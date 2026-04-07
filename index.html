@@ -1,0 +1,3378 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RUSHUP.AI V4.29</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+  --bg: #08080F;
+  --surface: #0E0E16;
+  --surface2: #13131E;
+  --surface3: #181826;
+  --border: #232335;
+  --border2: #2E2E48;
+  --accent: #9F58F5;
+  --accent-light: #B47FFF;
+  --accent-dark: #7B2FD4;
+  --green: #4BC97A;
+  --yellow: #F5C842;
+  --red: #F55252;
+  --text: #F0F0F5;
+  --muted: #9090B0;
+  --muted2: #505070;
+  --warn: #F5C842;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Mono', monospace;
+  background: var(--bg);
+  background-image: radial-gradient(ellipse at 15% 0%, rgba(159,88,245,0.1) 0%, transparent 55%),
+                    radial-gradient(ellipse at 85% 100%, rgba(75,201,122,0.05) 0%, transparent 55%);
+  background-attachment: fixed;
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 13px;
+}
+
+/* ── HEADER ── */
+header {
+  border-bottom: 1px solid var(--border);
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  position: sticky;
+  top: 0;
+  background: rgba(8,8,15,0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 200;
+}
+
+.logo {
+  font-family: 'Outfit', sans-serif;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #F0F0F5;
+}
+
+.logo span { 
+  color: #9F58F5;
+}
+
+.version-badge {
+  font-size: 9px;
+  letter-spacing: 2px;
+  background: rgba(151,71,255,0.15);
+  color: var(--accent);
+  border: 1px solid rgba(151,71,255,0.3);
+  padding: 2px 7px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+.header-right { display: flex; align-items: center; gap: 12px; }
+
+.hist-btn {
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  padding: 6px 14px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.5px;
+}
+.hist-btn:hover { border-color: var(--accent4); color: var(--accent4); }
+
+.apikey-input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 6px 11px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  width: 200px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.apikey-input:focus { border-color: var(--accent); }
+.apikey-input::placeholder { color: var(--muted); }
+
+/* ── LAYOUT ── */
+.container { max-width: 1080px; margin: 0 auto; padding: 36px 40px; }
+
+/* ── STEP ── */
+.step {
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 4px;
+  overflow: hidden;
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.3s, border-color 0.3s;
+}
+.step.active { opacity: 1; pointer-events: all; }
+.step.done { opacity: 1; pointer-events: all; border-color: rgba(180,127,255,0.25); }
+.step.current { border-color: rgba(151,71,255,0.35); }
+
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.step-num {
+  font-family: 'Outfit', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(151,71,255,0.1);
+  border: 1px solid rgba(151,71,255,0.25);
+  padding: 2px 7px;
+  border-radius: 2px;
+  letter-spacing: 1px;
+}
+.step-title { font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; color: #F0F0F5; }
+.step-status { margin-left: auto; font-size: 10px; color: rgba(255,255,255,0.5); letter-spacing: 0.5px; }
+.step-done-icon { margin-left: auto; color: var(--accent3); font-size: 12px; }
+.step-body { padding: 20px; }
+
+/* ── SOURCES ── */
+.sources-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.source-row {
+  display: grid;
+  grid-template-columns: 1fr 120px 36px;
+  gap: 8px;
+  align-items: center;
+}
+.source-input {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+.source-input:focus { border-color: var(--accent); }
+.source-input::placeholder { color: var(--muted2); }
+.source-remove {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--muted);
+  font-size: 14px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.source-remove:hover { border-color: #ff7070; color: #ff7070; }
+.add-source-btn {
+  background: transparent;
+  border: 1px dashed var(--border2);
+  border-radius: 3px;
+  padding: 8px 16px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+  text-align: center;
+}
+.add-source-btn:hover { border-color: var(--accent); color: var(--accent); }
+.sources-note { font-size: 11px; color: #fff; opacity: 0.7; margin-top: 8px; line-height: 1.7; }
+.source-num {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  text-align: center;
+  background: rgba(151,71,255,0.08);
+  border: 1px solid rgba(151,71,255,0.2);
+  border-radius: 2px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+/* ── DROP ── */
+.drop-zone {
+  border: 1.5px dashed var(--border2);
+  border-radius: 4px;
+  padding: 36px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--accent);
+  background: rgba(151,71,255,0.02);
+}
+.drop-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.drop-icon { font-size: 24px; display: block; margin-bottom: 8px; }
+.drop-main { font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 3px; color: #F0F0F5; }
+.drop-sub { font-size: 11px; color: rgba(255,255,255,0.5); }
+
+.stats-row { display: flex; gap: 0; margin-top: 14px; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; display: none; }
+.stats-row.visible { display: flex; }
+.stat { flex: 1; padding: 12px 16px; border-right: 1px solid var(--border); }
+.stat:last-child { border-right: none; }
+.stat-val { font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 700; color: #9F58F5; }
+.stat-lbl { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+.srt-preview { margin-top: 12px; border: 1px solid var(--border); padding: 12px; max-height: 110px; overflow-y: auto; background: var(--surface2); font-size: 11px; line-height: 1.9; color: var(--muted); display: none; border-radius: 3px; }
+.srt-preview.visible { display: block; }
+.srt-preview .tc { color: #9F58F5; }
+
+/* ── CHANNELS ── */
+.channels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.channel-card {
+  border: 1.5px solid var(--border2);
+  border-radius: 3px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--surface2);
+  position: relative;
+}
+.channel-card:hover { border-color: #9F58F5; background: rgba(159,88,245,0.06); }
+.channel-card.selected { border-color: var(--accent); background: rgba(151,71,255,0.05); }
+.channel-card.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 8px; right: 10px;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.channel-icon { font-size: 20px; margin-bottom: 8px; display: block; opacity: 0.85; }
+.channel-name { font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 700; margin-bottom: 2px; color: #F0F0F5; }
+.channel-dur { font-size: 10px; color: rgba(255,255,255,0.45); }
+
+/* ── MODE ── */
+.mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.mode-card {
+  border: 1.5px solid var(--border);
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: 3px;
+  background: var(--surface2);
+  position: relative;
+}
+.mode-card:hover { border-color: var(--border2); }
+.mode-card.selected { border-color: var(--accent); background: rgba(151,71,255,0.04); }
+.mode-card.selected::after { content: '✓'; position: absolute; top: 12px; right: 14px; color: var(--accent); font-weight: 700; font-size: 12px; }
+.mode-tag { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+.mode-title { font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 5px; }
+.mode-desc { font-size: 11px; color: rgba(255,255,255,0.55); line-height: 1.7; }
+
+/* ── FIELDS ── */
+.field { margin-bottom: 16px; }
+.field-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.6); display: block; margin-bottom: 7px; }
+textarea, input[type="number"] {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 10px 13px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s;
+  resize: vertical;
+}
+textarea:focus, input[type="number"]:focus { border-color: var(--accent); }
+textarea::placeholder, input::placeholder { color: var(--muted2); font-style: italic; }
+
+/* ── BTNS ── */
+.run-btn {
+  width: 100%;
+  background: #4BC97A;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 14px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.run-btn:hover { background: #3DB368; }
+.run-btn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+.run-btn .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+.run-btn.loading .spinner { display: block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.sec-btn {
+  background: transparent;
+  border: 1px solid #4BC97A;
+  border-radius: 3px;
+  padding: 9px 18px;
+  color: #4BC97A;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.sec-btn:hover { background: #4BC97A; color: #fff; }
+.sec-btn:disabled { border-color: var(--border); color: var(--muted); cursor: not-allowed; }
+
+/* ── THEMATICS ── */
+.thematics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; margin-bottom: 16px; }
+.thematic-card {
+  border: 1.5px solid var(--border);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: 3px;
+  background: var(--surface2);
+  position: relative;
+}
+.thematic-card:hover { border-color: var(--border2); }
+.thematic-card.selected { border-color: #9F58F5; }
+.thematic-card.selected::after { content: '✓'; position: absolute; top: 10px; right: 12px; color: var(--accent); font-weight: 700; }
+.thematic-num { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.45); margin-bottom: 5px; }
+.thematic-title { font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 700; margin-bottom: 5px; line-height: 1.3; }
+.thematic-desc { font-size: 11px; color: rgba(255,255,255,0.6); line-height: 1.6; margin-bottom: 7px; }
+.thematic-tc { font-size: 10px; color: #9F58F5; letter-spacing: 0.5px; }
+.score-dots { display: flex; gap: 3px; margin-top: 7px; }
+.score-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--border); }
+.score-dot.on { background: #9F58F5; }
+
+/* ── ACCROCHE ── */
+.accroche-wrap {
+  background: rgba(151,71,255,0.03);
+  border: 1px solid rgba(151,71,255,0.2);
+  border-radius: 4px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.accroche-hdr { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.accroche-badge { font-size: 9px; letter-spacing: 2px; background: var(--accent); color: #fff; padding: 3px 8px; border-radius: 2px; font-weight: 700; }
+.accroche-title { font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 700; }
+.accroche-sub { font-size: 10px; color: rgba(255,255,255,0.5); margin-left: auto; }
+.accroche-cards { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.accroche-card {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 10px;
+  align-items: start;
+  background: var(--surface2);
+}
+.accroche-card:hover { border-color: #9F58F5; }
+.accroche-card.selected { border-color: var(--accent); background: rgba(151,71,255,0.05); }
+.accroche-card.dimmed { opacity: 0.3; pointer-events: none; }
+.accroche-rank { font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 800; color: var(--accent); margin-top: 1px; }
+.accroche-type { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: #F5C842; margin-bottom: 4px; }
+.accroche-text { font-size: 12px; line-height: 1.6; }
+.accroche-tc { font-size: 10px; color: rgba(255,255,255,0.5); margin-top: 3px; }
+.accroche-why { font-size: 10px; color: rgba(255,255,255,0.55); font-style: italic; margin-top: 3px; }
+.accroche-dur { font-size: 11px; color: rgba(255,255,255,0.55); white-space: nowrap; }
+
+.accroche-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.accroche-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 7px 13px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.accroche-btn:hover { border-color: var(--text); color: var(--text); }
+.accroche-btn.active { border-color: var(--accent); color: var(--accent); }
+
+/* ── RESULT VERSIONS ── */
+.result-versions-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  flex-wrap: wrap;
+}
+.result-version-btn {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 4px 12px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.result-version-btn:hover { border-color: var(--border2); color: var(--text); }
+.result-version-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(151,71,255,0.08); }
+.reanalyze-result-btn {
+  background: transparent;
+  border: 1px solid #9F58F5;
+  border-radius: 3px;
+  padding: 5px 14px;
+  color: #9F58F5;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.reanalyze-result-btn:hover { background: rgba(151,71,255,0.1); }
+.reanalyze-result-btn:disabled { border-color: var(--border); color: var(--muted); cursor: not-allowed; }
+
+/* ── CHANNEL RESULTS TABS ── */
+.channel-tabs { display: flex; gap: 0; margin-bottom: 20px; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; flex-wrap: wrap; }
+.channel-tab {
+  flex: 1;
+  min-width: 100px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-right: 1px solid var(--border);
+  background: var(--surface2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.channel-tab:last-child { border-right: none; }
+.channel-tab:hover { background: var(--surface3); }
+.channel-tab.active { background: var(--surface); border-bottom: 2px solid #9F58F5; }
+.tab-icon { font-size: 16px; }
+.tab-name { font-family: 'Outfit', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
+.tab-score {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 2px;
+}
+.score-high { background: rgba(180,127,255,0.15); color: var(--accent3); }
+.score-mid { background: rgba(151,71,255,0.15); color: var(--accent); }
+.score-low { background: rgba(255,107,107,0.15); color: var(--accent2); }
+
+.channel-result { display: none; }
+.channel-result.active { display: block; }
+
+/* ── RESULTS ── */
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.results-title { font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.results-title .dot { width: 7px; height: 7px; border-radius: 50%; background: #4BC97A; box-shadow: 0 0 8px #4BC97A; }
+.export-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.export-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 5px 12px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.export-btn:hover { border-color: var(--text); color: var(--text); }
+.export-btn.primary { border-color: rgba(151,71,255,0.4); color: var(--accent); }
+.export-btn.primary:hover { background: rgba(151,71,255,0.1); }
+
+.editorial-note {
+  background: var(--surface2);
+  border-left: 2px solid #9F58F5;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 11px;
+  line-height: 1.75;
+  color: rgba(255,255,255,0.75);
+  font-style: italic;
+  border-radius: 0 3px 3px 0;
+}
+
+/* ── NARRATIVE ARC ── */
+.arc-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.arc-part {
+  padding: 7px 10px;
+  border-radius: 3px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 600;
+  text-align: center;
+}
+.arc-intro { background: rgba(123,95,255,0.15); color: var(--accent4); border: 1px solid rgba(123,95,255,0.25); }
+.arc-tension { background: rgba(245,82,82,0.15); color: #F55252; border: 1px solid rgba(245,82,82,0.4); }
+.arc-develop { background: rgba(245,200,66,0.15); color: #F5C842; border: 1px solid rgba(245,200,66,0.4); }
+.arc-conclu { background: rgba(180,127,255,0.12); color: var(--accent3); border: 1px solid rgba(180,127,255,0.25); }
+
+/* ── SEGMENTS ── */
+.segments-list { display: flex; flex-direction: column; gap: 6px; }
+
+.segment {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  background: var(--surface2);
+  animation: fadeUp 0.25s ease both;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.segment:hover { border-color: var(--border2); }
+.segment.is-accroche { border-color: rgba(151,71,255,0.3); }
+.segment.has-warning { border-color: rgba(255,179,71,0.4); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+.seg-idx {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--muted2);
+  background: var(--surface3);
+  border-right: 1px solid var(--border);
+}
+
+.seg-body { padding: 12px 16px; }
+.seg-tc { font-size: 11px; color: #9F58F5; margin-bottom: 4px; letter-spacing: 0.5px; }
+
+.seg-tag {
+  display: inline-block;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 2px;
+  margin-bottom: 5px;
+  margin-right: 4px;
+  font-weight: 600;
+}
+/* Each tag has its own Premiere-inspired color */
+.tag-accroche { background: rgba(159,88,245,0.18); color: #9F58F5; border: 1px solid rgba(159,88,245,0.45); }
+.tag-reorder  { background: rgba(245,82,82,0.15);  color: #F55252; border: 1px solid rgba(245,82,82,0.4); }
+.tag-thematic { background: rgba(75,201,122,0.13); color: #4BC97A; border: 1px solid rgba(75,201,122,0.35); }
+.tag-warning  { background: rgba(245,200,66,0.15); color: #F5C842; border: 1px solid rgba(245,200,66,0.4); cursor: help; }
+
+/* Arc tags — each part = distinct color */
+.tag-arc-intro       { background: rgba(77,170,255,0.15); color: #4DAAFF; border: 1px solid rgba(77,170,255,0.4); }
+.tag-arc-tension     { background: rgba(245,82,82,0.15);  color: #F55252; border: 1px solid rgba(245,82,82,0.4); }
+.tag-arc-developpement { background: rgba(245,200,66,0.15); color: #F5C842; border: 1px solid rgba(245,200,66,0.4); }
+.tag-arc-conclusion  { background: rgba(75,201,122,0.15); color: #4BC97A; border: 1px solid rgba(75,201,122,0.4); }
+.tag-arc-accroche    { background: rgba(159,88,245,0.18); color: #9F58F5; border: 1px solid rgba(159,88,245,0.45); }
+.tag-arc-hook        { background: rgba(245,200,66,0.15); color: #F5C842; border: 1px solid rgba(245,200,66,0.4); }
+/* Generic arc fallback */
+.tag-arc { background: rgba(180,127,255,0.13); color: #B47FFF; border: 1px solid rgba(180,127,255,0.3); }
+
+.seg-text { font-size: 12px; line-height: 1.65; margin-bottom: 5px; }
+.seg-reason { font-size: 11px; color: rgba(255,255,255,0.55); font-style: italic; line-height: 1.5; }
+.seg-text-edit {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed var(--border2);
+  color: var(--text);
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  line-height: 1.65;
+  resize: none;
+  outline: none;
+  padding: 2px 0;
+  margin-bottom: 5px;
+  cursor: text;
+  overflow: hidden;
+}
+.seg-text-edit:focus {
+  border-bottom-color: var(--accent);
+  background: rgba(151,71,255,0.02);
+}
+.seg-text-hint {
+  font-size: 9px;
+  color: var(--muted2);
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  display: none;
+}
+.seg-text-edit:focus ~ .seg-reason + .seg-text-hint,
+.seg-text-edit:focus + .seg-text-hint {
+  display: block;
+}
+.seg-warning-detail { font-size: 10px; color: var(--warn); margin-top: 4px; background: rgba(255,179,71,0.07); padding: 4px 8px; border-radius: 2px; }
+
+.seg-meta {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 5px;
+  border-left: 1px solid var(--border);
+  min-width: 68px;
+}
+.seg-dur { font-size: 11px; color: rgba(255,255,255,0.5); }
+.seg-score-dots { display: flex; gap: 2px; }
+.seg-score-dots .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--border); }
+.seg-score-dots .dot.on { background: #4BC97A; }
+.seg-delete {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.seg-delete:hover { border-color: #ff7070; color: #ff7070; background: rgba(255,70,70,0.08); }
+
+/* ── PERFORMANCE SCORE ── */
+.perf-block {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  background: var(--surface2);
+}
+.perf-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.perf-title { font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+.perf-score-big {
+  font-family: 'Outfit', sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+}
+.perf-bar-row { display: flex; flex-direction: column; gap: 6px; }
+.perf-bar-item { display: flex; align-items: center; gap: 10px; }
+.perf-bar-label { font-size: 10px; color: rgba(255,255,255,0.6); width: 120px; flex-shrink: 0; letter-spacing: 0.5px; }
+.perf-bar-track { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.perf-bar-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
+.perf-bar-val { font-size: 10px; color: rgba(255,255,255,0.7); width: 28px; text-align: right; }
+
+.total-bar {
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface2);
+  border-radius: 3px;
+}
+.total-label { font-size: 10px; color: rgba(255,255,255,0.6); letter-spacing: 1px; text-transform: uppercase; }
+.total-val { font-family: 'Outfit', sans-serif; font-size: 20px; font-weight: 700; color: #4BC97A; }
+
+.workflow-note {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  padding: 12px 16px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+  line-height: 1.8;
+  border-radius: 3px;
+}
+.workflow-note strong { color: var(--text); font-weight: 500; }
+
+.error-block {
+  background: rgba(255,70,70,0.07);
+  border: 1px solid rgba(255,70,70,0.25);
+  border-radius: 3px;
+  padding: 10px 14px;
+  font-size: 11px;
+  color: #ff7070;
+  margin-top: 10px;
+  display: none;
+  line-height: 1.6;
+}
+.error-block.visible { display: block; }
+
+/* ── HISTORY MODAL ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.visible { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  width: 680px;
+  max-width: 95vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-title { font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 700; }
+.modal-actions { display: flex; gap: 8px; align-items: center; }
+.clear-all-btn {
+  background: transparent;
+  border: 1px solid rgba(255,70,70,0.3);
+  border-radius: 3px;
+  padding: 5px 12px;
+  color: #ff7070;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.clear-all-btn:hover { background: rgba(255,70,70,0.1); }
+.modal-close {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 5px 10px;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+  line-height: 1;
+}
+.modal-close:hover { border-color: var(--text); color: var(--text); }
+
+.modal-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+
+.hist-empty { text-align: center; color: var(--muted); padding: 40px; font-size: 12px; }
+
+.hist-item {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  background: var(--surface2);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: start;
+}
+.hist-item:hover { border-color: var(--accent4); }
+.hist-filename { font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+.hist-meta { font-size: 10px; color: var(--muted); line-height: 1.7; }
+.hist-channels { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+.hist-channel-tag { font-size: 9px; background: var(--surface3); border: 1px solid var(--border); padding: 2px 6px; border-radius: 2px; color: var(--muted); }
+.hist-delete {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 5px 8px;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.hist-delete:hover { border-color: #ff7070; color: #ff7070; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+@media (max-width: 768px) {
+  .container { padding: 20px; }
+  header { padding: 0 20px; }
+  .mode-grid { grid-template-columns: 1fr; }
+  .channels-grid { grid-template-columns: repeat(3, 1fr); }
+  .arc-bar { grid-template-columns: repeat(2, 1fr); }
+  .apikey-input { width: 130px; }
+}
+
+/* ── GLOBAL DURATION BUTTONS ── */
+.dur-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 7px 14px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.dur-btn:hover { border-color: var(--border2); color: var(--text); }
+.dur-btn.active { background: #4BC97A; color: #fff; border-color: #4BC97A; font-weight: 600; }
+
+/* ── CHANNEL DURATION INPUT ── */
+.channel-dur-input {
+  display: none;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  pointer-events: all;
+}
+.channel-card.selected .channel-dur-input { display: block; }
+.channel-dur-row { display: flex; align-items: center; gap: 6px; pointer-events: all; }
+.channel-dur-label { font-size: 11px; color: var(--text); white-space: nowrap; font-weight: 500; }
+.channel-dur-field {
+  flex: 1;
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: 2px;
+  padding: 6px 10px;
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  outline: none;
+  width: 100%;
+  min-width: 80px;
+  cursor: text;
+  pointer-events: all;
+}
+.channel-dur-field:focus { border-color: var(--accent); }
+.channel-priority {
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: 2px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.channel-priority:hover { border-color: var(--accent); color: var(--accent); }
+.channel-priority.active { border-color: var(--accent); color: var(--accent); background: rgba(151,71,255,0.1); }
+.priority-label { font-size: 9px; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; margin-top: 4px; display: none; }
+.channel-card.priority .priority-label { display: block; }
+
+/* ── REANALYZE ── */
+.reanalyze-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.reanalyze-info { font-size: 11px; color: rgba(255,255,255,0.65); }
+.reanalyze-info strong { color: var(--text); }
+.reanalyze-actions { display: flex; gap: 8px; }
+.reanalyze-btn {
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: 3px;
+  padding: 5px 12px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.reanalyze-btn:hover { border-color: var(--accent4); color: var(--accent4); }
+.reanalyze-btn.primary { border-color: var(--accent); color: var(--accent); }
+.reanalyze-btn.primary:hover { background: rgba(151,71,255,0.1); }
+
+.thematic-versions {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.thematic-version-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 4px 12px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.thematic-version-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(151,71,255,0.08); }
+
+/* ── SCORE ADVICE ── */
+.score-advice {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: rgba(123,95,255,0.07);
+  border: 1px solid rgba(123,95,255,0.2);
+  border-radius: 3px;
+  font-size: 11px;
+  color: var(--accent4);
+  line-height: 1.7;
+}
+.score-advice strong { color: var(--text); font-weight: 500; }
+.score-advice .score-sim { color: #4BC97A; font-weight: 700; }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V4.29</span></div>
+  <div class="header-right">
+    <button class="hist-btn" onclick="openHistory()">⏱ Historique</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- 00 SOURCES -->
+  <div class="step active current" id="step0">
+    <div class="step-header">
+      <span class="step-num">00</span>
+      <span class="step-title">Déclarer les fichiers sources</span>
+      <span class="step-status" id="s0status">Optionnel — nécessaire pour l'export XML</span>
+    </div>
+    <div class="step-body">
+      <div class="sources-list" id="sourcesList">
+        <div style="display:grid;grid-template-columns:1fr 120px 36px;gap:8px;margin-bottom:4px;">
+          <div style="font-size:10px;color:#fff;opacity:0.8;letter-spacing:1px;text-transform:uppercase;">Nom du fichier</div>
+          <div style="font-size:10px;color:#fff;opacity:0.8;letter-spacing:1px;text-transform:uppercase;">Durée</div>
+          <div></div>
+        </div>
+      </div>
+      <button class="add-source-btn" onclick="addSource()">+ Ajouter un rush source</button>
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
+        <span style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.6);">Format séquence</span>
+        <button id="fmt169" class="dur-btn active" onclick="setFormat('16:9',this)" style="padding:5px 12px;font-size:11px;">16:9</button>
+        <button id="fmt916" class="dur-btn" onclick="setFormat('9:16',this)" style="padding:5px 12px;font-size:11px;">9:16</button>
+        <span style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-left:12px;">Scale alternance</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:11px;color:rgba(255,255,255,0.5);">A</span>
+          <input id="scaleA" type="text" value="100" onclick="event.stopPropagation()"
+            style="width:52px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:5px 8px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;text-align:center;outline:none;"
+            placeholder="100">
+          <span style="font-size:11px;color:rgba(255,255,255,0.3);">%</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:11px;color:rgba(255,255,255,0.5);">B</span>
+          <input id="scaleB" type="text" value="85" onclick="event.stopPropagation()"
+            style="width:52px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:5px 8px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;text-align:center;outline:none;"
+            placeholder="85">
+          <span style="font-size:11px;color:rgba(255,255,255,0.3);">%</span>
+        </div>
+        <span style="font-size:10px;color:rgba(255,255,255,0.35);font-style:italic;">alternance A/B par clip</span>
+      </div>
+      <div class="sources-note">
+        Déclare tes fichiers dans l'ordre chronologique du SRT.<br>
+        Ex : <span style="color:var(--accent)">FX30001.mp4</span> + <span style="color:var(--accent)">00:25:14:00</span> — le XML Premiere utilisera ces noms exacts pour relier les médias.
+      </div>
+    </div>
+  </div>
+
+  <!-- 01 SRT -->
+  <div class="step active current" id="step1">
+    <div class="step-header">
+      <span class="step-num">01</span>
+      <span class="step-title">Importer le fichier SRT</span>
+      <span class="step-status" id="s1status">En attente</span>
+    </div>
+    <div class="step-body">
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="srtFile" accept=".srt,.txt,.SRT,text/plain,text/srt,application/x-subrip">
+        <span class="drop-icon">📄</span>
+        <div class="drop-main">Déposer le fichier SRT ici</div>
+        <div class="drop-sub">Exporté depuis Premiere Pro · .srt · jusqu'à 2h de rush</div>
+      </div>
+      <div class="stats-row" id="statsRow">
+        <div class="stat"><div class="stat-val" id="stBlocks">—</div><div class="stat-lbl">Blocs</div></div>
+        <div class="stat"><div class="stat-val" id="stDur">—</div><div class="stat-lbl">Durée</div></div>
+        <div class="stat"><div class="stat-val" id="stWords">—</div><div class="stat-lbl">Mots</div></div>
+        <div class="stat"><div class="stat-val" id="stTakes">—</div><div class="stat-lbl">Prises est.</div></div>
+      </div>
+      <div class="srt-preview" id="srtPreview"></div>
+    </div>
+  </div>
+
+  <!-- 02 CHANNELS -->
+  <div class="step" id="step2">
+    <div class="step-header">
+      <span class="step-num">02</span>
+      <span class="step-title">Canaux de diffusion</span>
+      <span class="step-status">Sélectionne un ou plusieurs canaux</span>
+    </div>
+    <div class="step-body">
+      <div class="channels-grid" id="channelsGrid">
+        <div class="channel-card" data-channel="youtube" onclick="toggleChannel(this)">
+          <span class="channel-icon">▶</span>
+          <div class="channel-name">YouTube</div>
+          <div class="channel-dur">5–15 min</div>
+          <div class="channel-dur-input">
+            <div class="channel-dur-row">
+              <div class="channel-priority" onclick="event.stopPropagation();setPriority(this,'youtube')" title="★ Canal prioritaire">★</div>
+            </div>
+            <div class="priority-label">★ Prioritaire</div>
+          </div>
+        </div>
+        <div class="channel-card" data-channel="instagram_reels" onclick="toggleChannel(this)">
+          <span class="channel-icon">◈</span>
+          <div class="channel-name">Instagram Reels</div>
+          <div class="channel-dur">30–90 sec</div>
+          <div class="channel-dur-input">
+            <div class="channel-dur-row">
+              <div class="channel-priority" onclick="event.stopPropagation();setPriority(this,'instagram_reels')" title="★ Canal prioritaire">★</div>
+            </div>
+            <div class="priority-label">★ Prioritaire</div>
+          </div>
+        </div>
+        <div class="channel-card" data-channel="tiktok" onclick="toggleChannel(this)">
+          <span class="channel-icon">♪</span>
+          <div class="channel-name">TikTok</div>
+          <div class="channel-dur">15–60 sec</div>
+          <div class="channel-dur-input">
+            <div class="channel-dur-row">
+              <div class="channel-priority" onclick="event.stopPropagation();setPriority(this,'tiktok')" title="★ Canal prioritaire">★</div>
+            </div>
+            <div class="priority-label">★ Prioritaire</div>
+          </div>
+        </div>
+        <div class="channel-card" data-channel="linkedin" onclick="toggleChannel(this)">
+          <span class="channel-icon">◉</span>
+          <div class="channel-name">LinkedIn</div>
+          <div class="channel-dur">2–5 min</div>
+          <div class="channel-dur-input">
+            <div class="channel-dur-row">
+              <div class="channel-priority" onclick="event.stopPropagation();setPriority(this,'linkedin')" title="★ Canal prioritaire">★</div>
+            </div>
+            <div class="priority-label">★ Prioritaire</div>
+          </div>
+        </div>
+        <div class="channel-card" data-channel="facebook" onclick="toggleChannel(this)">
+          <span class="channel-icon">◎</span>
+          <div class="channel-name">Facebook</div>
+          <div class="channel-dur">1–3 min</div>
+          <div class="channel-dur-input">
+            <div class="channel-dur-row">
+              <div class="channel-priority" onclick="event.stopPropagation();setPriority(this,'facebook')" title="★ Canal prioritaire">★</div>
+            </div>
+            <div class="priority-label">★ Prioritaire</div>
+          </div>
+        </div>
+        <div class="channel-card" data-channel="tv_doc" onclick="toggleChannel(this)">
+          <span class="channel-icon">◼</span>
+          <div class="channel-name">TV / Doc</div>
+          <div class="channel-dur">2–5 min</div>
+          <div class="channel-dur-input">
+            <div class="channel-dur-row">
+              <div class="channel-priority" onclick="event.stopPropagation();setPriority(this,'tv_doc')" title="★ Canal prioritaire">★</div>
+            </div>
+            <div class="priority-label">★ Prioritaire</div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Les canaux définissent le style et la structure. La durée est définie ci-dessous.</div>
+
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Durée cible de la vidéo finale</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <button class="dur-btn" onclick="setGlobalDur(this,60)">1 min</button>
+          <button class="dur-btn" onclick="setGlobalDur(this,120)">2 min</button>
+          <button class="dur-btn active" onclick="setGlobalDur(this,180)">3 min</button>
+          <button class="dur-btn" onclick="setGlobalDur(this,300)">5 min</button>
+          <button class="dur-btn" onclick="setGlobalDur(this,600)">10 min</button>
+          <input type="text" id="customGlobalDur" placeholder="ex: 4 min ou 90 sec"
+            style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:7px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;width:160px;outline:none;"
+            oninput="setCustomGlobalDur(this.value)"
+            onfocus="document.querySelectorAll('.dur-btn').forEach(b=>b.classList.remove('active'))">
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">L'IA privilégie la cohérence du discours — une variation de ±20% est normale.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 03 MODE -->
+  <div class="step" id="step3">
+    <div class="step-header">
+      <span class="step-num">03</span>
+      <span class="step-title">Mode d'analyse</span>
+      <span class="step-status" id="s3status">Choisis un mode</span>
+    </div>
+    <div class="step-body">
+      <div class="mode-grid" style="grid-template-columns:1fr 1fr 1fr;">
+        <div class="mode-card" id="modeA" onclick="selectMode('A')">
+          <div class="mode-tag">Mode Expert</div>
+          <div class="mode-title">Je connais mon angle</div>
+          <div class="mode-desc">Tu décris l'angle éditorial et les thèmes. L'IA structure selon le framework intro/tension/développement/conclusion.</div>
+        </div>
+        <div class="mode-card" id="modeB" onclick="selectMode('B')">
+          <div class="mode-tag">Mode Découverte</div>
+          <div class="mode-title">Je découvre le sujet</div>
+          <div class="mode-desc">L'IA analyse et détecte les thématiques. Tu choisis, elle sélectionne et adapte par canal.</div>
+        </div>
+        <div class="mode-card" id="modeC" onclick="selectMode('C')">
+          <div class="mode-tag">Mode Script</div>
+          <div class="mode-title">Nettoyer les prises</div>
+          <div class="mode-desc">L'IA retrouve les meilleures prises dans l'ordre original. Idéal pour les face cam, prompteur, texte répété en plusieurs prises.</div>
+        </div>
+      </div>
+
+      <div id="formA" style="display:none;">
+        <div class="field">
+          <label class="field-label">Angle éditorial</label>
+          <textarea id="angleA" rows="3" placeholder="Ex: On veut montrer comment cette entreprise a réinventé son modèle après la crise. Ton inspirant et concret."></textarea>
+        </div>
+        <div class="field">
+          <label class="field-label">Questions posées (optionnel)</label>
+          <textarea id="questionsA" rows="2" placeholder="Ex: Comment avez-vous vécu la crise ? Quelle a été votre première décision ?"></textarea>
+        </div>
+      </div>
+
+      <div id="formB" style="display:none;">
+        <div style="border:1px solid var(--border);padding:14px;background:var(--surface2);font-size:11px;color:var(--muted);line-height:1.8;border-radius:3px;">
+          L'IA analyse le rush, identifie jusqu'à 8 thématiques génériques, et te les présente avec un score d'intensité. Tu choisis, elle sélectionne et adapte pour chaque canal.
+        </div>
+      </div>
+
+      <div id="formC" style="display:none;">
+        <div style="border:1px solid rgba(180,127,255,0.2);padding:14px;background:rgba(180,127,255,0.04);font-size:11px;color:var(--muted);line-height:1.8;border-radius:3px;margin-bottom:16px;">
+          L'IA lit l'ensemble du rush, détecte les répétitions et hésitations, et reconstruit le discours le plus propre dans l'ordre original. Elle ne réordonne rien — elle sélectionne la meilleure prise de chaque passage.
+        </div>
+        <div class="field">
+          <label class="field-label">Script validé (optionnel)</label>
+          <textarea id="scriptC" rows="5" placeholder="Colle ici le texte du script final validé si tu l'as.&#10;&#10;Ex: Imagine 1 million de personnes streamer une chanson. Et tout l'argent de ce stream va aider une femme sur dix...&#10;&#10;Si tu ne l'as pas, laisse vide — l'IA détectera automatiquement la structure du message."></textarea>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:-8px;">Sans script : l'IA détecte automatiquement le message et nettoie les prises. Avec script : elle aligne chaque ligne du script avec la meilleure prise du rush.</div>
+      </div>
+
+      <div class="error-block" id="errorBlock"></div>
+
+      <button class="run-btn" id="runBtn" onclick="runStep3()" disabled>
+        <div class="spinner"></div>
+        <span class="btn-text">Analyser le rush</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 04 THEMATICS (Mode B) -->
+  <div class="step" id="step4" style="display:none;">
+    <div class="step-header">
+      <span class="step-num">04</span>
+      <span class="step-title">Sélectionner les thématiques</span>
+      <span class="step-status">Coche les thèmes à développer</span>
+    </div>
+    <div class="step-body">
+      <div class="reanalyze-bar" id="reanalyzebar">
+        <div class="reanalyze-info"><strong id="thematicVersionLabel">Analyse 1</strong> — <span id="thematicVersionCount">0 thématiques détectées</span></div>
+        <div class="reanalyze-actions">
+          <div class="thematic-versions" id="thematicVersions"></div>
+          <button class="reanalyze-btn primary" onclick="reanalyzeThematics()">↺ Ré-analyser</button>
+        </div>
+      </div>
+      <div class="thematics-grid" id="thematicsGrid"></div>
+      <button class="sec-btn" id="confirmThematics" onclick="runFromThematics()" disabled>
+        Générer la sélection →
+      </button>
+    </div>
+  </div>
+
+  <!-- 05 ACCROCHE -->
+  <div class="step" id="step5" style="display:none;">
+    <div class="step-header">
+      <span class="step-num">05</span>
+      <span class="step-title">Accroche — Les 3 phrases les plus fortes</span>
+      <span class="step-status">Max 15 secondes · Choisir la stratégie d'ouverture</span>
+    </div>
+    <div class="step-body">
+      <div class="accroche-wrap">
+        <div class="accroche-hdr">
+          <span class="accroche-badge">⚡ ACCROCHE</span>
+          <span class="accroche-title">3 passages identifiés par l'IA</span>
+          <span class="accroche-sub">Max 15 sec · Mécanisme psychologique détecté</span>
+          <button id="reanalyzeAccrocheBtn" class="accroche-btn" style="margin-left:auto;border-color:var(--accent);color:var(--accent);" onclick="reanalyzeAccroches()">↺ Ré-analyser</button>
+        </div>
+        <div class="accroche-cards" id="accrocheCards"></div>
+        <div class="accroche-actions">
+          <button class="accroche-btn" id="btnAll" onclick="setAccroche('all')">Garder les 3 — je déciderai au montage</button>
+          <button class="accroche-btn" id="btnPick" onclick="setAccroche('pick')">Choisir 1 maintenant</button>
+          <button class="accroche-btn" id="btnNone" onclick="setAccroche('none')">Aucune — commencer directement</button>
+        </div>
+        <div id="pickMsg" style="display:none;font-size:11px;color:var(--muted);margin-top:8px;font-style:italic;">↑ Clique sur une accroche pour la sélectionner</div>
+      </div>
+      <button class="run-btn" id="confirmAccroche" onclick="finalizeResults()" disabled>
+        <span class="btn-text">Confirmer et voir la sélection →</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 06 RESULTS -->
+  <div class="step" id="step6" style="display:none;">
+    <div class="step-header">
+      <span class="step-num">06</span>
+      <span class="step-title">Sélection éditoriale finale</span>
+      <span class="step-status" id="s6status"></span>
+    </div>
+    <div class="step-body">
+      <div class="result-versions-bar" id="resultVersionsBar" style="display:none;">
+        <span style="font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;">Versions</span>
+        <div id="resultVersionBtns" style="display:flex;gap:6px;"></div>
+        <button class="reanalyze-result-btn" id="reanalyzeResultBtn" onclick="reanalyzeResult()">
+          <span>↺</span> <span>Ré-analyser</span>
+        </button>
+      </div>
+      <div class="channel-tabs" id="channelTabs"></div>
+      <div id="channelResults"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- HISTORY MODAL -->
+<div class="modal-overlay" id="histModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">⏱ Historique des analyses</div>
+      <div class="modal-actions">
+        <button class="clear-all-btn" onclick="clearAllHistory()">Tout effacer</button>
+        <button class="modal-close" onclick="closeHistory()">×</button>
+      </div>
+    </div>
+    <div class="modal-body" id="histBody"></div>
+  </div>
+</div>
+
+<script>
+// ── CHANNEL CONFIG ────────────────────────────────────────────────────────────
+const CHANNEL_CONFIG = {
+  youtube:         { name: 'YouTube',         icon: '▶', dur: '5–15 min', hookType: 'curiosity_gap',        hookMaxSec: 15, density: 'high',
+    style: "Narration développée, arc complet, moments de respiration. Mini-accroches tout au long pour maintenir la rétention." },
+  instagram_reels: { name: 'Instagram Reels', icon: '◈', dur: '30–90 sec', hookType: 'pattern_interrupt',   hookMaxSec: 5,  density: 'low',
+    style: "Accroche choc dans les 3 premières secondes. Phrases courtes. Zéro silence mort. Rythme soutenu. Conclusion forte. Chaque seconde compte." },
+  tiktok:          { name: 'TikTok',          icon: '♪', dur: '15–60 sec', hookType: 'shock_statement',     hookMaxSec: 5,  density: 'low',
+    style: "Déclaration choc immédiate. Ultra-dynamique. Une seule idée centrale. Fin surprenante ou call-to-action fort." },
+  linkedin:        { name: 'LinkedIn',         icon: '◉', dur: '2–5 min',  hookType: 'authority_fact',      hookMaxSec: 10, density: 'medium',
+    style: "Ouverture avec chiffre ou expertise. Ton professionnel et inspirant. Idées structurées. Conclusion avec enseignement actionnable." },
+  facebook:        { name: 'Facebook',         icon: '◎', dur: '1–3 min',  hookType: 'self_identification', hookMaxSec: 8,  density: 'medium',
+    style: "Identification émotionnelle immédiate. Les 10 premières secondes sont clés même sans son. Storytelling accessible." },
+  tv_doc:          { name: 'TV / Doc',         icon: '◼', dur: '2–5 min',  hookType: 'cliffhanger',         hookMaxSec: 15, density: 'high',
+    style: "Ouverture en tension. Développement riche et nuancé. Espace pour la réflexion. Conclusion ouverte ou forte prise de position." }
+};
+
+const HOOK_TYPES = {
+  curiosity_gap:       'Curiosité — crée un manque d\'information',
+  pattern_interrupt:   'Pattern interrupt — casse les attentes',
+  shock_statement:     'Déclaration choc — surprend immédiatement',
+  authority_fact:      'Autorité/chiffre — crédibilité instantanée',
+  self_identification: 'Identification — le spectateur se reconnaît',
+  cliffhanger:         'Cliffhanger — tension narrative immédiate',
+  pain_point:          'Pain point — problème que le spectateur vit',
+  contrarian:          'Contrarian — contredit une idée reçue'
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let sources = []; // [{name, duration, durationSec, offset}]
+let sequenceFormat = '16:9'; // '16:9' or '9:16'
+let sequenceWidth = 1920;
+let sequenceHeight = 1080;
+let scaleA = 100;
+let scaleB = 85;
+let parsedSRT = [];
+let selectedChannels = [];
+let channelDurations = {};   // { youtube: "8 min", instagram_reels: "45 sec" }
+let priorityChannel = null;  // canal prioritaire
+let currentMode = null;
+let rawResult = null;
+let accrocheMode = null;
+let pickedAccroche = null;
+let selectedThematics = [];
+let currentFilename = '';
+let thematicVersions = [];   // historique des analyses thématiques
+let currentThematicVersion = 0;
+let resultVersions = [];     // historique des sélections finales
+let currentResultVersion = 0;
+
+// ── SRT ──────────────────────────────────────────────────────────────────────
+// ── SOURCES ──────────────────────────────────────────────────────────────────
+let sourceCount = 0;
+
+function setFormat(fmt, btn) {
+  sequenceFormat = fmt;
+  sequenceWidth = fmt === '9:16' ? 1080 : 1920;
+  sequenceHeight = fmt === '9:16' ? 1920 : 1080;
+  document.querySelectorAll('#fmt169, #fmt916').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function addSource() {
+  sourceCount++;
+  const list = document.getElementById('sourcesList');
+  const row = document.createElement('div');
+  row.className = 'source-row';
+  row.id = `source-row-${sourceCount}`;
+  const idx = sourceCount;
+  row.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span class="source-num">${String(sourceCount).padStart(2,'0')}</span>
+      <input class="source-input" type="text" placeholder="FX30001.mp4" id="source-name-${idx}">
+    </div>
+    <input class="source-input" type="text" placeholder="00250000" id="source-dur-${idx}" style="text-align:center;">
+    <button class="source-remove" onclick="removeSource(${idx})">×</button>
+  `;
+  list.appendChild(row);
+  updateSources();
+  document.getElementById(`source-name-${idx}`).addEventListener('input', updateSources);
+  const durEl = document.getElementById(`source-dur-${idx}`);
+  durEl.addEventListener('input', function(e) {
+    formatDurInput(this);
+    updateSources();
+  });
+  durEl.addEventListener('keydown', function(e) {
+    // Allow: backspace, delete, tab, escape, arrows
+    if ([8,46,9,27,37,38,39,40].indexOf(e.keyCode) !== -1) return;
+    // Only allow digits
+    if (e.key && !/\d/.test(e.key)) e.preventDefault();
+  });
+}
+
+function removeSource(idx) {
+  const row = document.getElementById(`source-row-${idx}`);
+  if (row) row.remove();
+  updateSources();
+}
+
+function formatDurInput(input) {
+  // Remove all non-digits
+  let digits = input.value.replace(/\D/g, '');
+  // Limit to 8 digits (HHMMSSff)
+  if (digits.length > 8) digits = digits.slice(0, 8);
+  // Auto-insert colons: HH:MM:SS:FF
+  let formatted = '';
+  if (digits.length <= 2) {
+    formatted = digits;
+  } else if (digits.length <= 4) {
+    formatted = digits.slice(0,2) + ':' + digits.slice(2);
+  } else if (digits.length <= 6) {
+    formatted = digits.slice(0,2) + ':' + digits.slice(2,4) + ':' + digits.slice(4);
+  } else {
+    formatted = digits.slice(0,2) + ':' + digits.slice(2,4) + ':' + digits.slice(4,6) + ':' + digits.slice(6);
+  }
+  input.value = formatted;
+}
+
+function updateSources() {
+  sources = [];
+  let cumulativeSec = 0;
+  for (let i = 1; i <= sourceCount; i++) {
+    const nameEl = document.getElementById(`source-name-${i}`);
+    const durEl = document.getElementById(`source-dur-${i}`);
+    if (!nameEl || !nameEl.closest('.source-row')) continue;
+    const name = nameEl.value.trim();
+    const durStr = durEl.value.trim();
+    if (!name || !durStr) continue;
+    const durationSec = parseDurationInput(durStr) || tcToSec(durStr + ',000');
+    sources.push({ name, durationSec, offset: cumulativeSec });
+    cumulativeSec += durationSec;
+  }
+
+  // Update step0 status
+  const status = document.getElementById('s0status');
+  if (sources.length > 0) {
+    status.textContent = `${sources.length} source${sources.length > 1 ? 's' : ''} déclarée${sources.length > 1 ? 's' : ''}`;
+    status.style.color = 'var(--accent3)';
+  } else {
+    status.textContent = "Optionnel — nécessaire pour l'export XML";
+    status.style.color = '';
+  }
+}
+
+function getSourceForTC(tcSec) {
+  if (!sources.length) return null;
+  // Find the right source based on cumulative offset
+  for (let i = sources.length - 1; i >= 0; i--) {
+    if (tcSec >= sources[i].offset) {
+      return {
+        name: sources[i].name,
+        localTC: tcSec - sources[i].offset,
+        sourceIndex: i
+      };
+    }
+  }
+  // Fallback: always return first source with raw TC
+  return { name: sources[0].name, localTC: tcSec, sourceIndex: 0 };
+}
+
+document.getElementById('srtFile').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  currentFilename = f.name;
+  const r = new FileReader();
+  r.onload = ev => parseSRT(ev.target.result, f.name);
+  r.onerror = () => {
+    // Fallback: try without encoding
+    const r2 = new FileReader();
+    r2.onload = ev2 => parseSRT(ev2.target.result, f.name);
+    r2.readAsText(f);
+  };
+  r.readAsText(f, 'UTF-8');
+});
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) {
+    currentFilename = f.name;
+    const r = new FileReader();
+    r.onload = ev => parseSRT(ev.target.result, f.name);
+    r.onerror = () => { const r2 = new FileReader(); r2.onload = ev2 => parseSRT(ev2.target.result, f.name); r2.readAsText(f); };
+    r.readAsText(f, 'UTF-8');
+  }
+});
+
+function parseSRT(text, filename) {
+  parsedSRT = [];
+  const blocks = text.trim().split(/\n\s*\n/);
+  for (const block of blocks) {
+    const lines = block.trim().split('\n');
+    const tcLine = lines.find(l => l.includes('-->'));
+    if (!tcLine) continue;
+    const [s, e] = tcLine.split('-->').map(x => x.trim());
+    const txt = lines.slice(lines.indexOf(tcLine)+1).join(' ').trim().replace(/<[^>]+>/g,'');
+    if (!txt) continue;
+    parsedSRT.push({ start: s, end: e, text: txt, startSec: tcToSec(s), endSec: tcToSec(e) });
+  }
+  if (!parsedSRT.length) {
+    showError("Format SRT non reconnu. Vérifiez que le fichier est bien un .srt exporté depuis Premiere Pro.");
+    return;
+  }
+
+  const totalSec = (parsedSRT[parsedSRT.length-1] ? parsedSRT[parsedSRT.length-1].endSec : 0);
+  const words = parsedSRT.reduce((a,b) => a + b.text.split(' ').length, 0);
+  let takes = 1;
+  for (let i = 1; i < parsedSRT.length; i++) {
+    if (parsedSRT[i].startSec - parsedSRT[i-1].endSec > 3) takes++;
+  }
+  takes = Math.max(1, takes); // never negative
+
+  document.getElementById('stBlocks').textContent = parsedSRT.length;
+  document.getElementById('stDur').textContent = secToMin(totalSec);
+  document.getElementById('stWords').textContent = words.toLocaleString('fr');
+  document.getElementById('stTakes').textContent = '~' + takes;
+  document.getElementById('statsRow').classList.add('visible');
+
+  const preview = document.getElementById('srtPreview');
+  preview.innerHTML = parsedSRT.slice(0,5).map(b =>
+    `<span class="tc">${b.start}</span> — ${b.text}<br>`
+  ).join('') + `<span style="color:var(--muted2)">... ${parsedSRT.length-5} blocs de plus</span>`;
+  preview.classList.add('visible');
+
+  dz.querySelector('.drop-main').textContent = '✓ ' + filename;
+  dz.querySelector('.drop-sub').textContent = `${parsedSRT.length} blocs · ${secToMin(totalSec)} · ${words.toLocaleString('fr')} mots`;
+
+  markDone('step1');
+  setActive('step2');
+  setActive('step3');
+}
+
+// ── CHANNELS ─────────────────────────────────────────────────────────────────
+// ── GLOBAL DURATION ─────────────────────────────────────────────────────────
+let globalDurationSec = 180; // default 3 min
+
+function setGlobalDur(btn, sec) {
+  globalDurationSec = sec;
+  document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('customGlobalDur').value = '';
+}
+
+function setCustomGlobalDur(val) {
+  const parsed = parseDurationInput(val);
+  if (parsed) {
+    globalDurationSec = parsed;
+    document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+  }
+}
+
+function toggleChannel(card) {
+  card.classList.toggle('selected');
+  selectedChannels = [...document.querySelectorAll('.channel-card.selected')].map(c => c.dataset.channel);
+  if (selectedChannels.length > 0 && parsedSRT.length > 0 && currentMode) {
+    document.getElementById('runBtn').disabled = false;
+  }
+}
+
+function setPriority(btn, ch) {
+  // Toggle priority
+  if (priorityChannel === ch) {
+    priorityChannel = null;
+    btn.classList.remove('active');
+    btn.closest('.channel-card').classList.remove('priority');
+  } else {
+    // Remove previous priority
+    document.querySelectorAll('.channel-priority.active').forEach(b => {
+      b.classList.remove('active');
+      b.closest('.channel-card').classList.remove('priority');
+    });
+    priorityChannel = ch;
+    btn.classList.add('active');
+    btn.closest('.channel-card').classList.add('priority');
+  }
+}
+
+function getChannelDurations() {
+  const durations = {};
+  document.querySelectorAll('.channel-dur-field').forEach(input => {
+    const ch = input.dataset.ch;
+    if (input.value.trim()) durations[ch] = input.value.trim();
+  });
+  return durations;
+}
+
+// Parse duration string to seconds
+// Accepts: "4:03:21" "00:04:03:21" (Premiere HH:MM:SS:FF) "4 min" "4:03" "243" "4m03s"
+function parseDurationInput(str) {
+  if (!str) return null;
+  str = str.trim();
+
+  // Premiere format HH:MM:SS:FF or HH:MM:SS:FF (with frames)
+  const premiereMatch = str.match(/^(\d+):(\d+):(\d+):(\d+)$/);
+  if (premiereMatch) {
+    const h = parseInt(premiereMatch[1]);
+    const m = parseInt(premiereMatch[2]);
+    const s = parseInt(premiereMatch[3]);
+    const f = parseInt(premiereMatch[4]);
+    // Detect fps from frames value — if frames >= 25 probably 30fps
+    const fps = f > 24 ? 30 : 25;
+    return h * 3600 + m * 60 + s + f / fps;
+  }
+
+  // MM:SS:FF or MM:SS (without hours)
+  const mmssff = str.match(/^(\d+):(\d+):(\d+)$/);
+  if (mmssff) {
+    const m = parseInt(mmssff[1]);
+    const s = parseInt(mmssff[2]);
+    const f = parseInt(mmssff[3]);
+    // If first number > 59, it's probably HH:MM:SS without frames
+    if (m > 59) return m * 3600 + s * 60 + f;
+    const fps = f > 24 ? 30 : 25;
+    return m * 60 + s + f / fps;
+  }
+
+  // MM:SS
+  const mmss = str.match(/^(\d+):(\d+)$/);
+  if (mmss) {
+    return parseInt(mmss[1]) * 60 + parseInt(mmss[2]);
+  }
+
+  // "4 min" "4min" "4m30s" "30 sec" "30s"
+  const lower = str.toLowerCase();
+  const minMatch = lower.match(/(\d+)\s*m(?:in)?/);
+  const secMatch = lower.match(/(\d+)\s*s(?:ec)?/);
+  let total = 0;
+  if (minMatch) total += parseInt(minMatch[1]) * 60;
+  if (secMatch) total += parseInt(secMatch[1]);
+  if (minMatch || secMatch) return total > 0 ? total : null;
+
+  // Plain number — if > 20 assume seconds, else minutes
+  const num = parseInt(str);
+  if (!isNaN(num)) return num > 20 ? num : num * 60;
+
+  return null;
+}
+
+// ── MODE ─────────────────────────────────────────────────────────────────────
+function selectMode(m) {
+  currentMode = m;
+  document.getElementById('modeA').classList.toggle('selected', m === 'A');
+  document.getElementById('modeB').classList.toggle('selected', m === 'B');
+  document.getElementById('modeC').classList.toggle('selected', m === 'C');
+  document.getElementById('formA').style.display = m === 'A' ? 'block' : 'none';
+  document.getElementById('formB').style.display = m === 'B' ? 'block' : 'none';
+  document.getElementById('formC').style.display = m === 'C' ? 'block' : 'none';
+  if (parsedSRT.length > 0 && selectedChannels.length > 0) {
+    document.getElementById('runBtn').disabled = false;
+  }
+  const labels = { A: 'Analyser et sélectionner', B: 'Analyser les thématiques', C: 'Nettoyer les prises' };
+  document.getElementById('runBtn').querySelector('.btn-text').textContent = labels[m] || 'Analyser';
+}
+
+// ── HESITATION DETECTION ─────────────────────────────────────────────────────
+function detectHesitations(segments) {
+  const fillerWords = /\b(euh|hum|hmm|donc euh|c'est-à-dire|voilà voilà|enfin voilà|bah|ben|alors euh)\b/gi;
+  const repetitionPattern = /\b(\w+)\s+\1\b/gi;
+
+  return segments.map(seg => {
+    const startSec = tcToSec((seg.start || '').replace(',','.'));
+    const endSec   = tcToSec((seg.end || '').replace(',','.'));
+    const blocks   = parsedSRT.filter(b => b.startSec >= startSec-0.1 && b.endSec <= endSec+0.1);
+
+    const warnings = [];
+    blocks.forEach(b => {
+      if (fillerWords.test(b.text)) {
+        warnings.push(`Hésitation détectée à ${b.start} : "${b.text}"`);
+      }
+      if (repetitionPattern.test(b.text)) {
+        warnings.push(`Répétition détectée à ${b.start} : "${b.text}"`);
+      }
+      // Reset regex lastIndex
+      fillerWords.lastIndex = 0;
+      repetitionPattern.lastIndex = 0;
+    });
+
+    // Detect long silences inside segment
+    for (let i = 1; i < blocks.length; i++) {
+      const gap = blocks[i].startSec - blocks[i-1].endSec;
+      if (gap > 2) {
+        warnings.push(`Silence de ${gap.toFixed(1)}s à ${blocks[i-1].end}`);
+      }
+    }
+
+    return { ...seg, warnings };
+  });
+}
+
+// ── PERFORMANCE SCORE ────────────────────────────────────────────────────────
+function calcPerfScore(channelKey, segments, accroches, totalSec) {
+  const cfg = CHANNEL_CONFIG[channelKey];
+  if (!cfg) return { total: 0, criteria: [], advice: [] };
+
+  const targetSec = globalDurationSec || null;
+  const isPriority = priorityChannel === channelKey;
+
+  let durScore = 70;
+  if (targetSec && totalSec > 0) {
+    const durRatio = Math.max(0, 1 - Math.abs(totalSec - targetSec) / targetSec);
+    durScore = Math.round(durRatio * 100);
+  }
+
+  const hasAccroche = accroches && accroches.length > 0;
+  const accrocheScore = hasAccroche ? (accroches[0].duration_sec <= cfg.hookMaxSec ? 100 : 60) : 30;
+
+  const arcParts = [...new Set(segments.map(s => s.arc_part).filter(Boolean))];
+  const arcScore = Math.min(100, arcParts.length * 25);
+
+  const warnCount = segments.reduce((a, s) => a + ((s.warnings && s.warnings.length) || 0), 0);
+  const cleanScore = Math.max(0, 100 - warnCount * 15);
+
+  const priorityBonus = isPriority ? 5 : 0;
+  const total = Math.min(100, Math.round(durScore * 0.25 + accrocheScore * 0.35 + arcScore * 0.25 + cleanScore * 0.15) + priorityBonus);
+
+  const advice = [];
+  if (targetSec && durScore < 50) {
+    const curMin = Math.floor(totalSec / 60);
+    const curSec = Math.floor(totalSec % 60);
+    const tgtMin = Math.floor(targetSec / 60);
+    const tgtSec = targetSec % 60;
+    advice.push(`La sélection fait ${curMin}m${curSec}s pour une cible de ${tgtMin}m${tgtSec > 0 ? tgtSec + 's' : ''}. L'IA a privilégié la cohérence du discours — vérifie que les passages sélectionnés servent bien ton propos.`);
+  }
+  // Style optimization advice based on channel
+  const styleAdvice = {
+    instagram_reels: "Pour Instagram Reels, vérifie que les 3 premières secondes sont un choc immédiat et qu'il n'y a aucun silence mort.",
+    tiktok: "Pour TikTok, chaque phrase doit avoir une raison d'être. Supprime tout ce qui ne fait pas avancer le propos.",
+    linkedin: "Pour LinkedIn, assure-toi que la conclusion apporte un enseignement clair et actionnable.",
+    youtube: "Pour YouTube, la rétention dépend des mini-accroches tout au long de la vidéo — pas seulement l'ouverture.",
+    facebook: "Pour Facebook, les 10 premières secondes déterminent si la vidéo sera regardée sans le son.",
+    tv_doc: "Pour TV/Doc, l'ouverture en tension et la richesse du développement sont les clés de l'engagement."
+  };
+  if (styleAdvice[channelKey]) advice.push(styleAdvice[channelKey]);
+  if (accrocheScore < 70) {
+    advice.push(`L'accroche dépasse ${cfg.hookMaxSec}s pour ${cfg.name}. La réduire à une seule phrase percutante améliorerait l'engagement.`);
+  }
+  if (arcScore < 75) {
+    const missing = ['intro','tension','développement','conclusion'].filter(p => !arcParts.includes(p));
+    if (missing.length) advice.push(`Arc narratif incomplet — parties manquantes : <strong>${missing.join(', ')}</strong>.`);
+  }
+  if (warnCount > 0) {
+    advice.push(`${warnCount} hésitation${warnCount > 1 ? 's' : ''} détectée${warnCount > 1 ? 's' : ''}. Les nettoyer dans Premiere améliorera la propreté.`);
+  }
+
+  return {
+    total, isPriority,
+    criteria: [
+      { label: 'Durée adaptée au canal', score: durScore },
+      { label: "Qualité de l'accroche", score: accrocheScore },
+      { label: 'Arc narratif complet', score: arcScore },
+      { label: 'Propreté du discours', score: cleanScore }
+    ],
+    advice
+  };
+}
+
+// ── STEP 3 RUN ────────────────────────────────────────────────────────────────
+async function runStep3() {
+  const key = getKey(); if (!key) return;
+  if (!parsedSRT.length) { showError("Importe un SRT."); return; }
+  if (!currentMode) { showError("Choisis un mode."); return; }
+  if (!selectedChannels.length) { showError("Sélectionne au moins un canal."); return; }
+  hideError();
+
+  const btn = document.getElementById('runBtn');
+  setLoading(btn, true);
+
+  try {
+    if (currentMode === 'A') {
+      const angle = document.getElementById('angleA').value.trim();
+      if (!angle) { showError("Décris l'angle éditorial."); setLoading(btn, false); return; }
+      await runModeA(key, angle);
+    } else if (currentMode === 'B') {
+      await runModeB(key);
+    } else if (currentMode === 'C') {
+      await runModeC(key);
+    }
+    markDone('step3');
+  } catch(err) {
+    showError("Erreur API : " + err.message);
+  }
+  setLoading(btn, false);
+}
+
+async function runModeA(key, angle) {
+  const questions = document.getElementById('questionsA').value.trim();
+  const transcript = buildTranscript();
+  channelDurations = getChannelDurations();
+  channelDurations = getChannelDurations();
+  const channelsDesc = selectedChannels.map(c => {
+    const cfg = CHANNEL_CONFIG[c];
+    const durMin = Math.floor(globalDurationSec / 60);
+    const durSec = globalDurationSec % 60;
+    const durLabel = durSec > 0 ? `${durMin}m${durSec}s` : `${durMin} min`;
+    const durLine = `durée cible : ${durLabel} (définie par le journaliste — c'est LA durée à respecter)`;
+    const isPrio = priorityChannel === c ? ' [CANAL PRIORITAIRE]' : '';
+    return `- ${cfg.name}${isPrio} : ${durLine}
+  Style d'optimisation pour ce canal : ${cfg.style}
+  Type d'accroche recommandé : "${HOOK_TYPES[cfg.hookType]}"`;
+  }).join('\n\n');
+
+  const prompt = `Tu es un monteur-journaliste expert qui travaille pour plusieurs plateformes simultanément.
+
+TRANSCRIPTION :
+${transcript}
+
+ANGLE ÉDITORIAL : ${angle}
+${questions ? `QUESTIONS POSÉES : ${questions}` : ''}
+
+CANAUX DE DIFFUSION CIBLÉS :
+${channelsDesc}
+
+FRAMEWORK NARRATIF OBLIGATOIRE : intro → tension → développement → conclusion
+Chaque segment doit être assigné à une partie de cet arc.
+
+RÈGLE ABSOLUE SUR LA DURÉE :
+Le journaliste a défini une durée cible — TU DOIS la respecter.
+Si la durée cible est 2 minutes, tu DOIS sélectionner environ 2 minutes de contenu.
+JAMAIS moins de 80% de la durée cible, sauf impossibilité absolue (rush trop court).
+NE RÉDUIS JAMAIS la durée parce que le canal recommande une durée plus courte.
+Si le journaliste veut 2 min pour Instagram Reels, il veut 2 min. Respecte-le.
+
+RÈGLE ABSOLUE SUR LES DOUBLONS :
+Chaque passage ne peut apparaître QU'UNE SEULE FOIS dans toute la sélection.
+Les accroches et les segments du corps sont DISTINCTS — jamais le même passage aux deux endroits.
+Les segments du corps ne doivent pas se répéter entre eux.
+Vérifie que chaque timecode est unique dans ta réponse complète.
+
+En revanche, OPTIMISE le style selon le canal :
+- Pour Instagram/TikTok : accroche choc, rythme soutenu, phrases percutantes, zéro silence
+- Pour LinkedIn : ton expert, structure claire, conclusion actionnable  
+- Pour YouTube/TV : arc narratif complet, richesse du développement
+La durée et le style sont deux choses séparées. Durée = décision du journaliste. Style = codes du canal.
+
+INSTRUCTIONS GÉNÉRALES :
+- Analyse TOUT le transcript avant de sélectionner
+- Élimine les redites, hésitations, reformulations
+- Tu PEUX réorganiser l'ordre chronologique si ça sert le récit
+- Ne coupe jamais au milieu d'une phrase ou d'une idée
+- Chaque segment doit être compréhensible sans contexte
+- Privilégie toujours la cohérence du propos sur la durée exacte
+
+ACCROCHES (communes à tous les canaux) :
+- Identifie EXACTEMENT 3 passages — ni plus, ni moins. Le tableau "accroches" doit contenir EXACTEMENT 3 objets.
+- MAXIMUM 15 secondes chacune — 1 à 2 phrases uniquement
+- Les 3 accroches doivent être des passages DIFFÉRENTS, non-redondants, classés du plus fort au moins fort
+- Classe chaque accroche selon son mécanisme psychologique : curiosity_gap, pattern_interrupt, shock_statement, authority_fact, self_identification, cliffhanger, pain_point, contrarian
+
+Pour CHAQUE canal sélectionné, génère une sélection adaptée avec :
+- Durée OBLIGATOIREMENT proche de la durée cible définie par le journaliste (±20% maximum)
+- Structure narrative intro/tension/développement/conclusion
+- Style adapté à la plateforme (accroche, rythme, densité)
+VÉRIFICATION OBLIGATOIRE AVANT DE RÉPONDRE :
+Additionne les duration_sec de tous tes segments pour chaque canal.
+Si la somme est inférieure à 80% de la durée cible, tu DOIS ajouter d'autres segments.
+La durée cible est définie par le journaliste — elle PRIME sur tout autre critère.
+
+Réponds UNIQUEMENT en JSON valide, sans markdown :
+{
+  "accroches": [
+    {
+      "rank": 1,
+      "start": "00:00:00,000",
+      "end": "00:00:00,000",
+      "text": "Texte exact — max 2 phrases",
+      "hook_type": "shock_statement",
+      "why": "Pourquoi c'est une bonne accroche",
+      "duration_sec": 0
+    }
+  ],
+  "channels": {
+    "CHANNEL_KEY": {
+      "editorial_note": "Note narrative pour ce canal",
+      "segments": [
+        {
+          "order": 1,
+          "arc_part": "intro",
+          "start": "00:00:00,000",
+          "end": "00:00:00,000",
+          "text": "Texte exact",
+          "reordered": false,
+          "original_position": "début/milieu/fin",
+          "reason": "Ce que ce passage apporte",
+          "score_force": 4,
+          "duration_sec": 0
+        }
+      ],
+      "total_duration_sec": 0
+    }
+  }
+}`;
+
+  rawResult = await callAPI(key, prompt);
+
+  // Validate duration - if too short, retry with stronger instruction
+  const targetSec = globalDurationSec || 180;
+  const channels = selectedChannels;
+  for (const ch of channels) {
+    const chData = (rawResult.channels && rawResult.channels[ch]);
+    if (chData) {
+      const totalSec = chData.total_duration_sec || 0;
+      if (totalSec < targetSec * 0.6) {
+        console.log(`Duration too short for ${ch}: ${totalSec}s vs target ${targetSec}s — retrying`);
+        // Retry with stronger duration instruction
+        const retryPrompt = prompt.replace(
+          'RAPPEL : si la durée cible est',
+          `ATTENTION CRITIQUE : la dernière tentative a produit seulement ${Math.round(totalSec)}s au lieu de ${Math.round(targetSec)}s. Tu DOIS sélectionner plus de passages pour atteindre la durée cible. RAPPEL : si la durée cible est`
+        );
+        rawResult = await callAPI(key, retryPrompt);
+        break;
+      }
+    }
+  }
+
+  renderAccroches(rawResult.accroches);
+}
+
+async function runModeC(key) {
+  const script = document.getElementById('scriptC').value.trim();
+  // For Mode Script: send all content but compress repetitions
+  // Group consecutive blocks into sentences for efficiency
+  const transcript = buildCompressedTranscript();
+  const channelsDesc = selectedChannels.map(c => {
+    const cfg = CHANNEL_CONFIG[c];
+    const durMin = Math.floor(globalDurationSec / 60);
+    const durSec = globalDurationSec % 60;
+    const durLabel = durSec > 0 ? `${durMin}m${durSec}s` : `${durMin} min`;
+    const isPrio = priorityChannel === c ? ' [CANAL PRIORITAIRE]' : '';
+    return `- ${cfg.name}${isPrio} : durée cible ${durLabel}, style : ${cfg.style}`;
+  }).join("\n");
+
+  const missionText = script
+    ? "Le script final est fourni. Pour CHAQUE ligne ou phrase du script, trouve la MEILLEURE PRISE dans le rush - la plus claire, fluide, sans hesitation. Garde TOUTES les parties du script dans l ordre exact. Ne supprime rien."
+    : "Detecte le message complet repete dans le rush. Pour CHAQUE passage du message, selectionne la meilleure prise. Garde l integralite du message dans l ordre original. Ne supprime aucune partie du discours.";
+
+  const scriptSection = script ? "SCRIPT VALIDE :\n" + script + "\n\n" : "";
+
+  const prompt = [
+    "Tu es un expert en nettoyage de prises video. Ton role est UNIQUEMENT de trouver la meilleure prise de chaque passage.",
+    "Tu NE fais PAS de montage editorial. Tu NE choisis PAS quoi garder ou enlever. Tu NE reorganises PAS.",
+    "Le script/discours est sacre - il doit etre respecte integralement dans son ordre original.",
+    "",
+    "TRANSCRIPTION :",
+    transcript,
+    "",
+    scriptSection,
+    "CANAUX DE DIFFUSION (style uniquement, pas de selection) :",
+    channelsDesc,
+    "",
+    "TA MISSION UNIQUE :",
+    missionText,
+    "",
+    "REGLES ABSOLUES - MODE NETTOYAGE UNIQUEMENT :",
+    "- GARDE TOUT le discours - ne supprime aucun passage du script",
+    "- NE REORDONNE JAMAIS - respecte strictement l ordre original du message",
+    "- NE FAIS PAS de selection editoriale - ce n est pas ton role ici",
+    "- Pour chaque passage repete, selectionne LA prise la plus fluide et propre",
+    "- Elimine uniquement les repetitions/begaiements a l interieur d un meme passage",
+    "- Chaque timecode unique une seule fois",
+    "- Le resultat doit couvrir l integralite du script dans l ordre",
+    "",
+    "IMPORTANT : les arc_part doivent reflechir la STRUCTURE DU SCRIPT, pas un arc narratif impose.",
+    "Utilise des labels descriptifs comme : introduction, appel_action, temoignage, chiffre_cle, conclusion, etc.",
+    "",
+    'Reponds UNIQUEMENT en JSON valide, sans markdown :',
+    '{',
+    '  "editorial_note": "Note expliquant quelles prises tu as choisies et pourquoi",',
+    '  "detected_message": "Resume du message en 2-3 phrases",',
+    '  "accroches": [{ "rank": 1, "start": "00:00:00,000", "end": "00:00:00,000", "text": "Texte", "hook_type": "pattern_interrupt", "why": "Pourquoi cest la meilleure ouverture", "duration_sec": 0 }, { "rank": 2, ... }, { "rank": 3, ... }],',
+    '  "channels": {',
+    '    "CHANNEL_KEY": {',
+    '      "editorial_note": "Note sur le nettoyage effectue pour ce canal",',
+    '      "segments": [{ "order": 1, "arc_part": "introduction", "start": "00:00:00,000", "end": "00:00:00,000", "text": "Texte exact de la meilleure prise", "reordered": false, "original_position": "debut", "reason": "Pourquoi cette prise est la plus propre", "score_force": 5, "duration_sec": 0 }],',
+    '      "total_duration_sec": 0',
+    '    }',
+    '  }',
+    '}'
+  ].join("\n");
+
+
+  rawResult = await callAPI(key, prompt);
+
+  // Show detected message if no script
+  if (!script && rawResult.detected_message) {
+    const s3body = document.getElementById('step3').querySelector('.step-body');
+    const msgDiv = document.createElement('div');
+    msgDiv.style.cssText = 'margin-top:14px;padding:12px 16px;background:rgba(180,127,255,0.06);border:1px solid rgba(180,127,255,0.2);border-radius:3px;font-size:12px;color:var(--accent3);line-height:1.7;';
+    msgDiv.innerHTML = `<strong style="font-size:10px;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:6px;">Message détecté</strong>${rawResult.detected_message}`;
+    s3body.appendChild(msgDiv);
+  }
+
+  renderAccroches(rawResult.accroches);
+}
+
+async function runModeB(key) {
+  // Send more content: every 2nd block + full beginning and end
+  // For very long SRTs, take every 2nd; for shorter ones, send all
+  const sampledSRT = parsedSRT.length > 500
+    ? parsedSRT.filter((_, i) => i % 2 === 0 || i < 30 || i > parsedSRT.length - 30)
+    : parsedSRT;
+  const transcript = sampledSRT.map(b => `[${b.start} --> ${b.end}] ${b.text}`).join('\n');
+  const reanalyzeInstruction = window._reanalyzing ? `\nIMPORTANT : ceci est une RE-ANALYSE — explore une perspective DIFFÉRENTE de la précédente. Regroupe les sujets autrement, cherche des angles moins évidents, propose une vision alternative du même contenu.` : '';
+
+  const prompt = `Tu es un monteur-journaliste expert. Analyse cette interview et identifie les thématiques.${reanalyzeInstruction}
+
+TRANSCRIPTION (échantillon représentatif) :
+${transcript}
+
+Identifie entre 4 et 8 thématiques génériques et distinctes — JAMAIS plus de 8.
+Si le contenu est très riche, regroupe les sujets proches.
+Trie par ordre décroissant d'importance.
+
+DÉTECTION DES INTERVENANTS :
+- Détecte si une ou plusieurs personnes se présentent (ex: "Je suis X, je travaille chez Y")
+- Note leur nom, rôle/fonction si mentionné, et les timecodes où ils interviennent
+- Si personne ne se présente, laisse le tableau vide
+
+Réponds UNIQUEMENT en JSON valide, sans markdown :
+{
+  "speakers": [
+    {
+      "name": "Prénom Nom",
+      "role": "Fonction ou rôle mentionné",
+      "intro_tc": "00:00:05,000",
+      "timecodes": ["00:00:05,000 --> 00:02:30,000"]
+    }
+  ],
+  "thematics": [
+    {
+      "id": 1,
+      "title": "Titre court",
+      "summary": "Ce que dit la personne en 2 phrases",
+      "timecodes": ["00:03:20,000 --> 00:05:40,000"],
+      "score_intensity": 4
+    }
+  ]
+}`;
+
+  const result = await callAPI(key, prompt);
+  let thematics = result.thematics || [];
+  if (thematics.length > 8) {
+    thematics = thematics.sort((a,b) => (b.score_intensity||0) - (a.score_intensity||0)).slice(0, 8);
+  }
+  renderThematics(thematics, result.speakers || []);
+}
+
+async function runFromThematics() {
+  const key = getKey(); if (!key) return;
+  if (!selectedThematics.length) { alert("Sélectionne au moins une thématique."); return; }
+
+  const btn = document.getElementById('confirmThematics');
+  btn.disabled = true; btn.textContent = 'Génération en cours…';
+
+  const transcript = buildTranscript();
+  const thList = selectedThematics.map(t => `- "${t.title}" : ${t.summary}`).join('\n');
+
+  // ── Durée cible : utilise globalDurationSec exactement comme runModeA ──
+  const targetSec = globalDurationSec || 180;
+  const durMin = Math.floor(targetSec / 60);
+  const durSec = targetSec % 60;
+  const durLabel = durSec > 0 ? `${durMin}m${durSec}s` : `${durMin} min`;
+
+  const channelsDesc = selectedChannels.map(c => {
+    const cfg = CHANNEL_CONFIG[c];
+    const isPrio = priorityChannel === c ? ' [CANAL PRIORITAIRE]' : '';
+    return `- ${cfg.name}${isPrio} : durée cible ${durLabel} (définie par le journaliste — c'est LA durée à respecter)\n  Style : ${cfg.style}\n  Accroche type : "${HOOK_TYPES[cfg.hookType]}"`;
+  }).join('\n\n');
+
+  const prompt = `Tu es un monteur-journaliste expert qui travaille pour plusieurs plateformes.
+
+TRANSCRIPTION :
+${transcript}
+
+THÉMATIQUES À COUVRIR :
+${thList}
+
+CANAUX DE DIFFUSION :
+${channelsDesc}
+
+FRAMEWORK NARRATIF OBLIGATOIRE : intro → tension → développement → conclusion
+
+RÈGLE ABSOLUE SUR LA DURÉE :
+La durée cible est ${durLabel} — TU DOIS la respecter.
+JAMAIS moins de 80% de la durée cible (soit ${Math.round(targetSec * 0.8)}s minimum).
+Si la somme de tes segments est insuffisante, ajoute d'autres passages pertinents.
+
+RÈGLE ABSOLUE SUR LES DOUBLONS :
+Chaque passage ne peut apparaître QU'UNE SEULE FOIS. Les accroches et les segments sont DISTINCTS.
+
+ACCROCHES : EXACTEMENT 3 passages, max 15 secondes chacun, classés du plus fort au moins fort, mécanisme : curiosity_gap, pattern_interrupt, shock_statement, authority_fact, self_identification, cliffhanger, pain_point, contrarian
+
+VÉRIFICATION OBLIGATOIRE AVANT DE RÉPONDRE :
+Additionne les duration_sec de tous tes segments. Si la somme est < ${Math.round(targetSec * 0.8)}s, ajoute des passages.
+
+Réponds UNIQUEMENT en JSON valide, sans markdown :
+{
+  "accroches": [
+    { "rank": 1, "start": "00:00:00,000", "end": "00:00:00,000", "text": "Texte", "hook_type": "shock_statement", "why": "Pourquoi", "duration_sec": 0 },
+    { "rank": 2, "start": "00:00:00,000", "end": "00:00:00,000", "text": "Texte", "hook_type": "pattern_interrupt", "why": "Pourquoi", "duration_sec": 0 },
+    { "rank": 3, "start": "00:00:00,000", "end": "00:00:00,000", "text": "Texte", "hook_type": "curiosity_gap", "why": "Pourquoi", "duration_sec": 0 }
+  ],
+  "channels": {
+    "CHANNEL_KEY": {
+      "editorial_note": "Note narrative",
+      "segments": [
+        { "order": 1, "arc_part": "intro", "start": "00:00:00,000", "end": "00:00:00,000", "text": "Texte", "thematic": "Nom thématique", "reordered": false, "original_position": "début/milieu/fin", "reason": "Pourquoi ce passage", "score_force": 4, "duration_sec": 0 }
+      ],
+      "total_duration_sec": 0
+    }
+  }
+}`;
+
+  try {
+    rawResult = await callAPI(key, prompt);
+
+    // Validate duration — retry si trop court
+    for (const ch of selectedChannels) {
+      const chData = rawResult.channels && rawResult.channels[ch];
+      if (chData) {
+        const totalSec2 = chData.total_duration_sec || 0;
+        if (totalSec2 < targetSec * 0.6) {
+          console.log(`Mode B duration too short for ${ch}: ${totalSec2}s vs target ${targetSec}s — retrying`);
+          const retryPrompt = prompt + `\n\nATTENTION CRITIQUE : ta tentative précédente n'a produit que ${Math.round(totalSec2)}s au lieu de ${Math.round(targetSec)}s (${durLabel}). Tu DOIS sélectionner BEAUCOUP plus de passages pour atteindre la durée cible. Ajoute des segments supplémentaires issus des thématiques sélectionnées.`;
+          rawResult = await callAPI(key, retryPrompt);
+          break;
+        }
+      }
+    }
+
+    markDone('step4');
+    renderAccroches(rawResult.accroches);
+  } catch(err) {
+    showError("Erreur : " + err.message);
+  }
+  btn.disabled = false; btn.textContent = 'Générer la sélection →';
+}
+
+// ── RENDER THEMATICS ──────────────────────────────────────────────────────────
+function reanalyzeThematics() {
+  const key = getKey(); if (!key) return;
+  const btn = document.querySelector('.reanalyze-btn.primary');
+  btn.textContent = '↺ Analyse en cours…'; btn.disabled = true;
+  window._reanalyzing = true; // flag to use higher temperature
+  runModeB(key).finally(() => {
+    btn.textContent = '↺ Ré-analyser';
+    btn.disabled = false;
+    window._reanalyzing = false;
+  });
+}
+
+function renderSpeakers(speakers) {
+  if (!speakers || speakers.length === 0) return;
+  
+  // Find or create speakers section
+  let speakersSection = document.getElementById('speakersSection');
+  if (!speakersSection) {
+    speakersSection = document.createElement('div');
+    speakersSection.id = 'speakersSection';
+    speakersSection.style.cssText = 'margin-bottom:16px;padding:14px 16px;background:rgba(123,95,255,0.06);border:1px solid rgba(123,95,255,0.2);border-radius:3px;';
+    const grid = document.getElementById('thematicsGrid');
+    grid.parentNode.insertBefore(speakersSection, grid);
+  }
+  
+  speakersSection.innerHTML = `
+    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent4);margin-bottom:10px;">
+      ${speakers.length > 1 ? '👥' : '👤'} ${speakers.length} Intervenant${speakers.length > 1 ? 's' : ''} détecté${speakers.length > 1 ? 's' : ''}
+    </div>
+    ${speakers.map(s => `
+      <div style="display:flex;gap:12px;align-items:start;margin-bottom:8px;padding:8px 10px;background:var(--surface2);border-radius:3px;border:1px solid var(--border);">
+        <div style="font-size:18px;">🎙</div>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;">${s.name}</div>
+          ${s.role ? `<div style="font-size:11px;color:var(--muted);">${s.role}</div>` : ''}
+          <div style="font-size:10px;color:var(--accent4);margin-top:3px;">Se présente à ${s.intro_tc || 'début du rush'}</div>
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function renderThematics(thematics, speakers) {
+  // Render speakers if detected
+  if (speakers && speakers.length > 0) renderSpeakers(speakers);
+
+  // Save version
+  thematicVersions.push(thematics);
+  currentThematicVersion = thematicVersions.length - 1;
+
+  // Update version buttons
+  const versionsContainer = document.getElementById('thematicVersions');
+  versionsContainer.innerHTML = thematicVersions.map((_, i) =>
+    `<button class="thematic-version-btn ${i === currentThematicVersion ? 'active' : ''}" onclick="loadThematicVersion(${i})">Analyse ${i+1}</button>`
+  ).join('');
+
+  document.getElementById('thematicVersionLabel').textContent = `Analyse ${currentThematicVersion + 1}`;
+  document.getElementById('thematicVersionCount').textContent = `${thematics.length} thématiques détectées`;
+
+  const grid = document.getElementById('thematicsGrid');
+  grid.innerHTML = '';
+  selectedThematics = [];
+
+  thematics.forEach((t, i) => {
+    const card = document.createElement('div');
+    card.className = 'thematic-card';
+    card.innerHTML = `
+      <div class="thematic-num">Thématique ${i+1}</div>
+      <div class="thematic-title">${t.title}</div>
+      <div class="thematic-desc">${t.summary}</div>
+      <div class="thematic-tc">${(t.timecodes||[]).join(' · ')}</div>
+      <div class="score-dots">${Array.from({length:5},(_,j)=>`<div class="score-dot ${j<(t.score_intensity||3)?'on':''}"></div>`).join('')}</div>
+    `;
+    card.addEventListener('click', () => {
+      card.classList.toggle('selected');
+      selectedThematics = card.classList.contains('selected') ? [...selectedThematics, t] : selectedThematics.filter(s => s.id !== t.id);
+      document.getElementById('confirmThematics').disabled = selectedThematics.length === 0;
+    });
+    grid.appendChild(card);
+  });
+
+  const s4 = document.getElementById('step4');
+  s4.style.display = 'block';
+  setActive('step4');
+  s4.scrollIntoView({ behavior: 'smooth' });
+}
+
+function loadThematicVersion(idx) {
+  currentThematicVersion = idx;
+  const thematics = thematicVersions[idx];
+  if (!thematics) return;
+
+  // Update version buttons
+  document.querySelectorAll('.thematic-version-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === idx);
+  });
+  document.getElementById('thematicVersionLabel').textContent = `Analyse ${idx + 1}`;
+  document.getElementById('thematicVersionCount').textContent = `${thematics.length} thématiques détectées`;
+
+  // Re-render grid without pushing new version
+  const grid = document.getElementById('thematicsGrid');
+  grid.innerHTML = '';
+  selectedThematics = [];
+
+  thematics.forEach((t, i) => {
+    const card = document.createElement('div');
+    card.className = 'thematic-card';
+    card.innerHTML = `
+      <div class="thematic-num">Thématique ${i+1}</div>
+      <div class="thematic-title">${t.title}</div>
+      <div class="thematic-desc">${t.summary}</div>
+      <div class="thematic-tc">${(t.timecodes||[]).join(' · ')}</div>
+      <div class="score-dots">${Array.from({length:5},(_,j)=>`<div class="score-dot ${j<(t.score_intensity||3)?'on':''}"></div>`).join('')}</div>
+    `;
+    card.addEventListener('click', () => {
+      card.classList.toggle('selected');
+      selectedThematics = card.classList.contains('selected') ? [...selectedThematics, t] : selectedThematics.filter(s => s.id !== t.id);
+      document.getElementById('confirmThematics').disabled = selectedThematics.length === 0;
+    });
+    grid.appendChild(card);
+  });
+  document.getElementById('confirmThematics').disabled = true;
+}
+
+// ── REANALYZE ACCROCHES ONLY ──────────────────────────────────────────────────
+async function reanalyzeAccroches() {
+  const key = getKey(); if (!key) return;
+  const btn = document.getElementById('reanalyzeAccrocheBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '↺ Analyse…'; }
+
+  window._reanalyzing = true;
+  try {
+    if (currentMode === 'A') {
+      const angle = document.getElementById('angleA') ? document.getElementById('angleA').value.trim() : '';
+      await runModeA(key, angle);
+    } else if (currentMode === 'C') {
+      await runModeC(key);
+    } else {
+      await runFromThematics();
+    }
+  } catch(err) {
+    showError("Erreur ré-analyse accroche : " + err.message);
+  } finally {
+    window._reanalyzing = false;
+    if (btn) { btn.disabled = false; btn.textContent = '↺ Ré-analyser'; }
+  }
+}
+
+// ── RENDER ACCROCHES ──────────────────────────────────────────────────────────
+function renderAccroches(accroches) {
+  const container = document.getElementById('accrocheCards');
+  container.innerHTML = '';
+  accrocheMode = null; pickedAccroche = null;
+
+  (accroches || []).forEach((a, i) => {
+    const card = document.createElement('div');
+    card.className = 'accroche-card';
+    const hookLabel = HOOK_TYPES[a.hook_type] || a.hook_type || '';
+    card.innerHTML = `
+      <div class="accroche-rank">#${a.rank||i+1}</div>
+      <div>
+        ${hookLabel ? `<div class="accroche-type">${hookLabel}</div>` : ''}
+        <div class="accroche-text">${a.text}</div>
+        <div class="accroche-tc">${a.start} → ${a.end}</div>
+        <div class="accroche-why">${a.why||''}</div>
+      </div>
+      <div class="accroche-dur">${secToMin(a.duration_sec||0)}</div>
+    `;
+    card.addEventListener('click', () => {
+      if (accrocheMode !== 'pick') return;
+      document.querySelectorAll('.accroche-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      pickedAccroche = a;
+      enableConfirm();
+    });
+    container.appendChild(card);
+  });
+
+  const s5 = document.getElementById('step5');
+  s5.style.display = 'block';
+  s5.style.opacity = '1';
+  s5.style.pointerEvents = 'all';
+  s5.classList.add('active');
+  s5.scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('confirmAccroche').disabled = true;
+}
+
+function setAccroche(mode) {
+  accrocheMode = mode;
+  ['btnAll','btnPick','btnNone'].forEach(id => document.getElementById(id).classList.remove('active'));
+
+  if (mode === 'all') {
+    document.getElementById('btnAll').classList.add('active');
+    document.getElementById('pickMsg').style.display = 'none';
+    document.querySelectorAll('.accroche-card').forEach(c => { c.classList.remove('dimmed'); c.classList.add('selected'); });
+    enableConfirm();
+  } else if (mode === 'pick') {
+    document.getElementById('btnPick').classList.add('active');
+    document.getElementById('pickMsg').style.display = 'block';
+    document.querySelectorAll('.accroche-card').forEach(c => { c.classList.remove('selected','dimmed'); });
+    document.getElementById('confirmAccroche').disabled = true;
+    pickedAccroche = null;
+  } else if (mode === 'none') {
+    document.getElementById('btnNone').classList.add('active');
+    document.getElementById('pickMsg').style.display = 'none';
+    document.querySelectorAll('.accroche-card').forEach(c => { c.classList.remove('selected'); c.classList.add('dimmed'); });
+    enableConfirm();
+  }
+}
+
+function enableConfirm() {
+  const btn = document.getElementById('confirmAccroche');
+  btn.disabled = false;
+  const s5 = document.getElementById('step5');
+  s5.style.opacity = '1';
+  s5.style.pointerEvents = 'all';
+}
+
+// ── FINALIZE ─────────────────────────────────────────────────────────────────
+function finalizeResults() {
+  if (!rawResult) return;
+
+  // Capture current channel durations
+  channelDurations = getChannelDurations();
+
+  let accrocheSegs = [];
+  if (accrocheMode === 'all') {
+    accrocheSegs = (rawResult.accroches||[]).map(a => ({ ...a, isAccroche: true, arc_part: 'accroche', reason: a.why, score_force: 5 }));
+  } else if (accrocheMode === 'pick' && pickedAccroche) {
+    accrocheSegs = [{ ...pickedAccroche, isAccroche: true, arc_part: 'accroche', reason: pickedAccroche.why, score_force: 5 }];
+  }
+
+  // Build set of accroche timecodes to exclude from body segments
+  const accrocheTimecodes = new Set(accrocheSegs.map(a => `${a.start}-${a.end}`));
+
+  // Build per-channel results
+  const channelResults = {};
+  selectedChannels.forEach(ch => {
+    const chData = (rawResult.channels && rawResult.channels[ch]) || (rawResult.channels && rawResult.channels[Object.keys(rawResult.channels || {})[0]]) || {};
+    // Filter out body segments that overlap with accroches or with each other
+    const rawBodySegs = detectHesitations(chData.segments || []);
+    const usedRanges = [...accrocheSegs.map(a => ({
+      start: tcToSec((a.start || '').replace(',','.')),
+      end: tcToSec((a.end || '').replace(',','.'))
+    }))];
+
+    const bodySegs = rawBodySegs.filter(seg => {
+      const segStart = tcToSec((seg.start || '').replace(',','.'));
+      const segEnd = tcToSec((seg.end || '').replace(',','.'));
+      // Check overlap with any already-used range
+      const overlaps = usedRanges.some(r => !(segEnd <= r.start + 0.5 || segStart >= r.end - 0.5));
+      if (!overlaps) {
+        usedRanges.push({ start: segStart, end: segEnd });
+        return true;
+      }
+      return false;
+    });
+    const allSegs = [...accrocheSegs, ...bodySegs];
+    const perf = calcPerfScore(ch, bodySegs, accrocheSegs, chData.total_duration_sec || 0);
+    channelResults[ch] = {
+      segments: allSegs,
+      editorial_note: chData.editorial_note || '',
+      total_duration_sec: chData.total_duration_sec || 0,
+      perf
+    };
+  });
+
+  // Save to history
+  saveToHistory({
+    filename: currentFilename,
+    date: new Date().toLocaleDateString('fr'),
+    channels: selectedChannels,
+    mode: currentMode,
+    result: channelResults,
+    accroches: rawResult.accroches
+  });
+
+  renderResults(channelResults);
+}
+
+// ── RENDER RESULTS ────────────────────────────────────────────────────────────
+async function reanalyzeResult() {
+  const key = getKey(); if (!key) return;
+  const btn = document.getElementById('reanalyzeResultBtn');
+  btn.disabled = true;
+  btn.querySelector('span:last-child').textContent = 'Analyse en cours…';
+
+  window._reanalyzing = true;
+  accrocheMode = null;
+  pickedAccroche = null;
+
+  try {
+    if (currentMode === 'A') {
+      const angle = document.getElementById('angleA') ? document.getElementById('angleA').value.trim() : '';
+      await runModeA(key, angle);
+    } else if (currentMode === 'C') {
+      await runModeC(key);
+    } else {
+      await runFromThematics();
+    }
+    // Scroll to accroche step so user re-validates before new version is saved
+    const s5 = document.getElementById('step5');
+    if (s5) s5.scrollIntoView({ behavior: 'smooth' });
+  } catch(err) {
+    showError("Erreur ré-analyse : " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.querySelector('span:last-child').textContent = 'Ré-analyser';
+    window._reanalyzing = false;
+  }
+}
+
+function renderResults(channelResults) {
+  // Save version
+  resultVersions.push(JSON.parse(JSON.stringify(channelResults)));
+  currentResultVersion = resultVersions.length - 1;
+
+  // Show version bar
+  const versionsBar = document.getElementById('resultVersionsBar');
+  versionsBar.style.display = 'flex';
+  const versionBtns = document.getElementById('resultVersionBtns');
+  versionBtns.innerHTML = resultVersions.map((_, i) =>
+    `<button class="result-version-btn ${i === currentResultVersion ? 'active' : ''}" onclick="loadResultVersion(${i})">Sélection ${i+1}</button>`
+  ).join('');
+
+  const tabsContainer = document.getElementById('channelTabs');
+  const resultsContainer = document.getElementById('channelResults');
+  tabsContainer.innerHTML = '';
+  resultsContainer.innerHTML = '';
+
+  const channels = Object.keys(channelResults);
+
+  channels.forEach((ch, i) => {
+    const cfg = CHANNEL_CONFIG[ch];
+    const perf = channelResults[ch].perf;
+    const scoreClass = perf.total >= 75 ? 'score-high' : perf.total >= 50 ? 'score-mid' : 'score-low';
+
+    // Tab
+    const tab = document.createElement('div');
+    tab.className = 'channel-tab' + (i === 0 ? ' active' : '');
+    tab.dataset.ch = ch;
+    tab.innerHTML = `<div class="tab-icon">${cfg.icon}</div><div class="tab-name">${cfg.name}</div><div class="tab-score ${scoreClass}">${perf.total}/100</div>`;
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.channel-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.channel-result').forEach(r => r.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(`result-${ch}`).classList.add('active');
+    });
+    tabsContainer.appendChild(tab);
+
+    // Result panel
+    const panel = document.createElement('div');
+    panel.className = 'channel-result' + (i === 0 ? ' active' : '');
+    panel.id = `result-${ch}`;
+    panel.innerHTML = buildChannelResultHTML(ch, channelResults[ch], cfg);
+    resultsContainer.appendChild(panel);
+  });
+
+  const s6 = document.getElementById('step6');
+  s6.style.display = 'block';
+  setActive('step6');
+  document.getElementById('s6status').textContent = `${channels.length} canal${channels.length>1?'x':''} · Prêt`;
+  s6.scrollIntoView({ behavior: 'smooth' });
+  markDone('step5');
+}
+
+function buildChannelResultHTML(ch, data, cfg) {
+  const { segments, editorial_note, total_duration_sec, perf } = data;
+
+  // Arc bar
+  const arcParts = ['accroche', 'intro', 'tension', 'développement', 'conclusion'];
+  const presentArc = [...new Set(segments.map(s => s.arc_part).filter(Boolean))];
+
+  let arcBarHTML = `<div class="arc-bar">`;
+  ['intro','tension','développement','conclusion'].forEach(part => {
+    const has = presentArc.includes(part);
+    const cls = part === 'intro' ? 'arc-intro' : part === 'tension' ? 'arc-tension' : part === 'développement' ? 'arc-develop' : 'arc-conclu';
+    arcBarHTML += `<div class="arc-part ${cls}" style="opacity:${has?1:0.3}">${part}</div>`;
+  });
+  arcBarHTML += '</div>';
+
+  // Performance block
+  const priorityBadge = perf.isPriority ? ' <span style="font-size:10px;color:var(--accent);background:rgba(151,71,255,0.1);border:1px solid rgba(151,71,255,0.3);padding:2px 6px;border-radius:2px;letter-spacing:1px;">★ PRIORITAIRE</span>' : '';
+  let perfHTML = `<div class="perf-block">
+    <div class="perf-header">
+      <div class="perf-title">Score de performance prédit${priorityBadge}</div>
+      <div class="perf-score-big" style="color:${perf.total>=75?'#4BC97A':perf.total>=50?'#F5C842':'#F55252'}">${perf.total}<span style="font-size:16px;color:var(--muted)">/100</span></div>
+    </div>
+    <div class="perf-bar-row">`;
+  perf.criteria.forEach(c => {
+    const color = c.score>=75 ? '#4BC97A' : c.score>=50 ? '#F5C842' : '#F55252';
+    perfHTML += `<div class="perf-bar-item">
+      <div class="perf-bar-label">${c.label}</div>
+      <div class="perf-bar-track"><div class="perf-bar-fill" style="width:${c.score}%;background:${color}"></div></div>
+      <div class="perf-bar-val">${c.score}</div>
+    </div>`;
+  });
+  perfHTML += `</div>`;
+  if (perf.advice && perf.advice.length > 0) {
+    perfHTML += `<div class="score-advice"><strong>→ Comment améliorer ce score :</strong><br>${perf.advice.map(a => '• ' + a).join('<br>')}</div>`;
+  }
+  perfHTML += `</div>`;
+
+  // Segments
+  let segsHTML = '<div class="segments-list">';
+  segments.forEach((seg, i) => {
+    const dur = seg.duration_sec || Math.max(0, tcToSec((seg.end || '').replace(',','.')) - tcToSec((seg.start || '').replace(',','.')));
+    const hasWarn = (seg.warnings && seg.warnings.length) > 0;
+    const isAccroche = seg.isAccroche;
+
+    const tags = [];
+    if (isAccroche) tags.push(`<span class="seg-tag tag-accroche">⚡ Accroche · ${HOOK_TYPES[seg.hook_type]||''}</span>`);
+    if (seg.arc_part && !isAccroche) {
+      const arcLower = seg.arc_part.toLowerCase();
+      let arcClass = 'tag-arc';
+      // Match by keyword presence for flexible IA output
+      if (arcLower.includes('intro') || arcLower.includes('reveal') || arcLower.includes('ouverture') || arcLower.includes('credibilite')) {
+        arcClass = 'tag-arc-intro';
+      } else if (arcLower.includes('tension') || arcLower.includes('story') || arcLower.includes('intime') || arcLower.includes('conflit') || arcLower.includes('probleme')) {
+        arcClass = 'tag-arc-tension';
+      } else if (arcLower.includes('develop') || arcLower.includes('vision') || arcLower.includes('decision') || arcLower.includes('action') || arcLower.includes('convention') || arcLower.includes('argument') || arcLower.includes('motivation') || arcLower.includes('intimite')) {
+        arcClass = 'tag-arc-developpement';
+      } else if (arcLower.includes('conclu') || arcLower.includes('call') || arcLower.includes('chute') || arcLower.includes('fin') || arcLower.includes('partenariat')) {
+        arcClass = 'tag-arc-conclusion';
+      } else if (arcLower.includes('hook') || arcLower.includes('challenge') || arcLower.includes('cap')) {
+        arcClass = 'tag-arc-hook';
+      }
+      // Color fallback by position if no keyword match — cycle through colors
+      if (arcClass === 'tag-arc') {
+        const colors = ['tag-arc-intro','tag-arc-tension','tag-arc-developpement','tag-arc-conclusion','tag-arc-hook'];
+        arcClass = colors[Math.abs(seg.order || 0) % colors.length];
+      }
+      tags.push(`<span class="seg-tag ${arcClass}">${seg.arc_part}</span>`);
+    }
+    if (seg.reordered) tags.push(`<span class="seg-tag tag-reorder">⚑ Réorganisé · ${seg.original_position||''}</span>`);
+    if (seg.thematic) tags.push(`<span class="seg-tag tag-thematic">◆ ${seg.thematic}</span>`);
+    if (hasWarn) tags.push(`<span class="seg-tag tag-warning" title="${seg.warnings.join('\n')}">⚠ À nettoyer</span>`);
+    if (seg._editedText) tags.push(`<span class="seg-tag tag-warning">🔴 Texte modifié — Rose dans Premiere</span>`);
+
+    const dots = Array.from({length:5},(_,j)=>`<div class="dot ${j<(seg.score_force||3)?'on':''}"></div>`).join('');
+    const label = isAccroche ? `A${i+1}` : String(seg.order||i);
+
+    // ── Source file tag ──────────────────────────────────────────────────────
+    const segStartSec = tcToSec((seg.start || '').replace(',','.'));
+    const segSource = sources.length ? getSourceForTC(segStartSec) : null;
+    const sourceTag = segSource
+      ? `<span style="font-size:10px;color:var(--muted);background:var(--surface3);border:1px solid var(--border);border-radius:2px;padding:1px 6px;margin-left:8px;letter-spacing:0.3px;">📁 ${segSource.name}</span>`
+      : '';
+
+    segsHTML += `<div class="segment${isAccroche?' is-accroche':''}${(hasWarn||seg._editedText)?' has-warning':''}">
+      <div class="seg-idx">${label}</div>
+      <div class="seg-body">
+        <div class="seg-tc">${seg.start} → ${seg.end}${sourceTag}</div>
+        ${tags.join('')}
+        <textarea class="seg-text-edit" rows="2"
+          oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';updateSegText('${ch}',${i},this.value)"
+          onfocus="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+        >${seg.text}</textarea>
+        <div id="edit-hint-${ch}-${i}" style="font-size:9px;color:var(--muted2);letter-spacing:0.5px;margin-bottom:4px;">✎ Clique pour éditer le texte</div>
+        <div class="seg-reason">${seg.reason||''}</div>
+        ${hasWarn ? `<div class="seg-warning-detail">⚠ ${seg.warnings.join(' · ')}</div>` : ''}
+      </div>
+      <div class="seg-meta">
+        <button class="seg-delete" onclick="deleteSegment('${ch}', ${i})" title="Supprimer ce segment">✕</button>
+        <div class="seg-dur">${secToMin(dur)}</div>
+        <div class="seg-score-dots">${dots}</div>
+      </div>
+    </div>`;
+  });
+  segsHTML += '</div>';
+
+  // Always recalculate from segments to ensure accuracy after edits/deletions
+  const total = segments.reduce((a,s) => a + (s.duration_sec || Math.max(0, tcToSec((s.end || '').replace(',','.')) - tcToSec((s.start || '').replace(',','.')))), 0) || total_duration_sec || 0;
+
+  return `
+    <div class="results-header">
+      <div class="results-title"><div class="dot"></div>${cfg.name} — Sélection</div>
+      <div class="export-row">
+        <button class="export-btn" onclick="exportBrief('${ch}')">↓ Brief</button>
+        <button class="export-btn" onclick="exportGlobalSRT('${ch}')">↓ SRT rush</button>
+        <button class="export-btn primary" onclick="exportSequenceSRT('${ch}')" title="SRT recalculé pour la nouvelle séquence montée">↓ SRT séquence</button>
+        <button class="export-btn" onclick="exportSegmentSRTs('${ch}')">↓ SRT segments</button>
+        <button class="export-btn primary" onclick="exportXML('${ch}')" title="${sources.length ? 'Exporter la séquence Premiere Pro' : 'Déclare les sources en étape 00 pour activer'}">↓ XML Premiere${sources.length ? '' : ' ⚠'}</button>
+      </div>
+    </div>
+    <div class="editorial-note">${editorial_note}</div>
+    ${arcBarHTML}
+    ${perfHTML}
+    ${segsHTML}
+    <div class="total-bar">
+      <span class="total-label">Durée totale sélectionnée</span>
+      <span class="total-val">${secToMin(total)}</span>
+    </div>
+    <div class="workflow-note">
+      <strong>→ Workflow Premiere Pro</strong><br>
+      Importe chaque SRT via <em>Fichier → Importer</em>. Les sous-titres marquent visuellement les passages sur ta timeline.<br>
+      <span style="color:var(--warn)">⚠ À nettoyer</span> — Ces segments contiennent des hésitations ou silences à corriger avant l'export final.
+    </div>
+  `;
+}
+
+// ── EXPORTS ──────────────────────────────────────────────────────────────────
+function getChannelData(ch) {
+  return window._lastChannelResults && window._lastChannelResults[ch];
+}
+
+function loadResultVersion(idx) {
+  currentResultVersion = idx;
+  const channelResults = resultVersions[idx];
+  if (!channelResults) return;
+
+  // Update version buttons
+  document.querySelectorAll('.result-version-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', i === idx);
+  });
+
+  // Re-render
+  window._lastChannelResults = channelResults;
+  selectedChannels = Object.keys(channelResults);
+
+  const tabsContainer = document.getElementById('channelTabs');
+  const resultsContainer = document.getElementById('channelResults');
+  tabsContainer.innerHTML = '';
+  resultsContainer.innerHTML = '';
+
+  const channels = Object.keys(channelResults);
+  channels.forEach((ch, i) => {
+    const cfg = CHANNEL_CONFIG[ch];
+    const perf = channelResults[ch].perf;
+    const scoreClass = perf.total >= 75 ? 'score-high' : perf.total >= 50 ? 'score-mid' : 'score-low';
+
+    const tab = document.createElement('div');
+    tab.className = 'channel-tab' + (i === 0 ? ' active' : '');
+    tab.dataset.ch = ch;
+    tab.innerHTML = `<div class="tab-icon">${cfg.icon}</div><div class="tab-name">${cfg.name}</div><div class="tab-score ${scoreClass}">${perf.total}/100</div>`;
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.channel-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.channel-result').forEach(r => r.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById(`result-${ch}`).classList.add('active');
+    });
+    tabsContainer.appendChild(tab);
+
+    const panel = document.createElement('div');
+    panel.className = 'channel-result' + (i === 0 ? ' active' : '');
+    panel.id = `result-${ch}`;
+    panel.innerHTML = buildChannelResultHTML(ch, channelResults[ch], cfg);
+    resultsContainer.appendChild(panel);
+  });
+}
+
+function updateSegText(ch, idx, newText) {
+  if (!window._lastChannelResults || !window._lastChannelResults[ch]) return;
+  const seg = window._lastChannelResults[ch].segments[idx];
+  const originalText = seg.originalText || seg.text;
+
+  // Store original on first edit
+  if (!seg.originalText) seg.originalText = seg.text;
+  seg.text = newText;
+  seg._editedText = (newText !== seg.originalText) ? newText : null;
+
+  // Show/hide warning
+  const hint = document.getElementById("edit-hint-" + ch + "-" + idx);
+  if (hint) {
+    if (newText !== originalText) {
+      hint.innerHTML = "<span style=\"color:var(--warn)\">⚠ Texte modifié — ajuster le timecode dans Premiere</span>";
+    } else {
+      hint.innerHTML = "✎ Clique pour éditer le texte";
+      hint.style.color = "var(--muted2)";
+    }
+  }
+
+  // Mise à jour live du badge 🔴 et de la bordure has-warning sans re-render complet
+  const segEl = hint ? hint.closest('.segment') : null;
+  if (segEl) {
+    // Badge 🔴 — cherche un tag existant ou en crée un
+    let roseTag = segEl.querySelector('.seg-rose-tag');
+    if (newText !== originalText) {
+      if (!roseTag) {
+        roseTag = document.createElement('span');
+        roseTag.className = 'seg-tag tag-warning seg-rose-tag';
+        roseTag.textContent = '🔴 Texte modifié — Rose dans Premiere';
+        const tagsContainer = segEl.querySelector('.seg-tc');
+        if (tagsContainer) tagsContainer.insertAdjacentElement('afterend', roseTag);
+      }
+      segEl.classList.add('has-warning');
+    } else {
+      if (roseTag) roseTag.remove();
+      // Retire has-warning seulement si pas d'autre warning
+      const seg = window._lastChannelResults[ch] && window._lastChannelResults[ch].segments[idx];
+      if (seg && (!seg.warnings || !seg.warnings.length)) segEl.classList.remove('has-warning');
+    }
+  }
+}
+
+function deleteSegment(ch, idx) {
+  if (!window._lastChannelResults || !window._lastChannelResults[ch]) return;
+
+  // Remove segment at index
+  window._lastChannelResults[ch].segments.splice(idx, 1);
+
+  // Recalculate total duration
+  // Use current segments (may have been edited/deleted by user)
+  const chData = window._lastChannelResults[ch];
+  const segs = (chData && chData.segments) ? chData.segments : [];
+  if (!segs.length) {
+    alert("Aucun segment dans cette sélection. Relance une analyse.");
+    return;
+  }
+  const newTotal = segs.reduce((a, s) => {
+    return a + (s.duration_sec || Math.max(0, tcToSec((s.end || '').replace(',','.')) - tcToSec((s.start || '').replace(',','.'))));
+  }, 0);
+  window._lastChannelResults[ch].total_duration_sec = newTotal;
+
+  // Recalculate perf score
+  const accroches = segs.filter(s => s.isAccroche);
+  const bodySegs = segs.filter(s => !s.isAccroche);
+  window._lastChannelResults[ch].perf = calcPerfScore(ch, bodySegs, accroches, newTotal);
+
+  // Re-render this channel — pass updated total_duration_sec
+  window._lastChannelResults[ch].total_duration_sec = newTotal;
+
+  const panel = document.getElementById(`result-${ch}`);
+  if (panel) {
+    const cfg = CHANNEL_CONFIG[ch];
+    panel.innerHTML = buildChannelResultHTML(ch, window._lastChannelResults[ch], cfg);
+  }
+
+  // Update tab score
+  const tab = document.querySelector(`.channel-tab[data-ch="${ch}"] .tab-score`);
+  if (tab) {
+    const perf = window._lastChannelResults[ch].perf;
+    tab.textContent = perf.total + '/100';
+    tab.className = 'tab-score ' + (perf.total >= 75 ? 'score-high' : perf.total >= 50 ? 'score-mid' : 'score-low');
+  }
+}
+
+function exportBrief(ch) {
+  if (!window._lastChannelResults) return;
+  const data = window._lastChannelResults[ch];
+  if (!data) return;
+  const cfg = CHANNEL_CONFIG[ch];
+  const segs = data.segments;
+  const total = secToMin(data.total_duration_sec);
+  const line = (c,n) => c.repeat(n);
+  let out = `RUSHUP.AI V4.29 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
+  out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
+  out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
+  out += `ORDRE DE MONTAGE\n${line('─',60)}\n`;
+  segs.forEach((seg, i) => {
+    const dur = secToMin(seg.duration_sec || Math.max(0, tcToSec((seg.end || '').replace(',','.')) - tcToSec((seg.start || '').replace(',','.'))));
+    const prefix = seg.isAccroche ? `⚡ ACCROCHE ${i+1}` : `SEGMENT ${String(seg.order||i).padStart(2,'0')} [${(seg.arc_part||'').toUpperCase()}]`;
+    const srtFile = seg.isAccroche ? `ACCROCHE_${i+1}.srt` : `${String(seg.order||i).padStart(2,'0')}_${seg.arc_part||'segment'}.srt`;
+    out += `${line('─',40)}\n${prefix}${seg.reordered?'  [RÉORGANISÉ]':''}\n${line('─',40)}\n`;
+    out += `  Fichier SRT    : ${srtFile}\n  TC IN          : ${seg.start}\n  TC OUT         : ${seg.end}\n  Durée          : ${dur}\n`;
+    if (seg.thematic) out += `  Thématique     : ${seg.thematic}\n`;
+    if ((seg.warnings && seg.warnings.length)) out += `  ⚠ À nettoyer  : ${seg.warnings.join(' | ')}\n`;
+    out += `  Texte          : "${seg.text}"\n  Note montage   : ${seg.reason||''}\n\n`;
+  });
+  out += `${line('═',60)}\nRÉSUMÉ TIMECODES\n${line('─',60)}\n`;
+  segs.forEach((seg, i) => {
+    const label = seg.isAccroche ? `A${i+1}` : `S${String(seg.order||i).padStart(2,'0')}`;
+    out += `${label}  ${seg.start} → ${seg.end}  |  ${seg.isAccroche?'ACCROCHE':'['+seg.arc_part+']'}${seg.thematic?' · '+seg.thematic:''}\n`;
+  });
+  out += `${line('─',60)}\nDURÉE TOTALE : ${total}  |  SCORE : ${data.perf.total}/100\n`;
+  download(`brief_${ch}_${new Date().toISOString().slice(0,10)}.txt`, out, 'text/plain');
+}
+
+function exportGlobalSRT(ch) {
+  if (!window._lastChannelResults) return;
+  const segs = (window._lastChannelResults[ch] ? window._lastChannelResults[ch].segments : []);
+  let srt = '', idx = 1;
+  segs.forEach(seg => {
+    const s = tcToSec((seg.start || '').replace(',','.'));
+    const e = tcToSec((seg.end || '').replace(',','.'));
+    // If text was edited, use a single block with edited text
+    if (seg._editedText) {
+      const s = tcToSec((seg.start||'').replace(',','.'));
+      const e = tcToSec((seg.end||'').replace(',','.'));
+      const editedBlocks = splitTextToSRTBlocks(seg._editedText, s, e);
+      editedBlocks.forEach(function(b) {
+        srt += idx + "\n" + secToSRTTC(b.start) + " --> " + secToSRTTC(b.end) + "\n" + b.text + "\n\n";
+        idx++;
+      });
+    } else {
+      parsedSRT.filter(b => b.startSec >= s-0.1 && b.endSec <= e+0.1).forEach(b => {
+        srt += idx + "\n" + b.start + " --> " + b.end + "\n" + b.text + "\n\n"; idx++;
+      });
+    }
+  });
+  download("selection_" + ch + "_complete.srt", srt, 'text/plain');
+}
+
+function exportSegmentSRTs(ch) {
+  if (!window._lastChannelResults) return;
+  const segs = (window._lastChannelResults[ch] ? window._lastChannelResults[ch].segments : []);
+  segs.forEach((seg, i) => {
+    const s = tcToSec((seg.start || '').replace(',','.'));
+    const e = tcToSec((seg.end || '').replace(',','.'));
+    const blocks = parsedSRT.filter(b => b.startSec >= s-0.1 && b.endSec <= e+0.1);
+    let srt = '';
+    blocks.forEach((b, j) => { srt += `${j+1}\n${b.start} --> ${b.end}\n${b.text}\n\n`; });
+    const prefix = seg.isAccroche ? `ACCROCHE_${i+1}` : `${String(seg.order||i).padStart(2,'0')}_${seg.arc_part||'segment'}`;
+    setTimeout(() => download(`${prefix}.srt`, srt, 'text/plain'), i * 200);
+  });
+}
+
+function exportSequenceSRT(ch) {
+  if (!window._lastChannelResults || !window._lastChannelResults[ch]) return;
+  // Use current segments (may have been edited/deleted by user)
+  const chData = window._lastChannelResults[ch];
+  const segs = (chData && chData.segments) ? chData.segments : [];
+  if (!segs.length) {
+    alert("Aucun segment dans cette sélection. Relance une analyse.");
+    return;
+  }
+
+  let srt = '';
+  let idx = 1;
+  let timelineOffset = 0; // running position in the new sequence (seconds)
+
+  segs.forEach(function(seg) {
+    const segStartSec = tcToSec((seg.start || '').replace(',','.'));
+    const segEndSec = tcToSec((seg.end || '').replace(',','.'));
+    const segDur = Math.max(0, segEndSec - segStartSec);
+
+    // If text was edited, use single block with edited text
+    if (seg._editedText) {
+      const editedBlocks = splitTextToSRTBlocks(seg._editedText, 0, segDur);
+      editedBlocks.forEach(function(b) {
+        srt += idx + "\n";
+        srt += secToSRTTC(timelineOffset + b.start) + " --> " + secToSRTTC(timelineOffset + b.end) + "\n";
+        srt += b.text + "\n\n";
+        idx++;
+      });
+      timelineOffset += segDur;
+      return;
+    }
+
+    // Otherwise remap original SRT blocks
+    const blocks = parsedSRT.filter(function(b) {
+      return b.startSec >= segStartSec - 0.1 && b.endSec <= segEndSec + 0.1;
+    });
+
+    if (blocks.length === 0) {
+      timelineOffset += segDur;
+      return;
+    }
+
+    blocks.forEach(function(b) {
+      const localStart = b.startSec - segStartSec;
+      const localEnd = b.endSec - segStartSec;
+      const newStart = timelineOffset + localStart;
+      const newEnd = timelineOffset + localEnd;
+      srt += idx + "\n";
+      srt += secToSRTTC(newStart) + " --> " + secToSRTTC(newEnd) + "\n";
+      srt += b.text + "\n\n";
+      idx++;
+    });
+
+    timelineOffset += segDur;
+  });
+
+  download('sequence_' + ch + '_subtitles.srt', srt, 'text/plain');
+}
+
+function secToSRTTC(sec) {
+  if (sec < 0) sec = 0;
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  const ms = Math.round((sec % 1) * 1000);
+  return String(h).padStart(2,'0') + ':' +
+         String(m).padStart(2,'0') + ':' +
+         String(s).padStart(2,'0') + ',' +
+         String(ms).padStart(3,'0');
+}
+
+function splitTextToSRTBlocks(text, segStart, segEnd, maxCharsPerLine, maxLines) {
+  maxCharsPerLine = maxCharsPerLine || 25;
+  maxLines = maxLines || 2;
+  const maxCharsPerBlock = maxCharsPerLine * maxLines;
+
+  // Split into words
+  const words = text.trim().split(/\s+/);
+  const blocks = [];
+  let currentBlock = '';
+  let currentLine = '';
+  let lineCount = 0;
+
+  words.forEach(function(word) {
+    // Check if adding this word exceeds line length
+    const testLine = currentLine ? currentLine + ' ' + word : word;
+    if (testLine.length > maxCharsPerLine) {
+      // Line is full
+      if (lineCount === 0) {
+        currentBlock = currentLine;
+        lineCount = 1;
+        currentLine = word;
+      } else {
+        // Block is full — save and start new
+        blocks.push((currentBlock + " " + currentLine).trim());
+        currentBlock = '';
+        currentLine = word;
+        lineCount = 0;
+      }
+    } else {
+      currentLine = testLine;
+    }
+  });
+
+  // Flush remaining
+  if (currentLine) {
+    if (lineCount === 0) {
+      blocks.push(currentLine.trim());
+    } else {
+        blocks.push((currentBlock + " " + currentLine).trim());
+    }
+  }
+
+  if (!blocks.length) return [];
+
+  // Distribute timecodes evenly across blocks
+  const totalSec = Math.max(0.1, segEnd - segStart);
+  const secPerBlock = totalSec / blocks.length;
+
+  return blocks.map(function(txt, i) {
+    return {
+      start: segStart + i * secPerBlock,
+      end: segStart + (i + 1) * secPerBlock,
+      text: txt
+    };
+  });
+}
+
+function download(name, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], {type}));
+  a.download = name; a.click();
+}
+
+function secToTC(sec, fps) {
+  fps = fps || 25;
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  const f = Math.floor((sec % 1) * fps);
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0') + ':' + String(f).padStart(2,'0');
+}
+
+function exportXML(ch) {
+  if (!window._lastChannelResults || !window._lastChannelResults[ch]) {
+    alert("Pas de résultats disponibles pour ce canal.");
+    return;
+  }
+
+  // If no sources declared, create a virtual source from SRT filename
+  if (!sources.length) {
+    const rushFile = (currentFilename || 'rush.mp4').replace(/\.srt$/i, '.mp4').replace(/\.txt$/i, '.mp4');
+    const totalSec = parsedSRT.length ? (parsedSRT[parsedSRT.length-1].endSec || 7200) : 7200;
+    sources = [{ name: rushFile, durationSec: totalSec, offset: 0 }];
+  }
+
+  // Use current segments (may have been edited/deleted by user)
+  const chData = window._lastChannelResults[ch];
+  const segs = (chData && chData.segments) ? chData.segments : [];
+  if (!segs.length) {
+    alert("Aucun segment dans cette sélection. Relance une analyse.");
+    return;
+  }
+  const cfg = CHANNEL_CONFIG[ch];
+  const fps = 25;
+  const rushName = (currentFilename || 'rush').replace(/\.srt$/i, '').replace(/\.txt$/i, '');
+  const seqName = rushName + " — " + cfg.name + " — " + new Date().toLocaleDateString('fr');
+
+  // Read scale values from inputs (safe fallback)
+  const scaleAEl = document.getElementById('scaleA');
+  const scaleBEl = document.getElementById('scaleB');
+  const scaleAVal = scaleAEl ? (parseFloat(scaleAEl.value) || 100) : 100;
+  const scaleBVal = scaleBEl ? (parseFloat(scaleBEl.value) || 85) : 85;
+
+  let videoClips = '';
+  let audioClips = '';
+  let timelineOffset = 0;
+  let missingSources = [];
+  const declaredFileIds = new Set(); // track which <file> blocks have been fully declared
+
+  segs.forEach(function(seg, i) {
+    const startSec = tcToSec((seg.start || '').replace(',','.'));
+    const endSec = tcToSec((seg.end || '').replace(',','.'));
+    const duration = Math.max(0, endSec - startSec);
+    if (duration < 0.1) { console.warn('Segment trop court ignoré:', seg.start, seg.end); return; }
+
+    const source = getSourceForTC(startSec);
+    if (!source) {
+      console.warn('Source introuvable pour TC:', startSec);
+      missingSources.push(`TC ${seg.start} (segment ${i+1})`);
+      return;
+    }
+
+    const localStart = source.localTC;
+    const localEnd = localStart + duration;
+    const inFrames = Math.round(localStart * fps);
+    const outFrames = Math.round(localEnd * fps);
+    const startFrames = Math.round(timelineOffset * fps);
+    const endFrames = Math.round((timelineOffset + duration) * fps);
+    const clipDurFrames = outFrames - inFrames;
+    const fileId = "file-" + (source.sourceIndex + 1);
+    const clipName = source.name;
+    const srcDurFrames = Math.round(sources[source.sourceIndex].durationSec * fps);
+
+    // En XMEML, le bloc <file> complet n'est déclaré QU'UNE SEULE FOIS par source.
+    // Les clips suivants du même fichier utilisent juste <file id="file-X"/> (référence vide).
+    const alreadyDeclared = declaredFileIds.has(fileId);
+    if (!alreadyDeclared) declaredFileIds.add(fileId);
+
+    const fileBlock = alreadyDeclared
+      ? '            <file id="' + fileId + '"/>'
+      : '            <file id="' + fileId + '">\n' +
+        '              <n>' + clipName + '</n>\n' +
+        '              <pathurl>file://localhost/' + clipName + '</pathurl>\n' +
+        '              <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
+        '              <duration>' + srcDurFrames + '</duration>\n' +
+        '              <timecode>\n' +
+        '                <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
+        '                <string>00:00:00:00</string>\n' +
+        '                <frame>0</frame>\n' +
+        '                <displayformat>NDF</displayformat>\n' +
+        '              </timecode>\n' +
+        '              <media>\n' +
+        '                <video><samplecharacteristics><rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate><width>' + sequenceWidth + '</width><height>' + sequenceHeight + '</height></samplecharacteristics></video>\n' +
+        '                <audio><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate><channels>2</channels></samplecharacteristics></audio>\n' +
+        '              </media>\n' +
+        '            </file>';
+
+    // ── Arc → Premiere label color ───────────────────────────────────────────
+    var arcLabel = (seg.arc_part || '').toLowerCase();
+    var clipLabel = 'Cerulean'; // défaut
+    if (seg.isAccroche) clipLabel = 'Violet';
+    else if (arcLabel.includes('intro') || arcLabel.includes('reveal') || arcLabel.includes('ouverture')) clipLabel = 'Iris';
+    else if (arcLabel.includes('tension') || arcLabel.includes('conflit') || arcLabel.includes('story')) clipLabel = 'Mango';
+    else if (arcLabel.includes('conclu') || arcLabel.includes('call') || arcLabel.includes('fin') || arcLabel.includes('partenariat')) clipLabel = 'Forest';
+    if (seg.warnings && seg.warnings.length > 0) clipLabel = 'Rose'; // IA détecte hésitation
+    if (seg._editedText) clipLabel = 'Rose'; // monteur a modifié le texte manuellement
+
+    const clipScale = (i % 2 === 0) ? scaleAVal : scaleBVal;
+    const buildClip = function(clipId) {
+      return '          <clipitem id="' + clipId + '">\n' +
+        '            <n>' + clipName + '</n>\n' +
+        '            <duration>' + clipDurFrames + '</duration>\n' +
+        '            <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
+        '            <start>' + startFrames + '</start>\n' +
+        '            <end>' + endFrames + '</end>\n' +
+        '            <in>' + inFrames + '</in>\n' +
+        '            <out>' + outFrames + '</out>\n' +
+        '            <labels><label2>' + clipLabel + '</label2></labels>\n' +
+        fileBlock + '\n' +
+        '            <filter>\n' +
+        '              <effect>\n' +
+        '                <n>Motion</n>\n' +
+        '                <effectid>basic</effectid>\n' +
+        '                <effecttype>motion</effecttype>\n' +
+        '                <mediatype>video</mediatype>\n' +
+        '                <parameter>\n' +
+        '                  <parameterid>scale</parameterid>\n' +
+        '                  <n>Scale</n>\n' +
+        '                  <value>' + clipScale + '</value>\n' +
+        '                </parameter>\n' +
+        '              </effect>\n' +
+        '            </filter>\n' +
+        '          </clipitem>';
+    };
+
+    videoClips += '\n' + buildClip('clipitem-v' + (i+1));
+    audioClips += '\n' + buildClip('clipitem-a' + (i+1));
+    timelineOffset += duration;
+  });
+
+  const totalFrames = Math.round(timelineOffset * fps);
+
+  // Build sequence markers — one per segment at timeline position
+  let markers = '';
+  let markerOffset = 0;
+  segs.forEach(function(seg, i) {
+    const segStart = tcToSec((seg.start || '').replace(',','.'));
+    const segEnd = tcToSec((seg.end || '').replace(',','.'));
+    const dur = Math.max(0, segEnd - segStart);
+    if (dur < 0.1) return;
+
+    const markerFrame = Math.round(markerOffset * fps);
+    const label = (seg.isAccroche ? "ACCROCHE" : (seg.arc_part || ("Segment " + (i+1)))).toUpperCase();
+    const shortText = (seg.text || '').substring(0, 60).replace(/[<>&"]/g, ' ');
+    const hasWarning = seg.warnings && seg.warnings.length > 0;
+    const comment = (hasWarning ? "[A NETTOYER] " : "") + shortText;
+
+    // Premiere marker colors: 0=red 1=orange 2=yellow 3=green 4=cyan 5=blue 6=purple 7=pink
+    var arcL = (seg.arc_part || '').toLowerCase();
+    var markerColor = 5; // blue default
+    if (seg.isAccroche) markerColor = 6; // purple
+    else if (arcL.includes('intro') || arcL.includes('reveal') || arcL.includes('ouverture')) markerColor = 5; // blue
+    else if (arcL.includes('tension') || arcL.includes('story') || arcL.includes('conflit')) markerColor = 0; // red
+    else if (arcL.includes('develop') || arcL.includes('action') || arcL.includes('vision') || arcL.includes('motivation') || arcL.includes('hook') || arcL.includes('challenge')) markerColor = 2; // yellow
+    else if (arcL.includes('conclu') || arcL.includes('call') || arcL.includes('fin') || arcL.includes('partenariat')) markerColor = 3; // green
+    if (hasWarning) markerColor = 1; // orange for cleanup
+
+    // Marker spans entire segment duration
+    const markerEndFrame = markerFrame + Math.round(dur * fps);
+
+    markers += '    <marker>\n' +
+      '      <name>' + label + '</name>\n' +
+      '      <comment>' + label + ' - ' + comment + '</comment>\n' +
+      '      <in>' + markerFrame + '</in>\n' +
+      '      <out>' + markerEndFrame + '</out>\n' +
+      '      <color>' + markerColor + '</color>\n' +
+      '    </marker>\n';
+
+    markerOffset += dur;
+  });
+
+  const xml = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<!DOCTYPE xmeml>\n' +
+    '<xmeml version="4">\n' +
+    '  <sequence id="seq-' + ch + '">\n' +
+    '    <n>' + seqName + '</n>\n' +
+    '    <duration>' + totalFrames + '</duration>\n' +
+    '    <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
+    '    <timecode>\n' +
+    '      <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
+    '      <string>00:00:00:00</string>\n' +
+    '      <frame>0</frame>\n' +
+    '      <displayformat>NDF</displayformat>\n' +
+    '    </timecode>\n' +
+    '    <media>\n' +
+    '      <video>\n' +
+    '        <format><samplecharacteristics>\n' +
+    '          <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
+    '          <width>' + sequenceWidth + '</width><height>' + sequenceHeight + '</height>\n' +
+    '          <pixelaspectratio>square</pixelaspectratio>\n' +
+    '          <fielddominance>none</fielddominance>\n' +
+    '        </samplecharacteristics></format>\n' +
+    '        <track>' + videoClips + '\n        </track>\n' +
+    '      </video>\n' +
+    '      <audio>\n' +
+    '        <numOutputChannels>2</numOutputChannels>\n' +
+    '        <format><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate><channels>2</channels></samplecharacteristics></format>\n' +
+    '        <track><enabled>TRUE</enabled><locked>FALSE</locked>' + audioClips + '\n        </track>\n' +
+    '        <track><enabled>TRUE</enabled><locked>FALSE</locked>\n        </track>\n' +
+    '      </audio>\n' +
+    '    </media>\n' +
+    markers +
+    '  </sequence>\n' +
+    '</xmeml>';
+
+  if (missingSources.length) {
+    alert(`⚠ ${missingSources.length} segment(s) ignoré(s) — source introuvable :\n${missingSources.join('\n')}\n\nVérifie que les fichiers source sont déclarés dans l'étape 00 avec les bonnes durées.`);
+  }
+
+  download("sequence_" + ch + "_" + new Date().toISOString().slice(0,10) + ".xml", xml, "text/xml");
+}
+
+// ── HISTORY ───────────────────────────────────────────────────────────────────
+const HIST_KEY = 'rushai_v4_history';
+const HIST_MAX = 20;
+
+function saveToHistory(entry) {
+  let hist = getHistory();
+  hist.unshift({ ...entry, id: Date.now() });
+  if (hist.length > HIST_MAX) hist = hist.slice(0, HIST_MAX);
+  try { localStorage.setItem(HIST_KEY, JSON.stringify(hist)); } catch(e) {}
+
+  // Store last result for exports
+  window._lastChannelResults = entry.result;
+}
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); } catch(e) { return []; }
+}
+
+function openHistory() {
+  const hist = getHistory();
+  const body = document.getElementById('histBody');
+
+  if (!hist.length) {
+    body.innerHTML = '<div class="hist-empty">Aucune analyse dans l\'historique</div>';
+  } else {
+    body.innerHTML = hist.map(entry => `
+      <div class="hist-item" onclick="loadHistory(${entry.id})">
+        <div>
+          <div class="hist-filename">${entry.filename || 'SRT sans nom'}</div>
+          <div class="hist-meta">
+            ${entry.date} · Mode ${entry.mode === 'A' ? 'Expert' : entry.mode === 'C' ? 'Script' : 'Découverte'}<br>
+            ${Object.keys(entry.result||{}).map(ch => {
+              const score = (entry.result[ch] && entry.result[ch].perf && entry.result[ch].perf.total) || 0;
+              return `${(CHANNEL_CONFIG[ch] ? CHANNEL_CONFIG[ch].name : ch)} ${score}/100`;
+            }).join(' · ')}
+          </div>
+          <div class="hist-channels">
+            ${(entry.channels||[]).map(ch => `<span class="hist-channel-tag">${(CHANNEL_CONFIG[ch] ? CHANNEL_CONFIG[ch].icon : '')} ${(CHANNEL_CONFIG[ch] ? CHANNEL_CONFIG[ch].name : ch)}</span>`).join('')}
+          </div>
+        </div>
+        <button class="hist-delete" onclick="event.stopPropagation();deleteHistory(${entry.id})">×</button>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('histModal').classList.add('visible');
+}
+
+function loadHistory(id) {
+  const hist = getHistory();
+  const entry = hist.find(h => h.id === id);
+  if (!entry) return;
+  window._lastChannelResults = entry.result;
+  selectedChannels = entry.channels || [];
+  renderResults(entry.result);
+  closeHistory();
+}
+
+function deleteHistory(id) {
+  let hist = getHistory().filter(h => h.id !== id);
+  try { localStorage.setItem(HIST_KEY, JSON.stringify(hist)); } catch(e) {}
+  openHistory();
+}
+
+function clearAllHistory() {
+  if (!confirm('Effacer tout l\'historique ?')) return;
+  try { localStorage.removeItem(HIST_KEY); } catch(e) {}
+  openHistory();
+}
+
+function closeHistory() {
+  document.getElementById('histModal').classList.remove('visible');
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function callAPI(key, prompt) {
+  // Appel via le proxy Netlify — la clé API est côté serveur, jamais exposée
+  const res = await fetch("/.netlify/functions/claude", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: currentMode === 'C' ? 8000 : 6000,
+      temperature: window._reanalyzing ? 0.8 : 0,
+      messages: [{ role: "user", content: prompt }]
+    })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  const raw = data.content.map(c => c.text||'').join('').replace(/```json|```/g,'').trim();
+  try { return JSON.parse(raw); }
+  catch(e) {
+    const last = raw.lastIndexOf('\n  ]\n}');
+    if (last > 0) { try { return JSON.parse(raw.substring(0, last+5) + '\n}'); } catch(e2) {} }
+    throw new Error("Réponse JSON incomplète — SRT trop long. Essaie un rush plus court.");
+  }
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function buildTranscript() {
+  return parsedSRT.map(b => `[${b.start} --> ${b.end}] ${b.text}`).join('\n');
+}
+
+function buildCompressedTranscript() {
+  // Merge consecutive blocks with no gap into sentences
+  // This reduces token count for Mode Script without losing timecode precision
+  if (parsedSRT.length === 0) return '';
+  
+  const merged = [];
+  let current = { start: parsedSRT[0].start, end: parsedSRT[0].end, text: parsedSRT[0].text, startSec: parsedSRT[0].startSec, endSec: parsedSRT[0].endSec };
+  
+  for (let i = 1; i < parsedSRT.length; i++) {
+    const b = parsedSRT[i];
+    const gap = b.startSec - current.endSec;
+    
+    // Merge if gap < 1.5s and current text < 100 chars
+    if (gap < 1.5 && current.text.length < 100) {
+      current.text += ' ' + b.text;
+      current.end = b.end;
+      current.endSec = b.endSec;
+    } else {
+      merged.push(current);
+      current = { start: b.start, end: b.end, text: b.text, startSec: b.startSec, endSec: b.endSec };
+    }
+  }
+  merged.push(current);
+  
+  return merged.map(b => `[${b.start} --> ${b.end}] ${b.text}`).join('\n');
+}
+function tcToSec(tc) {
+  if (!tc) return 0;
+  const c = tc.replace(',','.').replace(';','.');
+  const p = c.split(':');
+  return p.length === 3 ? +p[0]*3600 + +p[1]*60 + parseFloat(p[2]) : 0;
+}
+function secToMin(s) {
+  if (!s || s < 0) return '0m00s';
+  const m = Math.floor(s/60), sec = Math.floor(s%60).toString().padStart(2,'0');
+  return `${m}m${sec}s`;
+}
+function getKey() {
+  return true; // clé gérée côté serveur via Netlify Functions
+}
+function showError(msg) { const el = document.getElementById('errorBlock'); el.textContent = msg; el.classList.add('visible'); }
+function hideError() { document.getElementById('errorBlock').classList.remove('visible'); }
+function setLoading(btn, on) { btn.disabled = on; btn.classList.toggle('loading', on); if (!on) btn.querySelector('.btn-text').textContent = currentMode === 'A' ? 'Analyser et sélectionner' : 'Analyser les thématiques'; }
+function setActive(id) { const el = document.getElementById(id); el.classList.add('active'); el.classList.add('current'); }
+function markDone(id) { const el = document.getElementById(id); el.classList.add('done'); el.classList.remove('current'); }
+(function initApiKey() {
+  try {
+    const saved = localStorage.getItem('rushai_apikey');
+    if (saved && saved.startsWith('sk-ant')) {
+      const el = document.getElementById('apikeyInput');
+      if (el) el.value = saved;
+    }
+  } catch(e) {}
+})();
+
+</script>
+</body>
+</html>
