@@ -1464,20 +1464,39 @@ async function transcribeWithWhisper(file) {
   }
   currentFilename = file.name.replace(/\.(mp3|mp4|m4a|wav|ogg|mov)$/i, '');
   try {
-    statusText.textContent = '⏳ Préparation...';
-    const base64 = await fileToBase64(file);
+    // Récupère la clé OpenAI depuis Netlify
+    statusText.textContent = '⏳ Connexion...';
+    if (!window._openaiKey) {
+      const keyRes = await fetch('/.netlify/functions/whisper-key');
+      if (!keyRes.ok) throw new Error('Impossible de récupérer la clé OpenAI');
+      const keyData = await keyRes.json();
+      window._openaiKey = keyData.key;
+    }
+
+    // Envoi direct du fichier à OpenAI depuis le navigateur (contourne limite 6Mo Netlify)
     statusText.textContent = '🎵 Whisper transcrit l\'audio... (30-60 sec)';
-    const response = await fetch('/.netlify/functions/whisper', {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    formData.append('model', 'whisper-1');
+    formData.append('response_format', 'srt');
+    formData.append('language', 'fr');
+
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ audioBase64: base64, mimeType: file.type || 'audio/mpeg', language: 'fr' })
+      headers: { 'Authorization': `Bearer ${window._openaiKey}` },
+      body: formData
     });
-    const data = await response.json();
-    if (data.error) throw new Error(data.error);
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`OpenAI Whisper error: ${err}`);
+    }
+
+    const srtText = await response.text();
     statusText.style.color = 'var(--green)';
     statusText.textContent = '✅ Transcription terminée !';
-    try { localStorage.setItem('rushai_whisper_srt', data.srt); } catch(e) {}
-    parseSRT(data.srt, file.name);
+    try { localStorage.setItem('rushai_whisper_srt', srtText); } catch(e) {}
+    parseSRT(srtText, file.name);
   } catch(err) {
     statusText.style.color = 'var(--red)';
     statusText.textContent = '❌ Erreur : ' + err.message;
