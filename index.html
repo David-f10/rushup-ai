@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V4.31</title>
+<title>RUSHUP.AI V4.32</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
@@ -158,7 +158,7 @@ header {
 .sources-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
 .source-row {
   display: grid;
-  grid-template-columns: 1fr 120px 36px;
+  grid-template-columns: 1fr 120px auto 36px;
   gap: 8px;
   align-items: center;
 }
@@ -993,7 +993,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <body>
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V4.31</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V4.32</span></div>
   <div class="header-right">
     <button class="hist-btn" onclick="openHistory()">⏱ Historique</button>
   </div>
@@ -1175,7 +1175,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
     <div class="step-body">
       <div class="mode-grid" style="grid-template-columns:1fr 1fr 1fr;">
         <div class="mode-card" id="modeA" onclick="selectMode('A')">
-          <div class="mode-tag">Mode Expert</div>
+          <div class="mode-tag">Mode Questions</div>
           <div class="mode-title">Je connais mon angle</div>
           <div class="mode-desc">Tu décris l'angle éditorial et les thèmes. L'IA structure selon le framework intro/tension/développement/conclusion.</div>
         </div>
@@ -1390,6 +1390,10 @@ function addSource() {
       <input class="source-input" type="text" placeholder="FX30001.mp4" id="source-name-${idx}">
     </div>
     <input class="source-input" type="text" placeholder="00250000" id="source-dur-${idx}" style="text-align:center;">
+    <div style="display:flex;gap:4px;">
+      <button id="source-stereo-${idx}" class="dur-btn active" onclick="setAudioCh(${idx},'stereo',this)" style="padding:4px 8px;font-size:10px;letter-spacing:0.5px;">Stéréo</button>
+      <button id="source-mono-${idx}" class="dur-btn" onclick="setAudioCh(${idx},'mono',this)" style="padding:4px 8px;font-size:10px;letter-spacing:0.5px;">Mono</button>
+    </div>
     <button class="source-remove" onclick="removeSource(${idx})">×</button>
   `;
   list.appendChild(row);
@@ -1406,6 +1410,19 @@ function addSource() {
     // Only allow digits
     if (e.key && !/\d/.test(e.key)) e.preventDefault();
   });
+}
+
+function setAudioCh(idx, ch, btn) {
+  const stereoBtn = document.getElementById(`source-stereo-${idx}`);
+  const monoBtn = document.getElementById(`source-mono-${idx}`);
+  if (stereoBtn) stereoBtn.classList.toggle('active', ch === 'stereo');
+  if (monoBtn) monoBtn.classList.toggle('active', ch === 'mono');
+  updateSources();
+}
+
+function getAudioCh(idx) {
+  const monoBtn = document.getElementById(`source-mono-${idx}`);
+  return (monoBtn && monoBtn.classList.contains('active')) ? 1 : 2;
 }
 
 function removeSource(idx) {
@@ -1444,7 +1461,8 @@ function updateSources() {
     const durStr = durEl.value.trim();
     if (!name || !durStr) continue;
     const durationSec = parseDurationInput(durStr) || tcToSec(durStr + ',000');
-    sources.push({ name, durationSec, offset: cumulativeSec });
+    const audioChannels = getAudioCh(i);
+    sources.push({ name, durationSec, offset: cumulativeSec, audioChannels });
     cumulativeSec += durationSec;
   }
 
@@ -2814,7 +2832,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V4.31 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V4.32 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
@@ -3101,7 +3119,7 @@ function exportXML(ch) {
         '              </timecode>\n' +
         '              <media>\n' +
         '                <video><samplecharacteristics><rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate><width>' + sequenceWidth + '</width><height>' + sequenceHeight + '</height></samplecharacteristics></video>\n' +
-        '                <audio><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate><channels>2</channels></samplecharacteristics></audio>\n' +
+        '                <audio><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate><channels>' + (source.audioChannels || 2) + '</channels></samplecharacteristics></audio>\n' +
         '              </media>\n' +
         '            </file>';
 
@@ -3213,10 +3231,10 @@ function exportXML(ch) {
     '        <track>' + videoClips + '\n        </track>\n' +
     '      </video>\n' +
     '      <audio>\n' +
-    '        <numOutputChannels>2</numOutputChannels>\n' +
-    '        <format><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate><channels>2</channels></samplecharacteristics></format>\n' +
+    '        <numOutputChannels>' + (sources[0] ? (sources[0].audioChannels || 2) : 2) + '</numOutputChannels>\n' +
+    '        <format><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate><channels>' + (sources[0] ? (sources[0].audioChannels || 2) : 2) + '</channels></samplecharacteristics></format>\n' +
     '        <track><enabled>TRUE</enabled><locked>FALSE</locked>' + audioClips + '\n        </track>\n' +
-    '        <track><enabled>TRUE</enabled><locked>FALSE</locked>\n        </track>\n' +
+    ((!sources[0] || (sources[0].audioChannels || 2) === 2) ? '        <track><enabled>TRUE</enabled><locked>FALSE</locked>\n        </track>\n' : '') +
     '      </audio>\n' +
     '    </media>\n' +
     markers +
@@ -3260,7 +3278,7 @@ function openHistory() {
         <div>
           <div class="hist-filename">${entry.filename || 'SRT sans nom'}</div>
           <div class="hist-meta">
-            ${entry.date} · Mode ${entry.mode === 'A' ? 'Expert' : entry.mode === 'C' ? 'Script' : 'Découverte'}<br>
+            ${entry.date} · Mode ${entry.mode === 'A' ? 'Questions' : entry.mode === 'C' ? 'Script' : 'Découverte'}<br>
             ${Object.keys(entry.result||{}).map(ch => {
               const score = (entry.result[ch] && entry.result[ch].perf && entry.result[ch].perf.total) || 0;
               return `${(CHANNEL_CONFIG[ch] ? CHANNEL_CONFIG[ch].name : ch)} ${score}/100`;
