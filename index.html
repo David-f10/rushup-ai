@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V4.32</title>
+<title>RUSHUP.AI V4.33</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
@@ -993,7 +993,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <body>
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V4.32</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V4.33</span></div>
   <div class="header-right">
     <button class="hist-btn" onclick="openHistory()">⏱ Historique</button>
   </div>
@@ -1897,7 +1897,8 @@ Pour CHAQUE canal sélectionné, génère une sélection adaptée avec :
 - Style adapté à la plateforme (accroche, rythme, densité)
 VÉRIFICATION OBLIGATOIRE AVANT DE RÉPONDRE :
 Additionne les duration_sec de tous tes segments pour chaque canal.
-Si la somme est inférieure à 80% de la durée cible, tu DOIS ajouter d'autres segments.
+Si la somme est inférieure à 80% de la durée cible → ajoute d'autres segments.
+Si la somme dépasse 120% de la durée cible → supprime les passages les moins essentiels.
 La durée cible est définie par le journaliste — elle PRIME sur tout autre critère.
 
 Réponds UNIQUEMENT en JSON valide, sans markdown :
@@ -2141,7 +2142,10 @@ Chaque passage ne peut apparaître QU'UNE SEULE FOIS. Les accroches et les segme
 ACCROCHES : EXACTEMENT 3 passages, max 15 secondes chacun, classés du plus fort au moins fort, mécanisme : curiosity_gap, pattern_interrupt, shock_statement, authority_fact, self_identification, cliffhanger, pain_point, contrarian
 
 VÉRIFICATION OBLIGATOIRE AVANT DE RÉPONDRE :
-Additionne les duration_sec de tous tes segments. Si la somme est < ${Math.round(targetSec * 0.8)}s, ajoute des passages.
+Additionne les duration_sec de tous tes segments.
+- Si la somme est < ${Math.round(targetSec * 0.8)}s → ajoute des passages.
+- Si la somme est > ${Math.round(targetSec * 1.2)}s → supprime des passages moins importants.
+- La durée cible est ${durLabel} — tu dois être entre ${Math.round(targetSec * 0.8)}s et ${Math.round(targetSec * 1.2)}s.
 
 Réponds UNIQUEMENT en JSON valide, sans markdown :
 {
@@ -2485,9 +2489,22 @@ async function reanalyzeResult() {
     } else if (currentMode === 'C') {
       await runModeC(key);
     } else {
-      await runFromThematics();
+      // Mode B — si des thématiques sont déjà sélectionnées, on régénère directement
+      // Sinon on relance la détection des thématiques depuis le début
+      if (selectedThematics && selectedThematics.length > 0) {
+        await runFromThematics();
+      } else {
+        // Relance la détection des thématiques
+        await runModeB(key);
+        // L'utilisateur doit re-sélectionner ses thématiques
+        const s4 = document.getElementById('step4');
+        if (s4) s4.scrollIntoView({ behavior: 'smooth' });
+        btn.disabled = false;
+        btn.querySelector('span:last-child').textContent = 'Ré-analyser';
+        window._reanalyzing = false;
+        return;
+      }
     }
-    // Scroll to accroche step so user re-validates before new version is saved
     const s5 = document.getElementById('step5');
     if (s5) s5.scrollIntoView({ behavior: 'smooth' });
   } catch(err) {
@@ -2832,7 +2849,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V4.32 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V4.33 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
