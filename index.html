@@ -3297,10 +3297,27 @@ function closeHistory() {
 
 // ── API ───────────────────────────────────────────────────────────────────────
 async function callAPI(key, prompt) {
-  // Appel via le proxy Netlify — la clé API est côté serveur, jamais exposée
-  const res = await fetch("/.netlify/functions/claude", {
+  // Récupère la clé depuis Netlify si pas encore en cache
+  if (!window._apiKey) {
+    try {
+      const keyRes = await fetch('/.netlify/functions/claude?action=getkey');
+      const keyData = await keyRes.json();
+      window._apiKey = keyData.key;
+    } catch(e) {
+      throw new Error("Impossible de récupérer la clé API. Vérifie la configuration Netlify.");
+    }
+  }
+
+  // Appel direct à Anthropic depuis le navigateur — pas de timeout Netlify
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": window._apiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-allow-browser": "true",
+      "anthropic-dangerous-direct-browser-access": "true"
+    },
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
       max_tokens: currentMode === 'C' ? 8000 : 6000,
