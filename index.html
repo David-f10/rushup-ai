@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V4.29</title>
+<title>RUSHUP.AI V4.30</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
@@ -993,7 +993,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <body>
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V4.29</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V4.30</span></div>
   <div class="header-right">
     <button class="hist-btn" onclick="openHistory()">⏱ Historique</button>
   </div>
@@ -2805,7 +2805,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V4.29 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V4.30 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
