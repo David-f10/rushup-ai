@@ -328,6 +328,48 @@ header {
 }
 .srt-add-btn:hover { background: var(--accent-dark); }
 
+/* ── DRAG & DROP SEGMENTS ── */
+.segment {
+  cursor: grab;
+}
+.segment.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+.segment.drag-over-top {
+  border-top: 2px solid var(--accent) !important;
+}
+.segment.drag-over-bottom {
+  border-bottom: 2px solid var(--accent) !important;
+}
+
+/* ── TRIM SELECTION DANS SEGMENT ── */
+.seg-trim-bar {
+  display: none;
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: rgba(151,71,255,0.08);
+  border: 1px solid rgba(151,71,255,0.25);
+  border-radius: 3px;
+  font-size: 10px;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.seg-trim-bar.visible { display: flex; }
+.seg-trim-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 2px;
+  padding: 3px 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.seg-trim-btn:hover { background: var(--accent-dark); }
+
 /* ── CHANNELS ── */
 .channels-grid {
   display: grid;
@@ -2026,6 +2068,118 @@ function clearSRTSelection() {
   if (bar) bar.classList.remove('visible');
 }
 
+// ── DRAG & DROP SEGMENTS ─────────────────────────────────────────────────────
+let _dragSrcIdx = null;
+let _dragSrcCh = null;
+
+function onSegDragStart(e, el) {
+  _dragSrcIdx = parseInt(el.dataset.idx);
+  _dragSrcCh = el.dataset.ch;
+  el.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function onSegDragOver(e, el) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const targetIdx = parseInt(el.dataset.idx);
+  if (targetIdx === _dragSrcIdx) return;
+  el.classList.remove('drag-over-top', 'drag-over-bottom');
+  const rect = el.getBoundingClientRect();
+  const mid = rect.top + rect.height / 2;
+  el.classList.add(e.clientY < mid ? 'drag-over-top' : 'drag-over-bottom');
+}
+
+function onSegDragLeave(e, el) {
+  el.classList.remove('drag-over-top', 'drag-over-bottom');
+}
+
+function onSegDrop(e, el, ch) {
+  e.preventDefault();
+  el.classList.remove('drag-over-top', 'drag-over-bottom');
+  if (!window._lastChannelResults || !window._lastChannelResults[ch]) return;
+  const targetIdx = parseInt(el.dataset.idx);
+  if (targetIdx === _dragSrcIdx || _dragSrcCh !== ch) return;
+  const segs = window._lastChannelResults[ch].segments;
+  const rect = el.getBoundingClientRect();
+  const insertAfter = e.clientY >= rect.top + rect.height / 2;
+  const [moved] = segs.splice(_dragSrcIdx, 1);
+  let insertAt = targetIdx > _dragSrcIdx ? targetIdx - 1 : targetIdx;
+  if (insertAfter) insertAt++;
+  insertAt = Math.max(0, Math.min(insertAt, segs.length));
+  segs.splice(insertAt, 0, moved);
+  segs.forEach((s, i) => { if (!s.isAccroche) s.order = i + 1; });
+  const panel = document.getElementById('result-' + ch);
+  if (panel) {
+    panel.innerHTML = buildChannelResultHTML(ch, window._lastChannelResults[ch], CHANNEL_CONFIG[ch]);
+    setTimeout(() => updateQualityBar(ch), 50);
+  }
+}
+
+function onSegDragEnd(e) {
+  document.querySelectorAll('.segment').forEach(el => {
+    el.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom');
+  });
+  _dragSrcIdx = null; _dragSrcCh = null;
+}
+
+// ── TRIM SELECTION DANS UN SEGMENT ───────────────────────────────────────────
+let _segTrimData = {};
+
+function onSegTextSelection(e, ch, idx) {
+  const textarea = e.target;
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  if (start === end) { clearSegTrim(ch, idx); return; }
+  const seg = window._lastChannelResults && window._lastChannelResults[ch] && window._lastChannelResults[ch].segments[idx];
+  if (!seg) return;
+  const fullText = seg.text || '';
+  const selectedText = fullText.slice(start, end).trim();
+  if (!selectedText || selectedText === fullText) { clearSegTrim(ch, idx); return; }
+  const startSec = tcToSec((seg.start || '').replace(',', '.'));
+  const endSec = tcToSec((seg.end || '').replace(',', '.'));
+  const totalDur = endSec - startSec;
+  const newStartSec = startSec + (start / fullText.length) * totalDur;
+  const newEndSec = startSec + (end / fullText.length) * totalDur;
+  const newDur = newEndSec - newStartSec;
+  const newStartTC = secToSRTTC(newStartSec);
+  const newEndTC = secToSRTTC(newEndSec);
+  _segTrimData[ch + '-' + idx] = { newStartTC, newEndTC, newText: selectedText, newDur };
+  const bar = document.getElementById('seg-trim-bar-' + ch + '-' + idx);
+  const info = document.getElementById('seg-trim-info-' + ch + '-' + idx);
+  if (bar && info) {
+    bar.classList.add('visible');
+    info.innerHTML = newStartTC + ' → ' + newEndTC + ' · ' + Math.round(newDur) + 's · "<em>' + selectedText.slice(0,50) + (selectedText.length>50?'…':'') + '</em>"';
+  }
+}
+
+function applySegTrim(ch, idx) {
+  const key = ch + '-' + idx;
+  const trim = _segTrimData[key];
+  if (!trim || !window._lastChannelResults || !window._lastChannelResults[ch]) return;
+  const seg = window._lastChannelResults[ch].segments[idx];
+  if (!seg) return;
+  seg.start = trim.newStartTC;
+  seg.end = trim.newEndTC;
+  seg.text = trim.newText;
+  seg.duration_sec = trim.newDur;
+  seg._trimmed = true;
+  const chData = window._lastChannelResults[ch];
+  chData.total_duration_sec = (chData.segments || []).reduce((a, s) => a + (s.duration_sec || 0), 0);
+  delete _segTrimData[key];
+  const panel = document.getElementById('result-' + ch);
+  if (panel) {
+    panel.innerHTML = buildChannelResultHTML(ch, chData, CHANNEL_CONFIG[ch]);
+    setTimeout(() => updateQualityBar(ch), 50);
+  }
+}
+
+function clearSegTrim(ch, idx) {
+  delete _segTrimData[ch + '-' + idx];
+  const bar = document.getElementById('seg-trim-bar-' + ch + '-' + idx);
+  if (bar) bar.classList.remove('visible');
+}
+
 function addSegmentFromSelection() {
   if (!_srtSelection) return;
   const { startTC, endTC, startSec, endSec, text, dur } = _srtSelection;
@@ -3364,16 +3518,30 @@ function buildChannelResultHTML(ch, data, cfg) {
       ? `<span style="font-size:10px;color:var(--muted);background:var(--surface3);border:1px solid var(--border);border-radius:2px;padding:1px 6px;margin-left:8px;letter-spacing:0.3px;">📁 ${segSource.name}</span>`
       : '';
 
-    segsHTML += `<div class="segment${isAccroche?' is-accroche':''}${(hasWarn||seg._editedText)?' has-warning':''}">
-      <div class="seg-idx">${label}</div>
+    segsHTML += `<div class="segment${isAccroche?' is-accroche':''}${(hasWarn||seg._editedText)?' has-warning':''}" 
+      draggable="true"
+      data-ch="${ch}" data-idx="${i}"
+      ondragstart="onSegDragStart(event,this)"
+      ondragover="onSegDragOver(event,this)"
+      ondragleave="onSegDragLeave(event,this)"
+      ondrop="onSegDrop(event,this,'${ch}')"
+      ondragend="onSegDragEnd(event)">
+      <div class="seg-idx" style="cursor:grab;user-select:none;" title="Glisse pour réordonner">≡<br>${label}</div>
       <div class="seg-body">
         <div class="seg-tc">${seg.start} → ${seg.end}${sourceTag}</div>
         ${tags.join('')}
         <textarea class="seg-text-edit" rows="2"
+          onmouseup="onSegTextSelection(event,'${ch}',${i})"
+          ontouchend="onSegTextSelection(event,'${ch}',${i})"
           oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';updateSegText('${ch}',${i},this.value)"
           onfocus="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
         >${seg.text}</textarea>
-        <div id="edit-hint-${ch}-${i}" style="font-size:9px;color:var(--muted2);letter-spacing:0.5px;margin-bottom:4px;">✎ Clique pour éditer le texte</div>
+        <div id="edit-hint-${ch}-${i}" style="font-size:9px;color:var(--muted2);letter-spacing:0.5px;margin-bottom:4px;">✎ Clique pour éditer · Surligne pour réduire le timecode</div>
+        <div id="seg-trim-bar-${ch}-${i}" class="seg-trim-bar">
+          <span id="seg-trim-info-${ch}-${i}" style="color:var(--accent);flex:1;"></span>
+          <button class="seg-trim-btn" onclick="applySegTrim('${ch}',${i})">✂️ Réduire au passage sélectionné</button>
+          <button onclick="clearSegTrim('${ch}',${i})" style="background:transparent;border:1px solid var(--border);border-radius:2px;padding:3px 8px;color:var(--muted);font-size:10px;cursor:pointer;">✕</button>
+        </div>
         <div class="seg-reason">${seg.reason||''}</div>
         ${hasWarn ? `<div class="seg-warning-detail">⚠ ${seg.warnings.join(' · ')}</div>` : ''}
       </div>
