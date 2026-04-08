@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.0</title>
+<title>RUSHUP.AI V5.3</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
@@ -248,6 +248,85 @@ header {
 .srt-preview { margin-top: 12px; border: 1px solid var(--border); padding: 12px; max-height: 110px; overflow-y: auto; background: var(--surface2); font-size: 11px; line-height: 1.9; color: var(--muted); display: none; border-radius: 3px; }
 .srt-preview.visible { display: block; }
 .srt-preview .tc { color: #9F58F5; }
+
+/* ── V5.3 SRT VIEWER INTERACTIF ── */
+.srt-viewer {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface2);
+  display: none;
+  overflow: hidden;
+}
+.srt-viewer.visible { display: block; }
+.srt-viewer-header {
+  padding: 10px 14px;
+  background: var(--surface3);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.srt-viewer-body {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 10px 14px;
+  font-size: 12px;
+  line-height: 2;
+  user-select: text;
+  cursor: text;
+}
+.srt-block {
+  display: inline;
+}
+.srt-word {
+  display: inline;
+  border-radius: 2px;
+  padding: 1px 0;
+  transition: background 0.1s;
+  cursor: text;
+}
+.srt-word.highlighted {
+  background: rgba(151,71,255,0.35);
+  color: #fff;
+}
+.srt-word.filler {
+  background: rgba(245,82,82,0.15);
+  color: #F55252;
+}
+.srt-word.repeated {
+  background: rgba(245,200,66,0.15);
+  color: #F5C842;
+}
+.srt-selection-bar {
+  display: none;
+  padding: 8px 14px;
+  background: rgba(151,71,255,0.1);
+  border-top: 1px solid rgba(151,71,255,0.3);
+  font-size: 11px;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.srt-selection-bar.visible { display: flex; }
+.srt-add-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 5px 14px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: background 0.15s;
+}
+.srt-add-btn:hover { background: var(--accent-dark); }
 
 /* ── CHANNELS ── */
 .channels-grid {
@@ -993,7 +1072,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <body>
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.0</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.3</span></div>
   <div class="header-right">
     <button class="hist-btn" onclick="openHistory()">⏱ Historique</button>
   </div>
@@ -1098,6 +1177,19 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         <div class="stat"><div class="stat-val" id="stTakes">—</div><div class="stat-lbl">Prises est.</div></div>
       </div>
       <div class="srt-preview" id="srtPreview"></div>
+      <!-- V5.3 — SRT Viewer interactif -->
+      <div class="srt-viewer" id="srtViewer">
+        <div class="srt-viewer-header">
+          <span>📄 Transcript complet — surligne pour créer un segment</span>
+          <span id="srtViewerStats"></span>
+        </div>
+        <div class="srt-viewer-body" id="srtViewerBody" onmouseup="onSRTSelection()" ontouchend="onSRTSelection()"></div>
+        <div class="srt-selection-bar" id="srtSelectionBar">
+          <span id="srtSelectionInfo" style="color:var(--muted);flex:1;"></span>
+          <button class="srt-add-btn" onclick="addSegmentFromSelection()">+ Ajouter comme segment</button>
+          <button onclick="clearSRTSelection()" style="background:transparent;border:1px solid var(--border);border-radius:3px;padding:5px 10px;color:var(--muted);font-size:11px;cursor:pointer;">✕</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1762,6 +1854,9 @@ function parseSRT(text, filename) {
   ).join('') + `<span style="color:var(--muted2)">... ${parsedSRT.length-5} blocs de plus</span>`;
   preview.classList.add('visible');
 
+  // V5.3 — Affiche le viewer SRT interactif complet
+  renderSRTViewer();
+
   dz.querySelector('.drop-main').textContent = '✓ ' + filename;
   dz.querySelector('.drop-sub').textContent = `${parsedSRT.length} blocs · ${secToMin(totalSec)} · ${words.toLocaleString('fr')} mots`;
 
@@ -1834,6 +1929,192 @@ function analyzeRushQuality() {
     `;
     preview.parentNode.insertBefore(qualityDiv, preview.nextSibling);
   }
+}
+
+// ── V5.3 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
+let _srtSelection = null; // { startIdx, endIdx, startSec, endSec, text }
+
+function renderSRTViewer() {
+  const viewer = document.getElementById('srtViewer');
+  const body = document.getElementById('srtViewerBody');
+  const stats = document.getElementById('srtViewerStats');
+  if (!viewer || !body || !parsedSRT.length) return;
+
+  const fillerRx = /\b(euh|hum|hmm|bah|ben|du coup|genre|en fait|tu vois|voilà voilà|enfin voilà)\b/gi;
+  const repeatRx = /\b(\w{4,})\b/gi;
+
+  // Détecte mots répétés dans tout le transcript
+  const allText = parsedSRT.map(b => b.text).join(' ');
+  const wordCounts = {};
+  let m;
+  repeatRx.lastIndex = 0;
+  while ((m = repeatRx.exec(allText)) !== null) {
+    const w = m[1].toLowerCase();
+    wordCounts[w] = (wordCounts[w] || 0) + 1;
+  }
+  const repeatedWords = new Set(Object.keys(wordCounts).filter(w => wordCounts[w] > 2 && w.length > 4));
+
+  // Construit le HTML mot par mot avec data-idx pour retrouver le bloc SRT
+  let html = '';
+  parsedSRT.forEach((block, blockIdx) => {
+    const words = block.text.split(/(\s+)/);
+    words.forEach((part, partIdx) => {
+      if (/^\s+$/.test(part)) { html += part; return; }
+      const wordLower = part.toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
+      const isFiller = fillerRx.test(part); fillerRx.lastIndex = 0;
+      const isRepeated = repeatedWords.has(wordLower);
+      const cls = isFiller ? 'srt-word filler' : isRepeated ? 'srt-word repeated' : 'srt-word';
+      html += `<span class="${cls}" data-block="${blockIdx}" data-part="${partIdx}">${part}</span>`;
+    });
+    html += ' ';
+  });
+
+  body.innerHTML = html;
+  viewer.classList.add('visible');
+  stats.textContent = `${parsedSRT.length} blocs · surligne pour sélectionner`;
+}
+
+function onSRTSelection() {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+    return;
+  }
+
+  // Trouve les blocs SRT couverts par la sélection
+  const range = sel.getRangeAt(0);
+  const startEl = range.startContainer.parentElement;
+  const endEl = range.endContainer.parentElement;
+
+  const startBlock = parseInt(startEl.dataset && startEl.dataset.block);
+  const endBlock = parseInt(endEl.dataset && endEl.dataset.block);
+
+  if (isNaN(startBlock) || isNaN(endBlock)) return;
+
+  const from = Math.min(startBlock, endBlock);
+  const to = Math.max(startBlock, endBlock);
+
+  // Surligne les mots sélectionnés
+  document.querySelectorAll('.srt-word.highlighted').forEach(el => el.classList.remove('highlighted'));
+  document.querySelectorAll(`.srt-word[data-block]`).forEach(el => {
+    const b = parseInt(el.dataset.block);
+    if (b >= from && b <= to) el.classList.add('highlighted');
+  });
+
+  const startSec = parsedSRT[from].startSec;
+  const endSec = parsedSRT[to].endSec;
+  const text = parsedSRT.slice(from, to + 1).map(b => b.text).join(' ');
+  const dur = endSec - startSec;
+
+  _srtSelection = {
+    startIdx: from, endIdx: to,
+    startTC: parsedSRT[from].start, endTC: parsedSRT[to].end,
+    startSec, endSec, text, dur
+  };
+
+  // Affiche la barre d'action
+  const bar = document.getElementById('srtSelectionBar');
+  const info = document.getElementById('srtSelectionInfo');
+  bar.classList.add('visible');
+  info.innerHTML = `<span style="color:var(--accent);">${parsedSRT[from].start} → ${parsedSRT[to].end}</span> · ${Math.round(dur)}s · "${text.slice(0, 60)}${text.length > 60 ? '…' : ''}"`;
+}
+
+function clearSRTSelection() {
+  _srtSelection = null;
+  window.getSelection && window.getSelection().removeAllRanges();
+  document.querySelectorAll('.srt-word.highlighted').forEach(el => el.classList.remove('highlighted'));
+  const bar = document.getElementById('srtSelectionBar');
+  if (bar) bar.classList.remove('visible');
+}
+
+function addSegmentFromSelection() {
+  if (!_srtSelection) return;
+  const { startTC, endTC, startSec, endSec, text, dur } = _srtSelection;
+
+  // Ajoute dans tous les canaux sélectionnés
+  const channels = selectedChannels.length ? selectedChannels : Object.keys(window._lastChannelResults || {});
+  if (!channels.length) {
+    alert("Analyse d'abord le rush pour ajouter un segment manuel.");
+    clearSRTSelection();
+    return;
+  }
+
+  for (const ch of channels) {
+    if (!window._lastChannelResults || !window._lastChannelResults[ch]) continue;
+    const chData = window._lastChannelResults[ch];
+
+    const newSeg = {
+      order: (chData.segments.length + 1),
+      arc_part: 'manuel',
+      start: startTC,
+      end: endTC,
+      text,
+      reason: 'Ajouté manuellement par surlignage',
+      score_force: 3,
+      duration_sec: dur,
+      isManual: true
+    };
+
+    chData.segments.push(newSeg);
+    chData.total_duration_sec = (chData.total_duration_sec || 0) + dur;
+
+    // Re-render
+    const panel = document.getElementById(`result-${ch}`);
+    if (panel) {
+      panel.innerHTML = buildChannelResultHTML(ch, chData, CHANNEL_CONFIG[ch]);
+      setTimeout(() => updateQualityBar(ch), 50);
+    }
+  }
+
+  clearSRTSelection();
+
+  // Scroll vers résultats
+  const step6 = document.getElementById('step6');
+  if (step6) step6.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── SCORE QUALITÉ PROGRESSIF ─────────────────────────────────────────────────
+function calcSelectionQuality(segments) {
+  if (!segments || !segments.length) return { score: 100, hesitations: 0, repetitions: 0, total: segments ? segments.length : 0 };
+  const fillerWords = /\b(euh|hum|hmm|bah|ben|du coup|genre|en fait|tu vois|voilà voilà|enfin voilà)\b/gi;
+  const repeatPattern = /\b(\w{4,})\b(?:\s+\w+){0,4}\s+\b\1\b/gi;
+  let hesitations = 0, repetitions = 0;
+  for (const seg of segments) {
+    const text = seg.text || '';
+    fillerWords.lastIndex = 0;
+    if (fillerWords.test(text)) hesitations++;
+    repeatPattern.lastIndex = 0;
+    if (repeatPattern.test(text)) repetitions++;
+  }
+  const dirty = hesitations + repetitions;
+  const score = Math.max(0, Math.round(100 - (dirty / segments.length) * 100));
+  return { score, hesitations, repetitions, total: segments.length, dirty };
+}
+
+function updateQualityBar(ch) {
+  const chData = window._lastChannelResults && window._lastChannelResults[ch];
+  if (!chData) return;
+  const segs = chData.segments || [];
+  const q = calcSelectionQuality(segs);
+
+  const bar = document.getElementById(`quality-bar-${ch}`);
+  if (!bar) return;
+
+  const color = q.score >= 80 ? '#4BC97A' : q.score >= 50 ? '#F5C842' : '#F55252';
+  const emoji = q.score >= 80 ? '✅' : q.score >= 50 ? '⚡' : '⚠️';
+
+  bar.style.borderColor = `rgba(${q.score >= 80 ? '75,201,122' : q.score >= 50 ? '245,200,66' : '245,82,82'},0.3)`;
+  bar.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <span style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${color};">${emoji} Qualité sélection</span>
+      <span style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;color:${color};">${q.score}/100</span>
+      ${q.hesitations > 0 ? `<span style="color:var(--muted);font-size:11px;">💬 ${q.hesitations} hésitation${q.hesitations>1?'s':''}</span>` : ''}
+      ${q.repetitions > 0 ? `<span style="color:var(--muted);font-size:11px;">🔁 ${q.repetitions} répétition${q.repetitions>1?'s':''}</span>` : ''}
+      ${q.dirty === 0 ? `<span style="color:#4BC97A;font-size:11px;">Sélection parfaite 🎯</span>` : ''}
+    </div>
+    <div style="margin-top:8px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+      <div style="height:100%;width:${q.score}%;background:${color};border-radius:2px;transition:width 0.5s ease;"></div>
+    </div>
+  `;
 }
 
 // ── CHANNELS ─────────────────────────────────────────────────────────────────
@@ -2060,7 +2341,7 @@ function calcPerfScore(channelKey, segments, accroches, totalSec) {
   };
 }
 
-// ── V5.2 — REVALIDATION CLAUDE ───────────────────────────────────────────────
+// ── V5.3 — REVALIDATION CLAUDE ───────────────────────────────────────────────
 // Détecte les répétitions dans un texte (mots > 3 lettres répétés)
 function detectRepetitionsInText(text) {
   const repetitions = [];
@@ -2230,7 +2511,7 @@ async function runStep3() {
       await runModeC(key);
     }
 
-    // ── V5.2 — Revalidation Claude ──────────────────────────────────────────
+    // ── V5.3 — Revalidation Claude ──────────────────────────────────────────
     if (rawResult) {
       btn.querySelector('.btn-text').textContent = '⚙️ Revalidation…';
       rawResult = await revalidateResult(key, rawResult);
@@ -2987,6 +3268,11 @@ function renderResults(channelResults) {
     resultsContainer.appendChild(panel);
   });
 
+  // Initialise les barres qualité après rendu DOM
+  setTimeout(() => {
+    channels.forEach(ch => updateQualityBar(ch));
+  }, 100);
+
   const s6 = document.getElementById('step6');
   s6.style.display = 'block';
   setActive('step6');
@@ -3114,6 +3400,7 @@ function buildChannelResultHTML(ch, data, cfg) {
         <button class="export-btn primary" onclick="exportXML('${ch}')" title="${sources.length ? 'Exporter la séquence Premiere Pro' : 'Déclare les sources en étape 00 pour activer'}">↓ XML Premiere${sources.length ? '' : ' ⚠'}</button>
       </div>
     </div>
+    <div id="quality-bar-${ch}" style="margin-bottom:12px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;font-size:11px;"></div>
     <div class="editorial-note">${editorial_note}</div>
     ${arcBarHTML}
     ${perfHTML}
@@ -3158,6 +3445,7 @@ function bulkDeleteWarnings(ch) {
   // Re-render
   const panel = document.getElementById(`result-${ch}`);
   if (panel) panel.innerHTML = buildChannelResultHTML(ch, chData, CHANNEL_CONFIG[ch]);
+  setTimeout(() => updateQualityBar(ch), 50);
   const tab = document.querySelector(`.channel-tab[data-ch="${ch}"] .tab-score`);
   if (tab) {
     tab.textContent = chData.perf.total + '/100';
@@ -3215,6 +3503,7 @@ function loadResultVersion(idx) {
     panel.innerHTML = buildChannelResultHTML(ch, channelResults[ch], cfg);
     resultsContainer.appendChild(panel);
   });
+  setTimeout(() => channels.forEach(ch => updateQualityBar(ch)), 100);
 }
 
 function updateSegText(ch, idx, newText) {
@@ -3259,6 +3548,8 @@ function updateSegText(ch, idx, newText) {
       if (seg && (!seg.warnings || !seg.warnings.length)) segEl.classList.remove('has-warning');
     }
   }
+  // Mise à jour score qualité en temps réel
+  updateQualityBar(ch);
 }
 
 function deleteSegment(ch, idx) {
@@ -3292,6 +3583,7 @@ function deleteSegment(ch, idx) {
   if (panel) {
     const cfg = CHANNEL_CONFIG[ch];
     panel.innerHTML = buildChannelResultHTML(ch, window._lastChannelResults[ch], cfg);
+    setTimeout(() => updateQualityBar(ch), 50);
   }
 
   // Update tab score
@@ -3311,7 +3603,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.0 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.3 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
