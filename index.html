@@ -2061,11 +2061,24 @@ function calcPerfScore(channelKey, segments, accroches, totalSec) {
 }
 
 // ── V5.2 — REVALIDATION CLAUDE ───────────────────────────────────────────────
+// Détecte les répétitions dans un texte (mots > 3 lettres répétés)
+function detectRepetitionsInText(text) {
+  const repetitions = [];
+  const fillerWords = /\b(euh|hum|hmm|bah|ben|donc|voilà|enfin|du coup|genre|en fait|tu vois)\b/gi;
+  const repeatPattern = /\b(\w{4,})\b(?:\s+\w+){0,5}\s+\b\1\b/gi;
+  if (fillerWords.test(text)) repetitions.push('hésitations');
+  fillerWords.lastIndex = 0;
+  if (repeatPattern.test(text)) repetitions.push('répétitions de mots');
+  return repetitions;
+}
+
 async function revalidateResult(key, result) {
   const targetSec = globalDurationSec || 180;
+  const minSec = targetSec * 0.85; // ±15% strict
+  const maxSec = targetSec * 1.15;
   const channels = selectedChannels;
+  const transcript = buildTranscript();
 
-  // Construit le rapport de validation
   const validationChecks = [];
   let needsFix = false;
 
@@ -2075,105 +2088,122 @@ async function revalidateResult(key, result) {
 
     const segs = chData.segments || [];
     const totalSec = segs.reduce((a, s) => a + (s.duration_sec || 0), 0);
-    const arcParts = new Set(segs.map(s => s.arc_part));
-    const arcComplete = ['intro','tension','développement','conclusion'].every(p => arcParts.has(p) || arcParts.has('develop') || arcParts.has('developpement'));
+
+    // Arc narratif
+    const arcParts = new Set(segs.map(s => (s.arc_part || '').toLowerCase()));
+    const arcOk = arcParts.has('intro') && arcParts.has('conclusion') &&
+      (arcParts.has('tension') || arcParts.has('développement') || arcParts.has('developpement') || arcParts.has('develop'));
+
+    // Accroche durée
     const accroche = (result.accroches || [])[0];
     const accDur = accroche ? (accroche.duration_sec || 0) : 0;
+    const accOk = accDur <= 15;
 
-    // Détection doublons timecodes
+    // Doublons timecodes
     const tcSet = new Set();
     let hasDuplicates = false;
     for (const s of segs) {
-      const key = `${s.start}-${s.end}`;
-      if (tcSet.has(key)) { hasDuplicates = true; break; }
-      tcSet.add(key);
+      const tcKey = `${s.start}-${s.end}`;
+      if (tcSet.has(tcKey)) { hasDuplicates = true; break; }
+      tcSet.add(tcKey);
     }
 
-    const durOk = totalSec >= targetSec * 0.8 && totalSec <= targetSec * 1.2;
-    const accOk = accDur <= 15;
-    const arcOk = arcComplete;
-    const dupOk = !hasDuplicates;
+    // Détection segments avec répétitions/hésitations
+    const dirtySegs = segs.filter(s => detectRepetitionsInText(s.text || '').length > 0);
 
-    if (!durOk || !accOk || !arcOk || !dupOk) needsFix = true;
+    // Durée stricte ±15%
+    const durOk = totalSec >= minSec && totalSec <= maxSec;
+
+    if (!durOk || !accOk || !arcOk || hasDuplicates || dirtySegs.length > 0) needsFix = true;
 
     validationChecks.push({
-      ch,
-      durOk, totalSec, targetSec,
-      accOk, accDur,
-      arcOk,
-      dupOk
+      ch, durOk, totalSec, targetSec, minSec, maxSec,
+      accOk, accDur, arcOk,
+      dupOk: !hasDuplicates,
+      dirtyCount: dirtySegs.length,
+      dirtySegs: dirtySegs.map(s => `${s.start} → ${s.end}`)
     });
   }
 
-  // Affiche le rapport de revalidation dans l'UI
+  // Affiche rapport
   showRevalidationReport(validationChecks);
-
-  // Si tout est OK, pas besoin de re-appel API
   if (!needsFix) return result;
 
-  // Re-appel Claude pour corriger
-  const issues = validationChecks.filter(c => !c.durOk || !c.accOk || !c.arcOk || !c.dupOk)
-    .map(c => {
-      const problems = [];
-      if (!c.durOk) problems.push(`durée ${Math.round(c.totalSec)}s au lieu de ${Math.round(c.targetSec)}s cibles`);
-      if (!c.accOk) problems.push(`accroche trop longue (${Math.round(c.accDur)}s > 15s)`);
-      if (!c.arcOk) problems.push(`arc narratif incomplet (intro/tension/développement/conclusion manquant)`);
-      if (!c.dupOk) problems.push(`timecodes en doublon détectés`);
-      return `Canal ${c.ch} : ${problems.join(', ')}`;
-    }).join('\n');
+  // Construit le prompt de correction
+  const issues = validationChecks.map(c => {
+    const problems = [];
+    if (!c.durOk) problems.push(`DURÉE INCORRECTE : ${Math.round(c.totalSec)}s sélectionnés, cible STRICTE ${Math.round(c.targetSec)}s (entre ${Math.round(c.minSec)}s et ${Math.round(c.maxSec)}s). ${c.totalSec > c.maxSec ? 'SUPPRIME des segments.' : 'AJOUTE des segments depuis le transcript.'}`);
+    if (!c.accOk) problems.push(`Accroche trop longue : ${Math.round(c.accDur)}s > 15s max`);
+    if (!c.arcOk) problems.push(`Arc narratif incomplet — il faut obligatoirement : intro + tension + développement + conclusion`);
+    if (!c.dupOk) problems.push(`Timecodes en doublon — chaque passage doit être unique`);
+    if (c.dirtyCount > 0) problems.push(`${c.dirtyCount} segment(s) avec hésitations/répétitions à remplacer par des passages plus propres du transcript : ${c.dirtySegs.join(', ')}`);
+    return problems.length ? `Canal ${c.ch} :\n${problems.map(p => '  - ' + p).join('\n')}` : null;
+  }).filter(Boolean).join('\n\n');
 
-  const fixPrompt = `Tu es un monteur-journaliste expert. Voici une sélection JSON à corriger.
+  const fixPrompt = `Tu es un monteur-journaliste expert. Corrige cette sélection JSON.
 
-PROBLÈMES DÉTECTÉS :
+TRANSCRIPT COMPLET (pour trouver des segments de remplacement) :
+${transcript}
+
+PROBLÈMES À CORRIGER OBLIGATOIREMENT :
 ${issues}
 
-RÈGLES DE CORRECTION :
-- Durée cible : ${Math.round(targetSec)}s (±20% = entre ${Math.round(targetSec*0.8)}s et ${Math.round(targetSec*1.2)}s)
-- Accroche : max 15 secondes
-- Arc narratif : OBLIGATOIREMENT intro + tension + développement + conclusion
-- Zéro doublon de timecodes
+RÈGLES ABSOLUES :
+1. Durée finale ENTRE ${Math.round(minSec)}s ET ${Math.round(maxSec)}s — c'est non négociable
+2. Accroche ≤ 15 secondes
+3. Arc complet : intro + tension + développement + conclusion
+4. Zéro doublon de timecodes
+5. Remplace les segments avec répétitions/hésitations par des passages plus propres du transcript
 
 SÉLECTION À CORRIGER :
 ${JSON.stringify(result, null, 2)}
 
-Retourne UNIQUEMENT le JSON corrigé, sans markdown, sans explication.`;
+Retourne UNIQUEMENT le JSON corrigé, même structure, sans markdown, sans explication.`;
 
   try {
     const fixed = await callAPI(key, fixPrompt);
+    // Met à jour le rapport après correction
+    const finalChecks = validationChecks.map(c => {
+      const chData = fixed.channels && fixed.channels[c.ch];
+      if (!chData) return c;
+      const newTotal = (chData.segments || []).reduce((a, s) => a + (s.duration_sec || 0), 0);
+      return { ...c, totalSec: newTotal, durOk: newTotal >= minSec && newTotal <= maxSec, dirtyCount: 0 };
+    });
+    showRevalidationReport(finalChecks);
     return fixed;
   } catch(e) {
-    console.warn('Revalidation échouée, on garde le résultat original', e);
+    console.warn('Revalidation échouée', e);
     return result;
   }
 }
 
 function showRevalidationReport(checks) {
-  // Supprime ancien rapport si existe
   const old = document.getElementById('revalidationReport');
   if (old) old.remove();
 
   const report = document.createElement('div');
   report.id = 'revalidationReport';
-  report.style.cssText = 'margin:12px 0;padding:12px 16px;background:rgba(75,201,122,0.06);border:1px solid rgba(75,201,122,0.2);border-radius:3px;font-size:11px;line-height:2;';
 
-  const allOk = checks.every(c => c.durOk && c.accOk && c.arcOk && c.dupOk);
+  const allOk = checks.every(c => c.durOk && c.accOk && c.arcOk && c.dupOk && c.dirtyCount === 0);
+  const color = allOk ? '#4BC97A' : '#F5C842';
+  report.style.cssText = `margin:12px 0;padding:12px 16px;background:rgba(${allOk ? '75,201,122' : '245,200,66'},0.06);border:1px solid rgba(${allOk ? '75,201,122' : '245,200,66'},0.2);border-radius:3px;font-size:11px;line-height:2;`;
 
   report.innerHTML = `
-    <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${allOk ? '#4BC97A' : '#F5C842'};margin-bottom:8px;">
-      ${allOk ? '✅ Revalidation OK' : '⚙️ Corrections appliquées'}
+    <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${color};margin-bottom:8px;">
+      ${allOk ? '✅ Revalidation OK — tout est conforme' : '⚙️ Corrections appliquées automatiquement'}
     </div>
     ${checks.map(c => `
       <div style="margin-bottom:4px;">
         <span style="color:var(--muted);font-size:10px;">${c.ch}</span> &nbsp;
-        <span>${c.durOk ? '✅' : '⚠️'} Durée ${Math.round(c.totalSec)}s/${Math.round(c.targetSec)}s</span> &nbsp;
+        <span title="Cible : ${Math.round(c.targetSec)}s">${c.durOk ? '✅' : '⚠️'} Durée ${Math.round(c.totalSec)}s / cible ${Math.round(c.targetSec)}s</span> &nbsp;
         <span>${c.arcOk ? '✅' : '⚠️'} Arc narratif</span> &nbsp;
         <span>${c.accOk ? '✅' : '⚠️'} Accroche ≤15s</span> &nbsp;
-        <span>${c.dupOk ? '✅' : '⚠️'} Pas de doublons</span>
+        <span>${c.dupOk ? '✅' : '⚠️'} Doublons</span> &nbsp;
+        ${c.dirtyCount > 0 ? `<span style="color:#F5C842">⚠️ ${c.dirtyCount} segment(s) avec hésitations remplacés</span>` : '<span>✅ Segments propres</span>'}
       </div>
     `).join('')}
   `;
 
-  // Insère avant les résultats
   const resultsEl = document.getElementById('resultsBlock') || document.getElementById('step5');
   if (resultsEl) resultsEl.prepend(report);
 }
