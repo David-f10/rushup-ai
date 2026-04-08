@@ -2011,11 +2011,17 @@ async function runModeC(key) {
 }
 
 async function runModeB(key) {
-  // Send more content: every 2nd block + full beginning and end
-  // For very long SRTs, take every 2nd; for shorter ones, send all
-  const sampledSRT = parsedSRT.length > 500
-    ? parsedSRT.filter((_, i) => i % 2 === 0 || i < 30 || i > parsedSRT.length - 30)
-    : parsedSRT;
+  // Échantillonnage adaptatif selon la taille du SRT pour éviter les timeouts
+  let sampledSRT;
+  if (parsedSRT.length > 1500) {
+    // Très long : 1 bloc sur 4 + début et fin complets
+    sampledSRT = parsedSRT.filter((_, i) => i % 4 === 0 || i < 40 || i > parsedSRT.length - 40);
+  } else if (parsedSRT.length > 500) {
+    // Long : 1 bloc sur 2 + début et fin complets
+    sampledSRT = parsedSRT.filter((_, i) => i % 2 === 0 || i < 30 || i > parsedSRT.length - 30);
+  } else {
+    sampledSRT = parsedSRT;
+  }
   const transcript = sampledSRT.map(b => `[${b.start} --> ${b.end}] ${b.text}`).join('\n');
   const reanalyzeInstruction = window._reanalyzing ? `\nIMPORTANT : ceci est une RE-ANALYSE — explore une perspective DIFFÉRENTE de la précédente. Regroupe les sujets autrement, cherche des angles moins évidents, propose une vision alternative du même contenu.` : '';
 
