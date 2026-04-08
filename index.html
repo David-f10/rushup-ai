@@ -2136,14 +2136,38 @@ function onSegTextSelection(e, ch, idx) {
   const fullText = seg.text || '';
   const selectedText = fullText.slice(start, end).trim();
   if (!selectedText || selectedText === fullText) { clearSegTrim(ch, idx); return; }
-  const startSec = tcToSec((seg.start || '').replace(',', '.'));
-  const endSec = tcToSec((seg.end || '').replace(',', '.'));
-  const totalDur = endSec - startSec;
-  const newStartSec = startSec + (start / fullText.length) * totalDur;
-  const newEndSec = startSec + (end / fullText.length) * totalDur;
-  const newDur = newEndSec - newStartSec;
+
+  const segStartSec = tcToSec((seg.start || '').replace(',', '.'));
+  const segEndSec = tcToSec((seg.end || '').replace(',', '.'));
+  const totalDur = segEndSec - segStartSec;
+
+  // Cherche les vrais timecodes dans parsedSRT pour cette plage
+  const segBlocks = parsedSRT.filter(b => b.startSec >= segStartSec - 0.3 && b.endSec <= segEndSec + 0.3);
+  let newStartSec = segStartSec + (start / Math.max(1, fullText.length)) * totalDur;
+  let newEndSec = segStartSec + (end / Math.max(1, fullText.length)) * totalDur;
+
+  if (segBlocks.length > 0) {
+    // Trouve le bloc SRT dont le texte contient le début de la sélection
+    const selStart = selectedText.slice(0, 12).toLowerCase().replace(/[^a-zà-ÿ]/g, '');
+    const selEnd = selectedText.slice(-12).toLowerCase().replace(/[^a-zà-ÿ]/g, '');
+    let foundStart = false, foundEnd = false;
+    for (const block of segBlocks) {
+      const bt = block.text.toLowerCase().replace(/[^a-zà-ÿ\s]/g, '');
+      if (!foundStart && selStart.length > 4 && bt.includes(selStart.slice(0,8))) {
+        newStartSec = block.startSec;
+        foundStart = true;
+      }
+      if (selEnd.length > 4 && bt.includes(selEnd.slice(-8))) {
+        newEndSec = block.endSec;
+        foundEnd = true;
+      }
+    }
+  }
+
+  const newDur = Math.max(0.5, newEndSec - newStartSec);
   const newStartTC = secToSRTTC(newStartSec);
-  const newEndTC = secToSRTTC(newEndSec);
+  const newEndTC = secToSRTTC(newStartSec + newDur);
+
   _segTrimData[ch + '-' + idx] = { newStartTC, newEndTC, newText: selectedText, newDur };
   const bar = document.getElementById('seg-trim-bar-' + ch + '-' + idx);
   const info = document.getElementById('seg-trim-info-' + ch + '-' + idx);
@@ -2159,14 +2183,39 @@ function applySegTrim(ch, idx) {
   if (!trim || !window._lastChannelResults || !window._lastChannelResults[ch]) return;
   const seg = window._lastChannelResults[ch].segments[idx];
   if (!seg) return;
+
+  // Sauvegarde l'original pour restauration
+  if (!seg._original) {
+    seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
+  }
+
   seg.start = trim.newStartTC;
   seg.end = trim.newEndTC;
   seg.text = trim.newText;
   seg.duration_sec = trim.newDur;
   seg._trimmed = true;
+
   const chData = window._lastChannelResults[ch];
   chData.total_duration_sec = (chData.segments || []).reduce((a, s) => a + (s.duration_sec || 0), 0);
   delete _segTrimData[key];
+  const panel = document.getElementById('result-' + ch);
+  if (panel) {
+    panel.innerHTML = buildChannelResultHTML(ch, chData, CHANNEL_CONFIG[ch]);
+    setTimeout(() => updateQualityBar(ch), 50);
+  }
+}
+
+function restoreSegment(ch, idx) {
+  const seg = window._lastChannelResults && window._lastChannelResults[ch] && window._lastChannelResults[ch].segments[idx];
+  if (!seg || !seg._original) return;
+  seg.start = seg._original.start;
+  seg.end = seg._original.end;
+  seg.text = seg._original.text;
+  seg.duration_sec = seg._original.duration_sec;
+  seg._trimmed = false;
+  delete seg._original;
+  const chData = window._lastChannelResults[ch];
+  chData.total_duration_sec = (chData.segments || []).reduce((a, s) => a + (s.duration_sec || 0), 0);
   const panel = document.getElementById('result-' + ch);
   if (panel) {
     panel.innerHTML = buildChannelResultHTML(ch, chData, CHANNEL_CONFIG[ch]);
@@ -3514,9 +3563,10 @@ function buildChannelResultHTML(ch, data, cfg) {
     // ── Source file tag ──────────────────────────────────────────────────────
     const segStartSec = tcToSec((seg.start || '').replace(',','.'));
     const segSource = sources.length ? getSourceForTC(segStartSec) : null;
+    // Fallback : si aucune source déclarée, n'affiche rien (pas le nom MP3)
     const sourceTag = segSource
       ? `<span style="font-size:10px;color:var(--muted);background:var(--surface3);border:1px solid var(--border);border-radius:2px;padding:1px 6px;margin-left:8px;letter-spacing:0.3px;">📁 ${segSource.name}</span>`
-      : '';
+      : (sources.length === 0 ? '' : '');
 
     segsHTML += `<div class="segment${isAccroche?' is-accroche':''}${(hasWarn||seg._editedText)?' has-warning':''}" 
       draggable="true"
@@ -3542,6 +3592,7 @@ function buildChannelResultHTML(ch, data, cfg) {
           <button class="seg-trim-btn" onclick="applySegTrim('${ch}',${i})">✂️ Réduire au passage sélectionné</button>
           <button onclick="clearSegTrim('${ch}',${i})" style="background:transparent;border:1px solid var(--border);border-radius:2px;padding:3px 8px;color:var(--muted);font-size:10px;cursor:pointer;">✕</button>
         </div>
+        ${seg._trimmed ? `<div style="margin-top:4px;"><button onclick="restoreSegment('${ch}',${i})" style="background:transparent;border:1px solid var(--border2);border-radius:2px;padding:3px 10px;color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">↩ Restaurer l'original</button></div>` : ''}
         <div class="seg-reason">${seg.reason||''}</div>
         ${hasWarn ? `<div class="seg-warning-detail">⚠ ${seg.warnings.join(' · ')}</div>` : ''}
       </div>
