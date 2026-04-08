@@ -1492,7 +1492,9 @@ async function transcribeWithWhisper(file) {
       throw new Error(`OpenAI Whisper error: ${err}`);
     }
 
-    const srtText = await response.text();
+    const srtRaw = await response.text();
+    // Reformatage 25 caractères max / 1 ligne — style Premiere Pro
+    const srtText = reformatSRT(srtRaw, 25);
     statusText.style.color = 'var(--green)';
     statusText.textContent = '✅ Transcription terminée !';
     try { localStorage.setItem('rushai_whisper_srt', srtText); } catch(e) {}
@@ -1511,6 +1513,51 @@ function fileToBase64(file) {
     r.onerror = reject;
     r.readAsDataURL(file);
   });
+}
+
+// ── REFORMATAGE SRT : 25 caractères max / 1 ligne (style Premiere Pro) ─────
+function reformatSRT(srtText, maxChars = 25) {
+  const blocks = srtText.trim().split(/\n\s*\n/);
+  const result = [];
+  let index = 1;
+  for (const block of blocks) {
+    const lines = block.trim().split('\n');
+    const tcLine = lines.find(l => l.includes('-->'));
+    if (!tcLine) continue;
+    const [startTC, endTC] = tcLine.split('-->').map(x => x.trim());
+    const text = lines.slice(lines.indexOf(tcLine) + 1).join(' ').trim().replace(/<[^>]+>/g, '');
+    if (!text) continue;
+    const startSec = tcToSec(startTC);
+    const endSec = tcToSec(endTC);
+    const duration = endSec - startSec;
+    // Découpe en chunks de maxChars
+    const words = text.split(' ');
+    const chunks = [];
+    let current = '';
+    for (const word of words) {
+      const test = current ? current + ' ' + word : word;
+      if (test.length <= maxChars) { current = test; }
+      else { if (current) chunks.push(current); current = word; }
+    }
+    if (current) chunks.push(current);
+    // Distribue les timecodes proportionnellement
+    const chunkDur = chunks.length > 0 ? duration / chunks.length : duration;
+    chunks.forEach((chunk, i) => {
+      const chStart = startSec + i * chunkDur;
+      const chEnd = startSec + (i + 1) * chunkDur;
+      result.push(`${index}\n${secToSRTTC(chStart)} --> ${secToSRTTC(chEnd)}\n${chunk}`);
+      index++;
+    });
+  }
+  return result.join('\n\n');
+}
+
+function secToSRTTC(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  const ms = Math.round((sec % 1) * 1000);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(ms).padStart(3,'0')}`;
 }
 
 // ── SRT ──────────────────────────────────────────────────────────────────────
@@ -2013,6 +2060,124 @@ function calcPerfScore(channelKey, segments, accroches, totalSec) {
   };
 }
 
+// ── V5.2 — REVALIDATION CLAUDE ───────────────────────────────────────────────
+async function revalidateResult(key, result) {
+  const targetSec = globalDurationSec || 180;
+  const channels = selectedChannels;
+
+  // Construit le rapport de validation
+  const validationChecks = [];
+  let needsFix = false;
+
+  for (const ch of channels) {
+    const chData = result.channels && result.channels[ch];
+    if (!chData) continue;
+
+    const segs = chData.segments || [];
+    const totalSec = segs.reduce((a, s) => a + (s.duration_sec || 0), 0);
+    const arcParts = new Set(segs.map(s => s.arc_part));
+    const arcComplete = ['intro','tension','développement','conclusion'].every(p => arcParts.has(p) || arcParts.has('develop') || arcParts.has('developpement'));
+    const accroche = (result.accroches || [])[0];
+    const accDur = accroche ? (accroche.duration_sec || 0) : 0;
+
+    // Détection doublons timecodes
+    const tcSet = new Set();
+    let hasDuplicates = false;
+    for (const s of segs) {
+      const key = `${s.start}-${s.end}`;
+      if (tcSet.has(key)) { hasDuplicates = true; break; }
+      tcSet.add(key);
+    }
+
+    const durOk = totalSec >= targetSec * 0.8 && totalSec <= targetSec * 1.2;
+    const accOk = accDur <= 15;
+    const arcOk = arcComplete;
+    const dupOk = !hasDuplicates;
+
+    if (!durOk || !accOk || !arcOk || !dupOk) needsFix = true;
+
+    validationChecks.push({
+      ch,
+      durOk, totalSec, targetSec,
+      accOk, accDur,
+      arcOk,
+      dupOk
+    });
+  }
+
+  // Affiche le rapport de revalidation dans l'UI
+  showRevalidationReport(validationChecks);
+
+  // Si tout est OK, pas besoin de re-appel API
+  if (!needsFix) return result;
+
+  // Re-appel Claude pour corriger
+  const issues = validationChecks.filter(c => !c.durOk || !c.accOk || !c.arcOk || !c.dupOk)
+    .map(c => {
+      const problems = [];
+      if (!c.durOk) problems.push(`durée ${Math.round(c.totalSec)}s au lieu de ${Math.round(c.targetSec)}s cibles`);
+      if (!c.accOk) problems.push(`accroche trop longue (${Math.round(c.accDur)}s > 15s)`);
+      if (!c.arcOk) problems.push(`arc narratif incomplet (intro/tension/développement/conclusion manquant)`);
+      if (!c.dupOk) problems.push(`timecodes en doublon détectés`);
+      return `Canal ${c.ch} : ${problems.join(', ')}`;
+    }).join('\n');
+
+  const fixPrompt = `Tu es un monteur-journaliste expert. Voici une sélection JSON à corriger.
+
+PROBLÈMES DÉTECTÉS :
+${issues}
+
+RÈGLES DE CORRECTION :
+- Durée cible : ${Math.round(targetSec)}s (±20% = entre ${Math.round(targetSec*0.8)}s et ${Math.round(targetSec*1.2)}s)
+- Accroche : max 15 secondes
+- Arc narratif : OBLIGATOIREMENT intro + tension + développement + conclusion
+- Zéro doublon de timecodes
+
+SÉLECTION À CORRIGER :
+${JSON.stringify(result, null, 2)}
+
+Retourne UNIQUEMENT le JSON corrigé, sans markdown, sans explication.`;
+
+  try {
+    const fixed = await callAPI(key, fixPrompt);
+    return fixed;
+  } catch(e) {
+    console.warn('Revalidation échouée, on garde le résultat original', e);
+    return result;
+  }
+}
+
+function showRevalidationReport(checks) {
+  // Supprime ancien rapport si existe
+  const old = document.getElementById('revalidationReport');
+  if (old) old.remove();
+
+  const report = document.createElement('div');
+  report.id = 'revalidationReport';
+  report.style.cssText = 'margin:12px 0;padding:12px 16px;background:rgba(75,201,122,0.06);border:1px solid rgba(75,201,122,0.2);border-radius:3px;font-size:11px;line-height:2;';
+
+  const allOk = checks.every(c => c.durOk && c.accOk && c.arcOk && c.dupOk);
+
+  report.innerHTML = `
+    <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${allOk ? '#4BC97A' : '#F5C842'};margin-bottom:8px;">
+      ${allOk ? '✅ Revalidation OK' : '⚙️ Corrections appliquées'}
+    </div>
+    ${checks.map(c => `
+      <div style="margin-bottom:4px;">
+        <span style="color:var(--muted);font-size:10px;">${c.ch}</span> &nbsp;
+        <span>${c.durOk ? '✅' : '⚠️'} Durée ${Math.round(c.totalSec)}s/${Math.round(c.targetSec)}s</span> &nbsp;
+        <span>${c.arcOk ? '✅' : '⚠️'} Arc narratif</span> &nbsp;
+        <span>${c.accOk ? '✅' : '⚠️'} Accroche ≤15s</span> &nbsp;
+        <span>${c.dupOk ? '✅' : '⚠️'} Pas de doublons</span>
+      </div>
+    `).join('')}
+  `;
+
+  // Insère avant les résultats
+  const resultsEl = document.getElementById('resultsBlock') || document.getElementById('step5');
+  if (resultsEl) resultsEl.prepend(report);
+}
+
 // ── STEP 3 RUN ────────────────────────────────────────────────────────────────
 async function runStep3() {
   const key = getKey(); if (!key) return;
@@ -2034,6 +2199,13 @@ async function runStep3() {
     } else if (currentMode === 'C') {
       await runModeC(key);
     }
+
+    // ── V5.2 — Revalidation Claude ──────────────────────────────────────────
+    if (rawResult) {
+      btn.querySelector('.btn-text').textContent = '⚙️ Revalidation…';
+      rawResult = await revalidateResult(key, rawResult);
+    }
+
     markDone('step3');
   } catch(err) {
     showError("Erreur API : " + err.message);
