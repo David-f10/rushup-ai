@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V4.33</title>
+<title>RUSHUP.AI V5.0</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
@@ -993,7 +993,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <body>
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V4.33</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.0</span></div>
   <div class="header-right">
     <button class="hist-btn" onclick="openHistory()">⏱ Historique</button>
   </div>
@@ -1045,20 +1045,52 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
     </div>
   </div>
 
-  <!-- 01 SRT -->
+  <!-- 01 WHISPER / SRT -->
   <div class="step active current" id="step1">
     <div class="step-header">
       <span class="step-num">01</span>
-      <span class="step-title">Importer le fichier SRT</span>
+      <span class="step-title">Importer le rush audio</span>
       <span class="step-status" id="s1status">En attente</span>
     </div>
     <div class="step-body">
-      <div class="drop-zone" id="dropZone">
-        <input type="file" id="srtFile" accept=".srt,.txt,.SRT,text/plain,text/srt,application/x-subrip">
-        <span class="drop-icon">📄</span>
-        <div class="drop-main">Déposer le fichier SRT ici</div>
-        <div class="drop-sub">Exporté depuis Premiere Pro · .srt · jusqu'à 2h de rush</div>
+
+      <!-- Mode Whisper — PRIMARY -->
+      <div id="mode-whisper">
+        <div class="drop-zone" id="dropZoneAudio" onclick="document.getElementById('audioFile').click()">
+          <input type="file" id="audioFile" accept=".mp3,audio/mpeg" style="display:none">
+          <span class="drop-icon">🎵</span>
+          <div class="drop-main">Déposer le fichier MP3 ici</div>
+          <div class="drop-sub">MP3 uniquement · max 25 Mo · 64-128 kbps recommandé · ~30 min de rush</div>
+        </div>
+        <div id="whisperStatus" style="display:none;margin-top:12px;padding:12px 16px;background:rgba(151,71,255,0.06);border:1px solid rgba(151,71,255,0.2);border-radius:3px;font-size:12px;line-height:1.8;">
+          <div id="whisperStatusText" style="color:var(--accent);">⏳ Transcription en cours...</div>
+          <div style="margin-top:6px;color:var(--muted);font-size:11px;">Whisper analyse l'audio — environ 30-60 secondes pour 30 minutes de rush</div>
+        </div>
       </div>
+
+      <!-- Mode SRT — SECONDARY -->
+      <div id="mode-srt" style="display:none;">
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="srtFile" accept=".srt,.txt,.SRT,text/plain,text/srt,application/x-subrip">
+          <span class="drop-icon">📄</span>
+          <div class="drop-main">Déposer le fichier SRT ici</div>
+          <div class="drop-sub">Exporté depuis Premiere Pro · .srt · jusqu'à 2h de rush</div>
+        </div>
+      </div>
+
+      <!-- Toggle discret -->
+      <div style="text-align:center;margin-top:10px;">
+        <button onclick="switchTranscriptMode('srt')" id="tab-srt"
+          style="background:transparent;border:none;color:var(--muted2);font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;text-decoration:underline;letter-spacing:0.5px;">
+          J'ai déjà un SRT Premiere Pro →
+        </button>
+        <button onclick="switchTranscriptMode('whisper')" id="tab-whisper"
+          style="display:none;background:transparent;border:none;color:var(--muted2);font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;text-decoration:underline;letter-spacing:0.5px;">
+          ← Retour à Whisper
+        </button>
+      </div>
+
+      <!-- Stats communes -->
       <div class="stats-row" id="statsRow">
         <div class="stat"><div class="stat-val" id="stBlocks">—</div><div class="stat-lbl">Blocs</div></div>
         <div class="stat"><div class="stat-val" id="stDur">—</div><div class="stat-lbl">Durée</div></div>
@@ -1365,6 +1397,103 @@ let currentThematicVersion = 0;
 let resultVersions = [];     // historique des sélections finales
 let currentResultVersion = 0;
 
+// ── TRANSCRIPT MODE ───────────────────────────────────────────────────────────
+function switchTranscriptMode(mode) {
+  const srtBtn = document.getElementById('tab-srt');
+  const whisperBtn = document.getElementById('tab-whisper');
+  const srtDiv = document.getElementById('mode-srt');
+  const whisperDiv = document.getElementById('mode-whisper');
+
+  if (mode === 'srt') {
+    srtDiv.style.display = 'block';
+    whisperDiv.style.display = 'none';
+    if (srtBtn) srtBtn.style.display = 'none';
+    if (whisperBtn) whisperBtn.style.display = 'inline';
+  } else {
+    whisperDiv.style.display = 'block';
+    srtDiv.style.display = 'none';
+    if (srtBtn) srtBtn.style.display = 'inline';
+    if (whisperBtn) whisperBtn.style.display = 'none';
+  }
+}
+
+// ── WHISPER TRANSCRIPTION ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  const audioFile = document.getElementById('audioFile');
+  if (audioFile) {
+    audioFile.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) transcribeWithWhisper(file);
+    });
+  }
+  const dropZoneAudio = document.getElementById('dropZoneAudio');
+  if (dropZoneAudio) {
+    dropZoneAudio.addEventListener('dragover', e => { e.preventDefault(); dropZoneAudio.classList.add('drag-over'); });
+    dropZoneAudio.addEventListener('dragleave', () => dropZoneAudio.classList.remove('drag-over'));
+    dropZoneAudio.addEventListener('drop', e => {
+      e.preventDefault(); dropZoneAudio.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) transcribeWithWhisper(file);
+    });
+  }
+});
+
+async function transcribeWithWhisper(file) {
+  const statusDiv = document.getElementById('whisperStatus');
+  const statusText = document.getElementById('whisperStatusText');
+  const dz = document.getElementById('dropZoneAudio');
+
+  // Vérification taille max 25 Mo
+  const maxSize = 25 * 1024 * 1024;
+  if (file.size > maxSize) {
+    showError(`Fichier trop lourd : ${(file.size/1024/1024).toFixed(1)} Mo. Whisper accepte max 25 Mo. Exporte ton MP3 en 64-128 kbps depuis ton logiciel audio.`);
+    return;
+  }
+
+  // Vérification format MP3
+  if (!file.type.includes('mpeg') && !file.name.toLowerCase().endsWith('.mp3')) {
+    showError('Format non supporté. Utilise un fichier MP3 compressé (64-128 kbps).');
+    return;
+  }
+  statusDiv.style.display = 'block';
+  statusText.style.color = 'var(--accent)';
+  statusText.textContent = '⏳ Lecture du fichier...';
+  if (dz) {
+    dz.querySelector('.drop-main').textContent = '✓ ' + file.name;
+    dz.querySelector('.drop-sub').textContent = `${(file.size/1024/1024).toFixed(1)} Mo · transcription en cours...`;
+  }
+  currentFilename = file.name.replace(/\.(mp3|mp4|m4a|wav|ogg|mov)$/i, '');
+  try {
+    statusText.textContent = '⏳ Préparation...';
+    const base64 = await fileToBase64(file);
+    statusText.textContent = '🎵 Whisper transcrit l\'audio... (30-60 sec)';
+    const response = await fetch('/.netlify/functions/whisper', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ audioBase64: base64, mimeType: file.type || 'audio/mpeg', language: 'fr' })
+    });
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
+    statusText.style.color = 'var(--green)';
+    statusText.textContent = '✅ Transcription terminée !';
+    try { localStorage.setItem('rushai_whisper_srt', data.srt); } catch(e) {}
+    parseSRT(data.srt, file.name);
+  } catch(err) {
+    statusText.style.color = 'var(--red)';
+    statusText.textContent = '❌ Erreur : ' + err.message;
+    showError('Erreur Whisper : ' + err.message);
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result.split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
 // ── SRT ──────────────────────────────────────────────────────────────────────
 // ── SOURCES ──────────────────────────────────────────────────────────────────
 let sourceCount = 0;
@@ -1573,6 +1702,72 @@ function parseSRT(text, filename) {
   markDone('step1');
   setActive('step2');
   setActive('step3');
+
+  // ── Analyse Descript-style dès le chargement ────────────────────────────────
+  analyzeRushQuality();
+}
+
+// Stockage global de l'analyse qualité du rush
+let rushQuality = null;
+
+function analyzeRushQuality() {
+  const fillerWords = /\b(euh|hum|hmm|donc euh|c'est-à-dire|voilà voilà|enfin voilà|bah|ben|alors euh|du coup|genre|en fait|tu vois|comment dire)\b/gi;
+  const repetitionPattern = /\b(\w{3,})\s+\1\b/gi;
+
+  let silences = [];       // gaps > 1.5s
+  let hesitations = [];    // filler words
+  let repetitions = [];    // repeated words
+  let corrections = [];    // mid-phrase corrections (restart patterns)
+
+  parsedSRT.forEach((b, i) => {
+    // Silences entre blocs
+    if (i > 0) {
+      const gap = b.startSec - parsedSRT[i-1].endSec;
+      if (gap > 1.5) {
+        silences.push({ tc: parsedSRT[i-1].end, duration: gap });
+      }
+    }
+
+    // Mots de remplissage
+    fillerWords.lastIndex = 0;
+    if (fillerWords.test(b.text)) {
+      hesitations.push({ tc: b.start, text: b.text });
+    }
+
+    // Répétitions
+    repetitionPattern.lastIndex = 0;
+    if (repetitionPattern.test(b.text)) {
+      repetitions.push({ tc: b.start, text: b.text });
+    }
+
+    // Corrections mid-phrase (pattern : phrase courte < 4 mots suivie immédiatement)
+    if (b.text.split(' ').length <= 3 && i < parsedSRT.length - 1) {
+      const nextGap = parsedSRT[i+1].startSec - b.endSec;
+      if (nextGap < 0.5) {
+        corrections.push({ tc: b.start, text: b.text });
+      }
+    }
+  });
+
+  rushQuality = { silences, hesitations, repetitions, corrections };
+
+  // Affiche un résumé sous la prévisualisation SRT
+  const totalIssues = silences.length + hesitations.length + repetitions.length + corrections.length;
+  if (totalIssues > 0) {
+    const preview = document.getElementById('srtPreview');
+    const qualityDiv = document.createElement('div');
+    qualityDiv.id = 'rushQualityBar';
+    qualityDiv.style.cssText = 'margin-top:10px;padding:10px 14px;background:rgba(245,200,66,0.07);border:1px solid rgba(245,200,66,0.25);border-radius:3px;font-size:11px;line-height:1.9;';
+    qualityDiv.innerHTML = `
+      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#F5C842;margin-bottom:6px;">⚡ Analyse qualité rush</div>
+      ${silences.length ? `<span style="color:var(--muted)">🔇 ${silences.length} silence${silences.length>1?'s':''} > 1.5s</span> &nbsp;` : ''}
+      ${hesitations.length ? `<span style="color:var(--muted)">💬 ${hesitations.length} hésitation${hesitations.length>1?'s':''}</span> &nbsp;` : ''}
+      ${repetitions.length ? `<span style="color:var(--muted)">🔁 ${repetitions.length} répétition${repetitions.length>1?'s':''}</span> &nbsp;` : ''}
+      ${corrections.length ? `<span style="color:var(--muted)">✂️ ${corrections.length} correction${corrections.length>1?'s':''} mid-phrase</span>` : ''}
+      <div style="margin-top:6px;color:rgba(255,255,255,0.5);font-size:10px;">L'IA en tiendra compte dans l'analyse — les segments propres seront privilégiés.</div>
+    `;
+    preview.parentNode.insertBefore(qualityDiv, preview.nextSibling);
+  }
 }
 
 // ── CHANNELS ─────────────────────────────────────────────────────────────────
@@ -1844,11 +2039,20 @@ async function runModeA(key, angle) {
   Type d'accroche recommandé : "${HOOK_TYPES[cfg.hookType]}"`;
   }).join('\n\n');
 
+  const qualityContext = rushQuality ? `
+ANALYSE QUALITÉ DU RUSH (détectée automatiquement) :
+- ${rushQuality.silences.length} silence(s) > 1.5s détecté(s)
+- ${rushQuality.hesitations.length} hésitation(s) détectée(s) (euh, hm, du coup...)
+- ${rushQuality.repetitions.length} répétition(s) de mots détectée(s)
+- ${rushQuality.corrections.length} correction(s) mid-phrase détectée(s)
+Pour chaque segment sélectionné, PRIVILÉGIE les passages sans ces défauts. Si un passage contient des hésitations ou silences mais est le seul disponible sur un sujet clé, sélectionne-le et indique-le dans les warnings.
+` : '';
+
   const prompt = `Tu es un monteur-journaliste expert qui travaille pour plusieurs plateformes simultanément.
 
 TRANSCRIPTION :
 ${transcript}
-
+${qualityContext}
 ANGLE ÉDITORIAL : ${angle}
 ${questions ? `QUESTIONS POSÉES : ${questions}` : ''}
 
@@ -2701,8 +2905,45 @@ function buildChannelResultHTML(ch, data, cfg) {
       <strong>→ Workflow Premiere Pro</strong><br>
       Importe chaque SRT via <em>Fichier → Importer</em>. Les sous-titres marquent visuellement les passages sur ta timeline.<br>
       <span style="color:var(--warn)">⚠ À nettoyer</span> — Ces segments contiennent des hésitations ou silences à corriger avant l'export final.
+      ${segments.filter(s => s.warnings && s.warnings.length > 0).length > 0 ? `
+      <div style="margin-top:10px;">
+        <button onclick="bulkDeleteWarnings('${ch}')" style="background:transparent;border:1px solid rgba(245,200,66,0.4);border-radius:3px;padding:6px 14px;color:#F5C842;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(245,200,66,0.1)'" onmouseout="this.style.background='transparent'">
+          ✂️ Supprimer les ${segments.filter(s => s.warnings && s.warnings.length > 0).length} segment(s) à nettoyer
+        </button>
+        <span style="font-size:10px;color:var(--muted2);margin-left:8px;">Raccourci Descript-style</span>
+      </div>` : ''}
     </div>
   `;
+}
+
+// ── BULK CLEAN — Descript-style ───────────────────────────────────────────────
+function bulkDeleteWarnings(ch) {
+  if (!window._lastChannelResults || !window._lastChannelResults[ch]) return;
+  const chData = window._lastChannelResults[ch];
+  const before = chData.segments.length;
+  // Garde uniquement les segments sans warnings
+  chData.segments = chData.segments.filter(s => !s.warnings || s.warnings.length === 0);
+  const removed = before - chData.segments.length;
+
+  // Recalcule durée + score
+  const newTotal = chData.segments.reduce((a, s) => {
+    return a + (s.duration_sec || Math.max(0, tcToSec((s.end||'').replace(',','.')) - tcToSec((s.start||'').replace(',','.'))));
+  }, 0);
+  chData.total_duration_sec = newTotal;
+  const accroches = chData.segments.filter(s => s.isAccroche);
+  const bodySegs = chData.segments.filter(s => !s.isAccroche);
+  chData.perf = calcPerfScore(ch, bodySegs, accroches, newTotal);
+
+  // Re-render
+  const panel = document.getElementById(`result-${ch}`);
+  if (panel) panel.innerHTML = buildChannelResultHTML(ch, chData, CHANNEL_CONFIG[ch]);
+  const tab = document.querySelector(`.channel-tab[data-ch="${ch}"] .tab-score`);
+  if (tab) {
+    tab.textContent = chData.perf.total + '/100';
+    tab.className = 'tab-score ' + (chData.perf.total >= 75 ? 'score-high' : chData.perf.total >= 50 ? 'score-mid' : 'score-low');
+  }
+
+  if (removed > 0) alert(`✅ ${removed} segment(s) supprimé(s). La sélection est maintenant propre.`);
 }
 
 // ── EXPORTS ──────────────────────────────────────────────────────────────────
@@ -2849,7 +3090,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V4.33 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.0 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
