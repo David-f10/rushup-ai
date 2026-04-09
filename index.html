@@ -319,6 +319,69 @@ header {
   flex-wrap: wrap;
 }
 .srt-selection-bar.visible { display: flex; }
+
+/* ── WAVEFORM ── */
+.waveform-wrap {
+  width: 100%;
+  padding: 8px 0 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 6px;
+  display: none;
+}
+.waveform-wrap.visible { display: block; }
+.waveform-container {
+  position: relative;
+  height: 48px;
+  background: var(--surface3);
+  border-radius: 3px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.waveform-canvas { width: 100%; height: 100%; display: block; }
+.waveform-playhead {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 2px;
+  background: var(--green);
+  pointer-events: none;
+  transition: left 0.05s linear;
+}
+.waveform-handle {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 4px;
+  cursor: ew-resize;
+  z-index: 10;
+}
+.waveform-handle-in {
+  background: rgba(151,71,255,0.8);
+  border-right: 1px solid var(--accent);
+}
+.waveform-handle-out {
+  background: rgba(151,71,255,0.8);
+  border-left: 1px solid var(--accent);
+}
+.waveform-region {
+  position: absolute;
+  top: 0; bottom: 0;
+  background: rgba(151,71,255,0.12);
+  pointer-events: none;
+}
+.waveform-tc {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--muted2);
+  margin-top: 3px;
+  letter-spacing: 0.5px;
+}
+.waveform-warning {
+  font-size: 10px;
+  color: var(--warn);
+  margin-top: 4px;
+  display: none;
+}
+.waveform-warning.visible { display: block; }
 .srt-add-btn {
   background: var(--accent);
   color: #fff;
@@ -1335,10 +1398,28 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         </div>
         <div class="srt-viewer-body" id="srtViewerBody" onmouseup="debouncedSRTSelection()" ontouchend="debouncedSRTSelection()"></div>
         <div class="srt-selection-bar" id="srtSelectionBar">
-          <span id="srtSelectionInfo" style="color:var(--muted);flex:1;"></span>
-          <button onclick="playAudioSelection()" style="background:transparent;border:1px solid var(--green);border-radius:3px;padding:5px 12px;color:var(--green);font-size:11px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(75,201,122,0.1)'" onmouseout="this.style.background='transparent'">▶ Écouter</button>
-          <button class="srt-add-btn" onclick="addSegmentFromSelection()">+ Ajouter comme segment</button>
-          <button onclick="clearSRTSelection()" style="background:transparent;border:1px solid var(--border);border-radius:3px;padding:5px 10px;color:var(--muted);font-size:11px;cursor:pointer;">✕</button>
+          <div style="width:100%;display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <span id="srtSelectionInfo" style="color:var(--muted);flex:1;font-size:11px;"></span>
+              <button onclick="playAudioSelection()" style="background:transparent;border:1px solid var(--green);border-radius:3px;padding:5px 12px;color:var(--green);font-size:11px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(75,201,122,0.1)'" onmouseout="this.style.background='transparent'">▶ Écouter</button>
+              <button class="srt-add-btn" onclick="addSegmentFromSelection()">+ Ajouter comme segment</button>
+              <button onclick="clearSRTSelection()" style="background:transparent;border:1px solid var(--border);border-radius:3px;padding:5px 10px;color:var(--muted);font-size:11px;cursor:pointer;">✕</button>
+            </div>
+            <div class="waveform-wrap" id="waveformWrap">
+              <div class="waveform-container" id="waveformContainer">
+                <canvas class="waveform-canvas" id="waveformCanvas"></canvas>
+                <div class="waveform-region" id="waveformRegion"></div>
+                <div class="waveform-handle waveform-handle-in" id="waveformHandleIn"></div>
+                <div class="waveform-handle waveform-handle-out" id="waveformHandleOut"></div>
+                <div class="waveform-playhead" id="waveformPlayhead" style="display:none;"></div>
+              </div>
+              <div class="waveform-tc">
+                <span id="waveformTCIn"></span>
+                <span id="waveformTCOut"></span>
+              </div>
+              <div class="waveform-warning" id="waveformWarning"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1858,7 +1939,14 @@ function onPlayerProgressClick(e) {
 // Écouter une sélection dans le viewer SRT
 function playAudioSelection() {
   if (!_srtSelection) return;
-  const { startSec, endSec, text } = _srtSelection;
+  const startSec = _srtSelection.adjustedStartSec || _srtSelection.startSec;
+  const endSec = _srtSelection.adjustedEndSec || _srtSelection.endSec;
+  const text = _srtSelection.text;
+
+  // Met à jour le playhead sur la waveform
+  const playhead = document.getElementById('waveformPlayhead');
+  if (playhead) playhead.style.display = 'block';
+
   playAudioRange(startSec, endSec, text.slice(0, 60) + (text.length > 60 ? '…' : ''));
 }
 
@@ -2391,26 +2479,21 @@ function debouncedSRTSelection() {
 
 function onSRTSelection() {
   const sel = window.getSelection();
-  if (!sel || sel.isCollapsed || !sel.toString().trim()) {
-    return;
-  }
+  if (!sel || sel.isCollapsed || !sel.toString().trim()) return;
 
-  // Trouve les blocs SRT couverts par la sélection
   const range = sel.getRangeAt(0);
   const startEl = range.startContainer.parentElement;
   const endEl = range.endContainer.parentElement;
-
   const startBlock = parseInt(startEl.dataset && startEl.dataset.block);
   const endBlock = parseInt(endEl.dataset && endEl.dataset.block);
-
   if (isNaN(startBlock) || isNaN(endBlock)) return;
 
   const from = Math.min(startBlock, endBlock);
   const to = Math.max(startBlock, endBlock);
+  const blockCount = to - from + 1;
 
-  // Surligne les mots sélectionnés
   document.querySelectorAll('.srt-word.highlighted').forEach(el => el.classList.remove('highlighted'));
-  document.querySelectorAll(`.srt-word[data-block]`).forEach(el => {
+  document.querySelectorAll('.srt-word[data-block]').forEach(el => {
     const b = parseInt(el.dataset.block);
     if (b >= from && b <= to) el.classList.add('highlighted');
   });
@@ -2423,14 +2506,30 @@ function onSRTSelection() {
   _srtSelection = {
     startIdx: from, endIdx: to,
     startTC: parsedSRT[from].start, endTC: parsedSRT[to].end,
-    startSec, endSec, text, dur
+    startSec, endSec, text, dur,
+    adjustedStartSec: startSec, adjustedEndSec: endSec
   };
 
-  // Affiche la barre d'action
   const bar = document.getElementById('srtSelectionBar');
   const info = document.getElementById('srtSelectionInfo');
   bar.classList.add('visible');
-  info.innerHTML = `<span style="color:var(--accent);">${parsedSRT[from].start} → ${parsedSRT[to].end}</span> · ${Math.round(dur)}s · "${text.slice(0, 60)}${text.length > 60 ? '…' : ''}"`;
+  info.innerHTML = `<span style="color:var(--accent);">${parsedSRT[from].start} → ${parsedSRT[to].end}</span> · ${Math.round(dur)}s · "${text.slice(0, 50)}${text.length > 50 ? '…' : ''}"`;
+
+  // Avertissement multi-blocs
+  const warning = document.getElementById('waveformWarning');
+  if (warning) {
+    if (blockCount > 1) {
+      warning.textContent = `⚠ Ce passage couvre ${blockCount} blocs SRT — ajuste les poignées pour cadrer précisément le passage voulu.`;
+      warning.classList.add('visible');
+    } else {
+      warning.classList.remove('visible');
+    }
+  }
+
+  // Affiche la waveform si MP3 disponible
+  if (window._audioFile) {
+    renderWaveform(startSec, endSec);
+  }
 }
 
 function clearSRTSelection() {
@@ -2439,6 +2538,178 @@ function clearSRTSelection() {
   document.querySelectorAll('.srt-word.highlighted').forEach(el => el.classList.remove('highlighted'));
   const bar = document.getElementById('srtSelectionBar');
   if (bar) bar.classList.remove('visible');
+  const wrap = document.getElementById('waveformWrap');
+  if (wrap) wrap.classList.remove('visible');
+}
+
+// ── WAVEFORM ──────────────────────────────────────────────────────────────────
+let _waveformData = null;    // Float32Array des samples normalisés
+let _waveformSampleRate = 44100;
+let _waveformCtx = null;     // AudioBuffer context
+let _waveformStartSec = 0;
+let _waveformEndSec = 0;
+let _waveformDragging = null; // 'in' | 'out'
+
+async function renderWaveform(startSec, endSec) {
+  const wrap = document.getElementById('waveformWrap');
+  const canvas = document.getElementById('waveformCanvas');
+  const container = document.getElementById('waveformContainer');
+  if (!wrap || !canvas || !window._audioFile) return;
+
+  wrap.classList.add('visible');
+
+  // Charge l'audio une seule fois
+  if (!_waveformData) {
+    try {
+      const arrayBuffer = await window._audioFile.arrayBuffer();
+      const actx = new (window.AudioContext || window.webkitAudioContext)();
+      const audioBuf = await actx.decodeAudioData(arrayBuffer);
+      actx.close();
+      _waveformData = audioBuf.getChannelData(0);
+      _waveformSampleRate = audioBuf.sampleRate;
+    } catch(e) {
+      console.warn('Waveform load error:', e);
+      return;
+    }
+  }
+
+  _waveformStartSec = startSec;
+  _waveformEndSec = endSec;
+
+  // Marge de contexte : 1s avant et après pour permettre l'ajustement
+  const margin = Math.min(1.5, startSec);
+  const viewStart = Math.max(0, startSec - margin);
+  const viewEnd = Math.min(_waveformData.length / _waveformSampleRate, endSec + margin);
+
+  drawWaveform(canvas, viewStart, viewEnd, startSec, endSec);
+  updateWaveformHandles(viewStart, viewEnd, startSec, endSec);
+  updateWaveformTC(startSec, endSec);
+  setupWaveformDrag(container, viewStart, viewEnd);
+}
+
+function drawWaveform(canvas, viewStart, viewEnd, selStart, selEnd) {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 48 * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = '48px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = 48;
+
+  const startSample = Math.floor(viewStart * _waveformSampleRate);
+  const endSample = Math.floor(viewEnd * _waveformSampleRate);
+  const totalSamples = endSample - startSample;
+  const samplesPerPx = totalSamples / W;
+
+  // Fond
+  ctx.fillStyle = 'rgba(24,24,38,0.8)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Zone sélectionnée
+  const selStartPct = (selStart - viewStart) / (viewEnd - viewStart);
+  const selEndPct = (selEnd - viewStart) / (viewEnd - viewStart);
+  ctx.fillStyle = 'rgba(151,71,255,0.1)';
+  ctx.fillRect(selStartPct * W, 0, (selEndPct - selStartPct) * W, H);
+
+  // Waveform
+  for (let x = 0; x < W; x++) {
+    const sStart = Math.floor(startSample + x * samplesPerPx);
+    const sEnd = Math.floor(startSample + (x + 1) * samplesPerPx);
+    let min = 0, max = 0;
+    for (let s = sStart; s < sEnd && s < _waveformData.length; s++) {
+      if (_waveformData[s] > max) max = _waveformData[s];
+      if (_waveformData[s] < min) min = _waveformData[s];
+    }
+    const sec = viewStart + (x / W) * (viewEnd - viewStart);
+    const inSel = sec >= selStart && sec <= selEnd;
+    ctx.fillStyle = inSel ? 'rgba(75,201,122,0.85)' : 'rgba(144,144,176,0.4)';
+    ctx.fillRect(x, H/2 - max * H/2, 1, Math.max(1, (max - min) * H/2));
+  }
+}
+
+function updateWaveformHandles(viewStart, viewEnd, selStart, selEnd) {
+  const viewDur = viewEnd - viewStart;
+  const inPct = ((selStart - viewStart) / viewDur) * 100;
+  const outPct = ((selEnd - viewStart) / viewDur) * 100;
+
+  const handleIn = document.getElementById('waveformHandleIn');
+  const handleOut = document.getElementById('waveformHandleOut');
+  const region = document.getElementById('waveformRegion');
+
+  if (handleIn) handleIn.style.left = inPct + '%';
+  if (handleOut) handleOut.style.left = outPct + '%';
+  if (region) {
+    region.style.left = inPct + '%';
+    region.style.width = (outPct - inPct) + '%';
+  }
+}
+
+function updateWaveformTC(startSec, endSec) {
+  const tcIn = document.getElementById('waveformTCIn');
+  const tcOut = document.getElementById('waveformTCOut');
+  if (tcIn) tcIn.textContent = secToSRTTC(startSec).replace(',', '.');
+  if (tcOut) tcOut.textContent = secToSRTTC(endSec).replace(',', '.');
+  if (_srtSelection) {
+    _srtSelection.adjustedStartSec = startSec;
+    _srtSelection.adjustedEndSec = endSec;
+    _srtSelection.startTC = secToSRTTC(startSec);
+    _srtSelection.endTC = secToSRTTC(endSec);
+  }
+}
+
+function setupWaveformDrag(container, viewStart, viewEnd) {
+  const viewDur = viewEnd - viewStart;
+
+  container.onmousedown = (e) => {
+    const handleIn = document.getElementById('waveformHandleIn');
+    const handleOut = document.getElementById('waveformHandleOut');
+    const inRect = handleIn ? handleIn.getBoundingClientRect() : null;
+    const outRect = handleOut ? handleOut.getBoundingClientRect() : null;
+
+    if (inRect && Math.abs(e.clientX - inRect.left) < 12) {
+      _waveformDragging = 'in';
+    } else if (outRect && Math.abs(e.clientX - outRect.left) < 12) {
+      _waveformDragging = 'out';
+    } else {
+      // Clic direct → déplace la lecture
+      const rect = container.getBoundingClientRect();
+      const pct = (e.clientX - rect.left) / rect.width;
+      const clickSec = viewStart + pct * viewDur;
+      if (_srtSelection) playAudioRange(clickSec, _srtSelection.adjustedEndSec || _waveformEndSec, '');
+      return;
+    }
+
+    const canvas = document.getElementById('waveformCanvas');
+    const onMove = (ev) => {
+      const rect = container.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+      const newSec = viewStart + pct * viewDur;
+      if (_waveformDragging === 'in') {
+        const newStart = Math.min(newSec, (_srtSelection.adjustedEndSec || _waveformEndSec) - 0.2);
+        _waveformStartSec = newStart;
+        updateWaveformHandles(viewStart, viewEnd, newStart, _srtSelection.adjustedEndSec || _waveformEndSec);
+        updateWaveformTC(newStart, _srtSelection.adjustedEndSec || _waveformEndSec);
+        drawWaveform(canvas, viewStart, viewEnd, newStart, _srtSelection.adjustedEndSec || _waveformEndSec);
+      } else {
+        const newEnd = Math.max(newSec, (_srtSelection.adjustedStartSec || _waveformStartSec) + 0.2);
+        _waveformEndSec = newEnd;
+        updateWaveformHandles(viewStart, viewEnd, _srtSelection.adjustedStartSec || _waveformStartSec, newEnd);
+        updateWaveformTC(_srtSelection.adjustedStartSec || _waveformStartSec, newEnd);
+        drawWaveform(canvas, viewStart, viewEnd, _srtSelection.adjustedStartSec || _waveformStartSec, newEnd);
+      }
+    };
+    const onUp = () => {
+      _waveformDragging = null;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    e.preventDefault();
+  };
 }
 
 // ── DRAG & DROP SEGMENTS ─────────────────────────────────────────────────────
@@ -2604,7 +2875,13 @@ function clearSegTrim(ch, idx) {
 
 function addSegmentFromSelection() {
   if (!_srtSelection) return;
-  const { startTC, endTC, startSec, endSec, text, dur } = _srtSelection;
+  // Utilise les timecodes ajustés par la waveform si disponibles
+  const startSec = _srtSelection.adjustedStartSec || _srtSelection.startSec;
+  const endSec = _srtSelection.adjustedEndSec || _srtSelection.endSec;
+  const startTC = secToSRTTC(startSec);
+  const endTC = secToSRTTC(endSec);
+  const text = _srtSelection.text;
+  const dur = endSec - startSec;
 
   // Ajoute dans tous les canaux sélectionnés
   const channels = selectedChannels.length ? selectedChannels : Object.keys(window._lastChannelResults || {});
