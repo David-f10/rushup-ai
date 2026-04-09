@@ -1333,7 +1333,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
           <span>📄 Transcript complet — surligne pour créer un segment</span>
           <span id="srtViewerStats"></span>
         </div>
-        <div class="srt-viewer-body" id="srtViewerBody" onmouseup="onSRTSelection()" ontouchend="onSRTSelection()"></div>
+        <div class="srt-viewer-body" id="srtViewerBody" onmouseup="debouncedSRTSelection()" ontouchend="debouncedSRTSelection()"></div>
         <div class="srt-selection-bar" id="srtSelectionBar">
           <span id="srtSelectionInfo" style="color:var(--muted);flex:1;"></span>
           <button onclick="playAudioSelection()" style="background:transparent;border:1px solid var(--green);border-radius:3px;padding:5px 12px;color:var(--green);font-size:11px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(75,201,122,0.1)'" onmouseout="this.style.background='transparent'">▶ Écouter</button>
@@ -2317,8 +2317,16 @@ async function analyzeAudioQuality(file) {
         : '🎙 Audio propre';
     }
 
-    // Re-render le viewer SRT avec les nouvelles infos audio
-    renderSRTViewer();
+    // Met à jour les couleurs directement sans recréer le DOM
+    document.querySelectorAll('.srt-word[data-block]').forEach(el => {
+      const blockIdx = parseInt(el.dataset.block);
+      const block = parsedSRT[blockIdx];
+      if (!block) return;
+      if (block._hasTrueSilence) el.classList.add('has-silence');
+      if (block._hasSaturation) el.classList.add('has-saturation');
+      if (block._hasTrueSilence) el.title = '🔇 Silence détecté';
+      if (block._hasSaturation) el.title += ' ⚡ Saturation';
+    });
 
   } catch(e) {
     console.warn('Analyse audio échouée:', e);
@@ -2373,6 +2381,12 @@ function renderSRTViewer() {
   body.innerHTML = html;
   viewer.classList.add('visible');
   stats.textContent = `${parsedSRT.length} blocs · surligne pour sélectionner`;
+}
+
+let _srtSelectionTimer = null;
+function debouncedSRTSelection() {
+  clearTimeout(_srtSelectionTimer);
+  _srtSelectionTimer = setTimeout(onSRTSelection, 150);
 }
 
 function onSRTSelection() {
