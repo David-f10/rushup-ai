@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.5</title>
+<title>RUSHUP.AI V5.6</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
@@ -249,7 +249,7 @@ header {
 .srt-preview.visible { display: block; }
 .srt-preview .tc { color: #9F58F5; }
 
-/* ── V5.5 SRT VIEWER INTERACTIF ── */
+/* ── V5.6 SRT VIEWER INTERACTIF ── */
 .srt-viewer {
   margin-top: 12px;
   border: 1px solid var(--border);
@@ -307,6 +307,15 @@ header {
 }
 .srt-word.has-saturation {
   border-bottom: 2px solid rgba(245,82,82,0.6);
+}
+.srt-word.search-match {
+  background: rgba(245,200,66,0.3);
+  border-radius: 2px;
+}
+.srt-word.search-current {
+  background: rgba(245,200,66,0.7);
+  color: #000;
+  border-radius: 2px;
 }
 .srt-selection-bar {
   display: none;
@@ -1245,7 +1254,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <body>
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.5</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.6</span></div>
   <div class="header-right">
     <button class="hist-btn" onclick="openHistory()">⏱ Historique</button>
   </div>
@@ -1390,10 +1399,22 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         <div class="stat"><div class="stat-val" id="stTakes">—</div><div class="stat-lbl">Prises est.</div></div>
       </div>
       <div class="srt-preview" id="srtPreview"></div>
-      <!-- V5.5 — SRT Viewer interactif -->
+      <!-- V5.6 — SRT Viewer interactif -->
       <div class="srt-viewer" id="srtViewer">
         <div class="srt-viewer-header">
           <span>📄 Transcript complet — surligne pour créer un segment</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="position:relative;">
+              <input id="srtFinder" type="text" placeholder="🔍 Rechercher..."
+                style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--text);font-family:'DM Mono',monospace;font-size:10px;outline:none;width:160px;transition:border-color 0.2s;"
+                oninput="onSRTFind(this.value)"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+                onkeydown="if(event.key==='Enter')nextSRTMatch()">
+            </div>
+            <span id="srtFinderCount" style="font-size:10px;color:var(--muted2);white-space:nowrap;"></span>
+            <button onclick="nextSRTMatch()" style="background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:2px 4px;" title="Résultat suivant">↓</button>
+            <button onclick="prevSRTMatch()" style="background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:2px 4px;" title="Résultat précédent">↑</button>
+          </div>
           <span id="srtViewerStats"></span>
         </div>
         <div class="srt-viewer-body" id="srtViewerBody" onmouseup="debouncedSRTSelection()" ontouchend="debouncedSRTSelection()"></div>
@@ -2252,7 +2273,7 @@ function parseSRT(text, filename) {
   ).join('') + `<span style="color:var(--muted2)">... ${parsedSRT.length-5} blocs de plus</span>`;
   preview.classList.add('visible');
 
-  // V5.5 — Affiche le viewer SRT interactif complet
+  // V5.6 — Affiche le viewer SRT interactif complet
   renderSRTViewer();
 
   dz.querySelector('.drop-main').textContent = '✓ ' + filename;
@@ -2319,7 +2340,7 @@ function analyzeRushQuality() {
   if (window._audioFile) analyzeAudioQuality(window._audioFile);
 }
 
-// ── V5.5 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
+// ── V5.6 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
 async function analyzeAudioQuality(file) {
   const badge = document.getElementById('audioQualityBadge');
   try {
@@ -2422,7 +2443,7 @@ async function analyzeAudioQuality(file) {
   }
 }
 
-// ── V5.5 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
+// ── V5.6 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
 let _srtSelection = null; // { startIdx, endIdx, startSec, endSec, text }
 
 function renderSRTViewer() {
@@ -2576,21 +2597,48 @@ async function renderWaveform(startSec, endSec) {
   _waveformStartSec = startSec;
   _waveformEndSec = endSec;
 
-  // Marge de contexte : 1s avant et après pour permettre l'ajustement
-  const margin = Math.min(1.5, startSec);
+  const margin = Math.min(2, startSec);
+  const totalDur = _waveformData.length / _waveformSampleRate;
   const viewStart = Math.max(0, startSec - margin);
-  const viewEnd = Math.min(_waveformData.length / _waveformSampleRate, endSec + margin);
+  const viewEnd = Math.min(totalDur, endSec + margin);
 
-  drawWaveform(canvas, viewStart, viewEnd, startSec, endSec);
+  // Stocke la vue courante pour le pan
+  _waveformView = { viewStart, viewEnd };
+
+  redrawWaveform(viewStart, viewEnd, startSec, endSec);
   updateWaveformHandles(viewStart, viewEnd, startSec, endSec);
   updateWaveformTC(startSec, endSec);
-  setupWaveformDrag(container, viewStart, viewEnd);
+  setupWaveformInteraction(container);
+
+  // Fix resize — observe si le container change de taille
+  if (!container._resizeObserver) {
+    container._resizeObserver = new ResizeObserver(() => {
+      if (_waveformView && _srtSelection) {
+        const s = _srtSelection.adjustedStartSec || _waveformStartSec;
+        const e2 = _srtSelection.adjustedEndSec || _waveformEndSec;
+        redrawWaveform(_waveformView.viewStart, _waveformView.viewEnd, s, e2);
+        updateWaveformHandles(_waveformView.viewStart, _waveformView.viewEnd, s, e2);
+      }
+    });
+    container._resizeObserver.observe(container);
+  }
+}
+
+// Vue courante de la waveform (pour pan)
+let _waveformView = null;
+let _waveformPanStart = null; // { clientX, viewStart, viewEnd }
+
+function redrawWaveform(viewStart, viewEnd, selStart, selEnd) {
+  const canvas = document.getElementById('waveformCanvas');
+  if (!canvas || !_waveformData) return;
+  drawWaveform(canvas, viewStart, viewEnd, selStart, selEnd);
 }
 
 function drawWaveform(canvas, viewStart, viewEnd, selStart, selEnd) {
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.parentElement.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
+  if (rect.width === 0) return;
+  canvas.width = Math.floor(rect.width * dpr);
   canvas.height = 48 * dpr;
   canvas.style.width = rect.width + 'px';
   canvas.style.height = '48px';
@@ -2604,36 +2652,37 @@ function drawWaveform(canvas, viewStart, viewEnd, selStart, selEnd) {
   const totalSamples = endSample - startSample;
   const samplesPerPx = totalSamples / W;
 
-  // Fond
-  ctx.fillStyle = 'rgba(24,24,38,0.8)';
+  ctx.fillStyle = 'rgba(24,24,38,0.95)';
   ctx.fillRect(0, 0, W, H);
 
-  // Zone sélectionnée
-  const selStartPct = (selStart - viewStart) / (viewEnd - viewStart);
-  const selEndPct = (selEnd - viewStart) / (viewEnd - viewStart);
-  ctx.fillStyle = 'rgba(151,71,255,0.1)';
+  const selStartPct = Math.max(0, (selStart - viewStart) / (viewEnd - viewStart));
+  const selEndPct = Math.min(1, (selEnd - viewStart) / (viewEnd - viewStart));
+  ctx.fillStyle = 'rgba(151,71,255,0.12)';
   ctx.fillRect(selStartPct * W, 0, (selEndPct - selStartPct) * W, H);
 
-  // Waveform
   for (let x = 0; x < W; x++) {
     const sStart = Math.floor(startSample + x * samplesPerPx);
-    const sEnd = Math.floor(startSample + (x + 1) * samplesPerPx);
+    const sEnd = Math.min(Math.floor(startSample + (x + 1) * samplesPerPx), _waveformData.length);
     let min = 0, max = 0;
-    for (let s = sStart; s < sEnd && s < _waveformData.length; s++) {
+    for (let s = sStart; s < sEnd; s++) {
       if (_waveformData[s] > max) max = _waveformData[s];
       if (_waveformData[s] < min) min = _waveformData[s];
     }
     const sec = viewStart + (x / W) * (viewEnd - viewStart);
     const inSel = sec >= selStart && sec <= selEnd;
-    ctx.fillStyle = inSel ? 'rgba(75,201,122,0.85)' : 'rgba(144,144,176,0.4)';
+    ctx.fillStyle = inSel ? 'rgba(75,201,122,0.9)' : 'rgba(144,144,176,0.35)';
     ctx.fillRect(x, H/2 - max * H/2, 1, Math.max(1, (max - min) * H/2));
   }
+
+  // Ligne centrale
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillRect(0, H/2, W, 1);
 }
 
 function updateWaveformHandles(viewStart, viewEnd, selStart, selEnd) {
   const viewDur = viewEnd - viewStart;
-  const inPct = ((selStart - viewStart) / viewDur) * 100;
-  const outPct = ((selEnd - viewStart) / viewDur) * 100;
+  const inPct = Math.max(0, Math.min(100, ((selStart - viewStart) / viewDur) * 100));
+  const outPct = Math.max(0, Math.min(100, ((selEnd - viewStart) / viewDur) * 100));
 
   const handleIn = document.getElementById('waveformHandleIn');
   const handleOut = document.getElementById('waveformHandleOut');
@@ -2643,7 +2692,7 @@ function updateWaveformHandles(viewStart, viewEnd, selStart, selEnd) {
   if (handleOut) handleOut.style.left = outPct + '%';
   if (region) {
     region.style.left = inPct + '%';
-    region.style.width = (outPct - inPct) + '%';
+    region.style.width = Math.max(0, outPct - inPct) + '%';
   }
 }
 
@@ -2660,56 +2709,290 @@ function updateWaveformTC(startSec, endSec) {
   }
 }
 
-function setupWaveformDrag(container, viewStart, viewEnd) {
-  const viewDur = viewEnd - viewStart;
-
+function setupWaveformInteraction(container) {
   container.onmousedown = (e) => {
     const handleIn = document.getElementById('waveformHandleIn');
     const handleOut = document.getElementById('waveformHandleOut');
     const inRect = handleIn ? handleIn.getBoundingClientRect() : null;
     const outRect = handleOut ? handleOut.getBoundingClientRect() : null;
+    const containerRect = container.getBoundingClientRect();
 
-    if (inRect && Math.abs(e.clientX - inRect.left) < 12) {
+    const nearIn = inRect && Math.abs(e.clientX - (inRect.left + 2)) < 14;
+    const nearOut = outRect && Math.abs(e.clientX - (outRect.left + 2)) < 14;
+
+    if (nearIn) {
       _waveformDragging = 'in';
-    } else if (outRect && Math.abs(e.clientX - outRect.left) < 12) {
+    } else if (nearOut) {
       _waveformDragging = 'out';
     } else {
-      // Clic direct → déplace la lecture
-      const rect = container.getBoundingClientRect();
-      const pct = (e.clientX - rect.left) / rect.width;
-      const clickSec = viewStart + pct * viewDur;
-      if (_srtSelection) playAudioRange(clickSec, _srtSelection.adjustedEndSec || _waveformEndSec, '');
-      return;
+      // Pan — glisser pour déplacer la vue
+      _waveformDragging = 'pan';
+      _waveformPanStart = {
+        clientX: e.clientX,
+        viewStart: _waveformView.viewStart,
+        viewEnd: _waveformView.viewEnd
+      };
     }
 
     const canvas = document.getElementById('waveformCanvas');
+    const totalDur = _waveformData ? _waveformData.length / _waveformSampleRate : 0;
+
     const onMove = (ev) => {
+      if (!_waveformView) return;
+      const { viewStart, viewEnd } = _waveformView;
+      const viewDur = viewEnd - viewStart;
       const rect = container.getBoundingClientRect();
       const pct = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
       const newSec = viewStart + pct * viewDur;
+
+      const curStart = _srtSelection ? (_srtSelection.adjustedStartSec || _waveformStartSec) : _waveformStartSec;
+      const curEnd = _srtSelection ? (_srtSelection.adjustedEndSec || _waveformEndSec) : _waveformEndSec;
+
       if (_waveformDragging === 'in') {
-        const newStart = Math.min(newSec, (_srtSelection.adjustedEndSec || _waveformEndSec) - 0.2);
-        _waveformStartSec = newStart;
-        updateWaveformHandles(viewStart, viewEnd, newStart, _srtSelection.adjustedEndSec || _waveformEndSec);
-        updateWaveformTC(newStart, _srtSelection.adjustedEndSec || _waveformEndSec);
-        drawWaveform(canvas, viewStart, viewEnd, newStart, _srtSelection.adjustedEndSec || _waveformEndSec);
-      } else {
-        const newEnd = Math.max(newSec, (_srtSelection.adjustedStartSec || _waveformStartSec) + 0.2);
-        _waveformEndSec = newEnd;
-        updateWaveformHandles(viewStart, viewEnd, _srtSelection.adjustedStartSec || _waveformStartSec, newEnd);
-        updateWaveformTC(_srtSelection.adjustedStartSec || _waveformStartSec, newEnd);
-        drawWaveform(canvas, viewStart, viewEnd, _srtSelection.adjustedStartSec || _waveformStartSec, newEnd);
+        const newStart = Math.max(viewStart, Math.min(newSec, curEnd - 0.2));
+        updateWaveformHandles(viewStart, viewEnd, newStart, curEnd);
+        updateWaveformTC(newStart, curEnd);
+        drawWaveform(canvas, viewStart, viewEnd, newStart, curEnd);
+
+      } else if (_waveformDragging === 'out') {
+        const newEnd = Math.min(viewEnd, Math.max(newSec, curStart + 0.2));
+        updateWaveformHandles(viewStart, viewEnd, curStart, newEnd);
+        updateWaveformTC(curStart, newEnd);
+        drawWaveform(canvas, viewStart, viewEnd, curStart, newEnd);
+
+      } else if (_waveformDragging === 'pan' && _waveformPanStart) {
+        const dx = ev.clientX - _waveformPanStart.clientX;
+        const secPerPx = (_waveformPanStart.viewEnd - _waveformPanStart.viewStart) / rect.width;
+        const shift = -dx * secPerPx;
+        let newViewStart = Math.max(0, _waveformPanStart.viewStart + shift);
+        let newViewEnd = Math.min(totalDur, _waveformPanStart.viewEnd + shift);
+        // Garde la même largeur
+        const dur = _waveformPanStart.viewEnd - _waveformPanStart.viewStart;
+        if (newViewStart < 0) { newViewStart = 0; newViewEnd = dur; }
+        if (newViewEnd > totalDur) { newViewEnd = totalDur; newViewStart = Math.max(0, totalDur - dur); }
+        _waveformView = { viewStart: newViewStart, viewEnd: newViewEnd };
+        drawWaveform(canvas, newViewStart, newViewEnd, curStart, curEnd);
+        updateWaveformHandles(newViewStart, newViewEnd, curStart, curEnd);
+        const tcIn = document.getElementById('waveformTCIn');
+        const tcOut = document.getElementById('waveformTCOut');
+        if (tcIn) tcIn.textContent = secToSRTTC(newViewStart).replace(',', '.');
+        if (tcOut) tcOut.textContent = secToSRTTC(newViewEnd).replace(',', '.');
       }
     };
-    const onUp = () => {
+
+    const onUp = (ev) => {
+      // Clic simple sans drag → lecture depuis ce point
+      if (_waveformDragging === 'pan' && _waveformPanStart && Math.abs(ev.clientX - _waveformPanStart.clientX) < 5) {
+        const rect = container.getBoundingClientRect();
+        const pct = (ev.clientX - rect.left) / rect.width;
+        const { viewStart, viewEnd } = _waveformView;
+        const clickSec = viewStart + pct * (viewEnd - viewStart);
+        const curEnd = _srtSelection ? (_srtSelection.adjustedEndSec || _waveformEndSec) : _waveformEndSec;
+        playAudioRange(clickSec, curEnd, '');
+      }
       _waveformDragging = null;
+      _waveformPanStart = null;
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
     };
+
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
     e.preventDefault();
   };
+}
+
+// ── FINDER — RECHERCHE DANS LE TRANSCRIPT ────────────────────────────────────
+let _srtMatches = [];
+let _srtMatchIdx = -1;
+
+function onSRTFind(query) {
+  // Reset
+  document.querySelectorAll('.srt-word.search-match, .srt-word.search-current').forEach(el => {
+    el.classList.remove('search-match', 'search-current');
+  });
+  _srtMatches = [];
+  _srtMatchIdx = -1;
+
+  const count = document.getElementById('srtFinderCount');
+  if (!query || query.length < 2) { if (count) count.textContent = ''; return; }
+
+  const q = query.toLowerCase();
+  const words = document.querySelectorAll('.srt-word[data-block]');
+  let currentMatchWords = [];
+  let inMatch = false;
+
+  // Recherche approximative sur les mots
+  words.forEach((el, i) => {
+    const text = el.textContent.toLowerCase();
+    if (text.includes(q)) {
+      el.classList.add('search-match');
+      _srtMatches.push(el);
+    }
+  });
+
+  if (count) count.textContent = _srtMatches.length > 0 ? `${_srtMatches.length} résultat${_srtMatches.length > 1 ? 's' : ''}` : 'Aucun résultat';
+  if (_srtMatches.length > 0) { _srtMatchIdx = 0; highlightCurrentMatch(); }
+}
+
+function highlightCurrentMatch() {
+  document.querySelectorAll('.srt-word.search-current').forEach(el => el.classList.remove('search-current'));
+  if (_srtMatches.length === 0) return;
+  const el = _srtMatches[_srtMatchIdx];
+  if (el) {
+    el.classList.add('search-current');
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const count = document.getElementById('srtFinderCount');
+    if (count) count.textContent = `${_srtMatchIdx + 1}/${_srtMatches.length}`;
+  }
+}
+
+function nextSRTMatch() {
+  if (!_srtMatches.length) return;
+  _srtMatchIdx = (_srtMatchIdx + 1) % _srtMatches.length;
+  highlightCurrentMatch();
+}
+
+function prevSRTMatch() {
+  if (!_srtMatches.length) return;
+  _srtMatchIdx = (_srtMatchIdx - 1 + _srtMatches.length) % _srtMatches.length;
+  highlightCurrentMatch();
+}
+
+// ── CUT DESCRIPT + SÉLECTION INTELLIGENTE ────────────────────────────────────
+async function smartCutSegment(ch, idx) {
+  const seg = window._lastChannelResults && window._lastChannelResults[ch] && window._lastChannelResults[ch].segments[idx];
+  if (!seg) return;
+
+  const btn = document.getElementById('smart-cut-btn-' + ch + '-' + idx);
+  if (btn) { btn.textContent = '⏳ Analyse...'; btn.disabled = true; }
+
+  try {
+    // Analyse énergie vocale sur chaque occurrence répétée
+    const startSec = tcToSec((seg.start || '').replace(',', '.'));
+    const endSec = tcToSec((seg.end || '').replace(',', '.'));
+    let audioEnergy = null;
+
+    if (_waveformData && _waveformSampleRate) {
+      audioEnergy = measureSegmentEnergy(startSec, endSec);
+    }
+
+    // Appel Claude pour sélection intelligente
+    const contextBefore = parsedSRT.filter(b => b.endSec <= startSec).slice(-3).map(b => b.text).join(' ');
+    const contextAfter = parsedSRT.filter(b => b.startSec >= endSec).slice(0, 3).map(b => b.text).join(' ');
+
+    const prompt = `Tu es un monteur-journaliste expert. Voici un segment avec des répétitions à nettoyer.
+
+TEXTE DU SEGMENT :
+"${seg.text}"
+
+CONTEXTE AVANT CE SEGMENT :
+"${contextBefore}"
+
+CONTEXTE APRÈS CE SEGMENT :
+"${contextAfter}"
+
+${audioEnergy ? `ÉNERGIE VOCALE MESURÉE : ${audioEnergy.toFixed(3)} (amplitude RMS — plus élevé = plus d'énergie/enthousiasme)` : ''}
+
+MISSION :
+1. Identifie les répétitions dans ce segment
+2. Garde la version la plus cohérente avec le contexte avant/après
+3. Si plusieurs versions sont disponibles, privilégie celle avec le plus d'énergie vocale
+4. Supprime les hésitations, corrections mid-phrase, répétitions inutiles
+5. Garde le sens complet
+
+Réponds UNIQUEMENT en JSON :
+{
+  "cleanText": "texte nettoyé",
+  "removed": "ce qui a été supprimé",
+  "reason": "pourquoi cette version"
+}`;
+
+    // Récupère la clé Claude
+    if (!window._apiKey) {
+      const keyRes = await fetch('/.netlify/functions/claude?action=getkey');
+      const keyData = await keyRes.json();
+      window._apiKey = keyData.key;
+    }
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': window._apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-allow-browser': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 500,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await res.json();
+    const raw = data.content.map(c => c.text || '').join('').replace(/```json|```/g, '').trim();
+    const result = JSON.parse(raw);
+
+    if (result.cleanText) {
+      // Stocke l'original pour restauration
+      if (!seg._original) seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
+
+      // Recalcule le timecode proportionnellement au texte conservé
+      const originalWords = seg.text.split(' ').length;
+      const cleanWords = result.cleanText.split(' ').length;
+      const ratio = cleanWords / Math.max(1, originalWords);
+      const newDur = (seg.duration_sec || (endSec - startSec)) * ratio;
+      const newEndSec = startSec + newDur;
+
+      seg.text = result.cleanText;
+      seg.end = secToSRTTC(newEndSec);
+      seg.duration_sec = newDur;
+      seg._trimmed = true;
+      seg._smartCut = true;
+      seg.reason = (seg.reason || '') + ' [Nettoyé — ' + result.reason + ']';
+
+      // Met à jour la durée totale
+      const chData = window._lastChannelResults[ch];
+      chData.total_duration_sec = (chData.segments || []).reduce((a, s) => a + (s.duration_sec || 0), 0);
+
+      const panel = document.getElementById('result-' + ch);
+      if (panel) {
+        panel.innerHTML = buildChannelResultHTML(ch, chData, CHANNEL_CONFIG[ch]);
+        setTimeout(() => updateQualityBar(ch), 50);
+      }
+
+      // Toast de confirmation
+      showToast('✂️ Segment nettoyé — ' + result.removed);
+    }
+
+  } catch(e) {
+    console.warn('Smart cut error:', e);
+    if (btn) { btn.textContent = '✂️ Nettoyer'; btn.disabled = false; }
+  }
+}
+
+function measureSegmentEnergy(startSec, endSec) {
+  if (!_waveformData || !_waveformSampleRate) return null;
+  const startSample = Math.floor(startSec * _waveformSampleRate);
+  const endSample = Math.min(Math.floor(endSec * _waveformSampleRate), _waveformData.length);
+  let sum = 0;
+  for (let i = startSample; i < endSample; i++) sum += _waveformData[i] * _waveformData[i];
+  return Math.sqrt(sum / (endSample - startSample));
+}
+
+function showToast(msg) {
+  let toast = document.getElementById('rushupToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'rushupToast';
+    toast.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:var(--surface3);border:1px solid var(--border2);border-radius:4px;padding:10px 20px;font-size:12px;color:var(--text);z-index:2000;transition:opacity 0.3s;pointer-events:none;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 3000);
 }
 
 // ── DRAG & DROP SEGMENTS ─────────────────────────────────────────────────────
@@ -3194,7 +3477,7 @@ function calcPerfScore(channelKey, segments, accroches, totalSec) {
   };
 }
 
-// ── V5.5 — REVALIDATION CLAUDE ───────────────────────────────────────────────
+// ── V5.6 — REVALIDATION CLAUDE ───────────────────────────────────────────────
 // Détecte les répétitions dans un texte (mots > 3 lettres répétés)
 function detectRepetitionsInText(text) {
   const repetitions = [];
@@ -3364,7 +3647,7 @@ async function runStep3() {
       await runModeC(key);
     }
 
-    // ── V5.5 — Revalidation Claude ──────────────────────────────────────────
+    // ── V5.6 — Revalidation Claude ──────────────────────────────────────────
     if (rawResult) {
       btn.querySelector('.btn-text').textContent = '⚙️ Revalidation…';
       rawResult = await revalidateResult(key, rawResult);
@@ -4253,6 +4536,7 @@ function buildChannelResultHTML(ch, data, cfg) {
       <div class="seg-meta">
         <button class="seg-play-btn" onclick="playSegment('${ch}',${i})" title="Écouter ce passage">▶</button>
         <button class="seg-delete" onclick="deleteSegment('${ch}', ${i})" title="Supprimer ce segment">✕</button>
+        <button id="smart-cut-btn-${ch}-${i}" onclick="smartCutSegment('${ch}',${i})" title="Nettoyer les répétitions intelligemment" style="background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--muted);font-size:10px;padding:3px 7px;cursor:pointer;transition:all 0.15s;width:28px;height:28px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.borderColor='var(--yellow)';this.style.color='var(--yellow)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">✂</button>
         <div class="seg-dur">${secToMin(dur)}</div>
         <div class="seg-score-dots">${dots}</div>
       </div>
@@ -4477,7 +4761,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.5 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.6 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
