@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.3</title>
+<title>RUSHUP.AI V5.5</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
@@ -249,7 +249,7 @@ header {
 .srt-preview.visible { display: block; }
 .srt-preview .tc { color: #9F58F5; }
 
-/* ── V5.3 SRT VIEWER INTERACTIF ── */
+/* ── V5.5 SRT VIEWER INTERACTIF ── */
 .srt-viewer {
   margin-top: 12px;
   border: 1px solid var(--border);
@@ -301,6 +301,12 @@ header {
 .srt-word.repeated {
   background: rgba(245,200,66,0.15);
   color: #F5C842;
+}
+.srt-word.has-silence {
+  border-bottom: 2px solid rgba(75,201,122,0.5);
+}
+.srt-word.has-saturation {
+  border-bottom: 2px solid rgba(245,82,82,0.6);
 }
 .srt-selection-bar {
   display: none;
@@ -818,6 +824,68 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 }
 .seg-delete:hover { border-color: #ff7070; color: #ff7070; background: rgba(255,70,70,0.08); }
 
+/* ── LECTEUR AUDIO V5.1 ── */
+.seg-play-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.seg-play-btn:hover { border-color: var(--green); color: var(--green); }
+.seg-play-btn.playing { border-color: var(--green); color: var(--green); background: rgba(75,201,122,0.1); }
+
+.audio-player-bar {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(8,8,15,0.97);
+  border-top: 1px solid var(--border2);
+  padding: 10px 24px;
+  z-index: 1000;
+  align-items: center;
+  gap: 14px;
+  backdrop-filter: blur(12px);
+}
+.audio-player-bar.visible { display: flex; }
+.audio-player-title { font-size: 11px; color: var(--muted); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.audio-player-title strong { color: var(--text); }
+.audio-player-progress {
+  flex: 2;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.audio-player-progress-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 2px;
+  transition: width 0.1s linear;
+  width: 0%;
+}
+.audio-player-time { font-size: 10px; color: var(--muted); min-width: 60px; text-align: right; }
+.audio-player-stop {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.audio-player-stop:hover { border-color: var(--red); color: var(--red); }
+
 /* ── PERFORMANCE SCORE ── */
 .perf-block {
   border: 1px solid var(--border);
@@ -1114,11 +1182,21 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <body>
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.3</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.5</span></div>
   <div class="header-right">
     <button class="hist-btn" onclick="openHistory()">⏱ Historique</button>
   </div>
 </header>
+
+<!-- LECTEUR AUDIO FIXE V5.1 -->
+<div class="audio-player-bar" id="audioPlayerBar">
+  <div class="audio-player-title"><strong id="audioPlayerLabel">—</strong></div>
+  <div class="audio-player-progress" id="audioPlayerProgress" onclick="onPlayerProgressClick(event)">
+    <div class="audio-player-progress-fill" id="audioPlayerFill"></div>
+  </div>
+  <div class="audio-player-time" id="audioPlayerTime">0:00</div>
+  <button class="audio-player-stop" onclick="stopAudioPlayer()">■ Stop</button>
+</div>
 
 <div class="container">
 
@@ -1138,30 +1216,51 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         </div>
       </div>
       <button class="add-source-btn" onclick="addSource()">+ Ajouter un rush source</button>
-      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
-        <span style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.6);">Format séquence</span>
-        <button id="fmt169" class="dur-btn active" onclick="setFormat('16:9',this)" style="padding:5px 12px;font-size:11px;">16:9</button>
-        <button id="fmt916" class="dur-btn" onclick="setFormat('9:16',this)" style="padding:5px 12px;font-size:11px;">9:16</button>
-        <span style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-left:12px;">Scale alternance</span>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:11px;color:rgba(255,255,255,0.5);">A</span>
-          <input id="scaleA" type="text" value="100" onclick="event.stopPropagation()"
-            style="width:52px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:5px 8px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;text-align:center;outline:none;"
-            placeholder="100">
-          <span style="font-size:11px;color:rgba(255,255,255,0.3);">%</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:11px;color:rgba(255,255,255,0.5);">B</span>
-          <input id="scaleB" type="text" value="85" onclick="event.stopPropagation()"
-            style="width:52px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:5px 8px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;text-align:center;outline:none;"
-            placeholder="85">
-          <span style="font-size:11px;color:rgba(255,255,255,0.3);">%</span>
-        </div>
-        <span style="font-size:10px;color:rgba(255,255,255,0.35);font-style:italic;">alternance A/B par clip</span>
-      </div>
       <div class="sources-note">
-        Déclare tes fichiers dans l'ordre chronologique du SRT.<br>
+        Déclare chaque fichier vidéo source dans l'ordre de tournage. RUSHUP utilisera ces noms et durées pour construire ta séquence Premiere.<br>
         Ex : <span style="color:var(--accent)">FX30001.mp4</span> + <span style="color:var(--accent)">00:25:14:00</span> — le XML Premiere utilisera ces noms exacts pour relier les médias.
+      </div>
+    </div>
+  </div>
+
+  <!-- PARAMÈTRES SÉQUENCE — step 01 -->
+  <div class="step active" id="step-params">
+    <div class="step-header">
+      <span class="step-num">01</span>
+      <span class="step-title">Paramètres séquence</span>
+    </div>
+    <div class="step-body">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:10px;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;">Format</span>
+          <button id="fmt169" class="dur-btn active" onclick="setFormat('16:9',this)" style="padding:4px 12px;font-size:11px;">16:9</button>
+          <button id="fmt916" class="dur-btn" onclick="setFormat('9:16',this)" style="padding:4px 12px;font-size:11px;">9:16</button>
+        </div>
+        <div style="width:1px;height:16px;background:var(--border);"></div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:10px;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;">FPS</span>
+          <button id="fps25" class="dur-btn active" onclick="setFPS(25,this)" style="padding:4px 12px;font-size:11px;">25</button>
+          <button id="fps30" class="dur-btn" onclick="setFPS(30,this)" style="padding:4px 12px;font-size:11px;">30</button>
+        </div>
+        <div style="width:1px;height:16px;background:var(--border);"></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:10px;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;">Scale</span>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span style="font-size:10px;color:rgba(255,255,255,0.4);">A</span>
+            <input id="scaleA" type="text" value="100"
+              style="width:44px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:4px 6px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;text-align:center;outline:none;"
+              placeholder="100">
+            <span style="font-size:10px;color:rgba(255,255,255,0.3);">%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span style="font-size:10px;color:rgba(255,255,255,0.4);">B</span>
+            <input id="scaleB" type="text" value="85"
+              style="width:44px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:4px 6px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;text-align:center;outline:none;"
+              placeholder="85">
+            <span style="font-size:10px;color:rgba(255,255,255,0.3);">%</span>
+          </div>
+          <span style="font-size:10px;color:rgba(255,255,255,0.25);font-style:italic;">alternance A/B par clip</span>
+        </div>
       </div>
     </div>
   </div>
@@ -1169,7 +1268,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   <!-- 01 WHISPER / SRT -->
   <div class="step active current" id="step1">
     <div class="step-header">
-      <span class="step-num">01</span>
+      <span class="step-num">02</span>
       <span class="step-title">Importer le rush audio</span>
       <span class="step-status" id="s1status">En attente</span>
     </div>
@@ -1177,16 +1276,17 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 
       <!-- Mode Whisper — PRIMARY -->
       <div id="mode-whisper">
+        <div style="margin-bottom:10px;">
+          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Contexte du rush <span style="color:var(--muted2);font-size:9px;letter-spacing:0;">(optionnel — améliore la précision de la transcription)</span></div>
+          <input id="whisperContext" type="text" placeholder="Sujet du rush, intervenants, termes techniques ou noms propres — RUSHUP.AI s'en sert pour transcrire avec précision."
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:8px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;transition:border-color 0.2s;"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
         <div class="drop-zone" id="dropZoneAudio" onclick="document.getElementById('audioFile').click()">
           <input type="file" id="audioFile" accept=".mp3,audio/mpeg" style="display:none">
           <span class="drop-icon">🎵</span>
-          <div class="drop-main">Déposer le fichier MP3 ici</div>
+          <div class="drop-main">Dépose ton rush en MP3</div>
           <div class="drop-sub">MP3 uniquement · max 25 Mo · 64-128 kbps recommandé · ~30 min de rush</div>
-        </div>
-        <div style="margin-top:10px;">
-          <input id="whisperContext" type="text" placeholder="Contexte optionnel — ex: Interview d'une artiste sur sa chanson contre l'endométriose (réduit les hallucinations Whisper)"
-            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:8px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:11px;outline:none;"
-            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
         </div>
         <div id="whisperStatus" style="display:none;margin-top:12px;padding:12px 16px;background:rgba(151,71,255,0.06);border:1px solid rgba(151,71,255,0.2);border-radius:3px;font-size:12px;line-height:1.8;">
           <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -1227,7 +1327,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         <div class="stat"><div class="stat-val" id="stTakes">—</div><div class="stat-lbl">Prises est.</div></div>
       </div>
       <div class="srt-preview" id="srtPreview"></div>
-      <!-- V5.3 — SRT Viewer interactif -->
+      <!-- V5.5 — SRT Viewer interactif -->
       <div class="srt-viewer" id="srtViewer">
         <div class="srt-viewer-header">
           <span>📄 Transcript complet — surligne pour créer un segment</span>
@@ -1236,6 +1336,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         <div class="srt-viewer-body" id="srtViewerBody" onmouseup="onSRTSelection()" ontouchend="onSRTSelection()"></div>
         <div class="srt-selection-bar" id="srtSelectionBar">
           <span id="srtSelectionInfo" style="color:var(--muted);flex:1;"></span>
+          <button onclick="playAudioSelection()" style="background:transparent;border:1px solid var(--green);border-radius:3px;padding:5px 12px;color:var(--green);font-size:11px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(75,201,122,0.1)'" onmouseout="this.style.background='transparent'">▶ Écouter</button>
           <button class="srt-add-btn" onclick="addSegmentFromSelection()">+ Ajouter comme segment</button>
           <button onclick="clearSRTSelection()" style="background:transparent;border:1px solid var(--border);border-radius:3px;padding:5px 10px;color:var(--muted);font-size:11px;cursor:pointer;">✕</button>
         </div>
@@ -1246,7 +1347,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   <!-- 02 CHANNELS -->
   <div class="step" id="step2">
     <div class="step-header">
-      <span class="step-num">02</span>
+      <span class="step-num">03</span>
       <span class="step-title">Canaux de diffusion</span>
       <span class="step-status">Sélectionne un ou plusieurs canaux</span>
     </div>
@@ -1342,7 +1443,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   <!-- 03 MODE -->
   <div class="step" id="step3">
     <div class="step-header">
-      <span class="step-num">03</span>
+      <span class="step-num">04</span>
       <span class="step-title">Mode d'analyse</span>
       <span class="step-status" id="s3status">Choisis un mode</span>
     </div>
@@ -1405,7 +1506,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   <!-- 04 THEMATICS (Mode B) -->
   <div class="step" id="step4" style="display:none;">
     <div class="step-header">
-      <span class="step-num">04</span>
+      <span class="step-num">05</span>
       <span class="step-title">Sélectionner les thématiques</span>
       <span class="step-status">Coche les thèmes à développer</span>
     </div>
@@ -1427,7 +1528,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   <!-- 05 ACCROCHE -->
   <div class="step" id="step5" style="display:none;">
     <div class="step-header">
-      <span class="step-num">05</span>
+      <span class="step-num">06</span>
       <span class="step-title">Accroche — Les 3 phrases les plus fortes</span>
       <span class="step-status">Max 15 secondes · Choisir la stratégie d'ouverture</span>
     </div>
@@ -1456,7 +1557,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   <!-- 06 RESULTS -->
   <div class="step" id="step6" style="display:none;">
     <div class="step-header">
-      <span class="step-num">06</span>
+      <span class="step-num">07</span>
       <span class="step-title">Sélection éditoriale finale</span>
       <span class="step-status" id="s6status"></span>
     </div>
@@ -1521,6 +1622,7 @@ const HOOK_TYPES = {
 let sources = []; // [{name, duration, durationSec, offset}]
 let sequenceFormat = '16:9'; // '16:9' or '9:16'
 let sequenceWidth = 1920;
+let sequenceFPS = 25; // 25 or 30
 let sequenceHeight = 1080;
 let scaleA = 100;
 let scaleB = 85;
@@ -1605,6 +1707,7 @@ async function transcribeWithWhisper(file) {
     dz.querySelector('.drop-sub').textContent = `${(file.size/1024/1024).toFixed(1)} Mo · transcription en cours...`;
   }
   currentFilename = file.name.replace(/\.(mp3|mp4|m4a|wav|ogg|mov)$/i, '');
+  window._audioFile = file; // Stocké pour le lecteur V5.1
   try {
     // Récupère la clé OpenAI depuis Netlify
     statusText.textContent = '⏳ Connexion...';
@@ -1668,7 +1771,114 @@ function fileToBase64(file) {
   });
 }
 
-// ── RESET AUDIO ───────────────────────────────────────────────────────────────
+// ── LECTEUR AUDIO V5.1 ───────────────────────────────────────────────────────
+let _audioEl = null;       // HTMLAudioElement courant
+let _audioRafId = null;    // requestAnimationFrame ID
+let _audioEndSec = null;   // timecode de fin du passage
+
+function getAudioElement() {
+  if (!window._audioFile) return null;
+  if (!_audioEl || _audioEl._file !== window._audioFile) {
+    _audioEl = new Audio(URL.createObjectURL(window._audioFile));
+    _audioEl._file = window._audioFile;
+  }
+  return _audioEl;
+}
+
+function playAudioRange(startSec, endSec, label) {
+  const audio = getAudioElement();
+  if (!audio) {
+    alert('Charge un fichier MP3 d\'abord pour écouter le passage.');
+    return;
+  }
+
+  // Stop lecture en cours
+  stopAudioPlayer(false);
+
+  _audioEndSec = endSec;
+  audio.currentTime = startSec;
+
+  // Barre lecteur
+  const bar = document.getElementById('audioPlayerBar');
+  const labelEl = document.getElementById('audioPlayerLabel');
+  const fill = document.getElementById('audioPlayerFill');
+  const timeEl = document.getElementById('audioPlayerTime');
+  if (bar) bar.classList.add('visible');
+  if (labelEl) labelEl.textContent = label || 'Lecture...';
+
+  audio.play().catch(e => console.warn('Audio play error:', e));
+
+  // Mise à jour progression
+  function tick() {
+    if (!audio || audio.paused) return;
+    const cur = audio.currentTime;
+    if (cur >= _audioEndSec) {
+      stopAudioPlayer(true);
+      return;
+    }
+    const pct = ((cur - startSec) / (endSec - startSec)) * 100;
+    if (fill) fill.style.width = Math.min(100, pct) + '%';
+    const elapsed = cur - startSec;
+    const m = Math.floor(elapsed / 60);
+    const s = Math.floor(elapsed % 60).toString().padStart(2, '0');
+    const totM = Math.floor((endSec - startSec) / 60);
+    const totS = Math.floor((endSec - startSec) % 60).toString().padStart(2, '0');
+    if (timeEl) timeEl.textContent = `${m}:${s} / ${totM}:${totS}`;
+    _audioRafId = requestAnimationFrame(tick);
+  }
+  _audioRafId = requestAnimationFrame(tick);
+
+  // Marque le bouton actif
+  document.querySelectorAll('.seg-play-btn').forEach(b => b.classList.remove('playing'));
+}
+
+function stopAudioPlayer(resetFill) {
+  if (_audioEl) { _audioEl.pause(); }
+  if (_audioRafId) { cancelAnimationFrame(_audioRafId); _audioRafId = null; }
+  if (resetFill !== false) {
+    const bar = document.getElementById('audioPlayerBar');
+    const fill = document.getElementById('audioPlayerFill');
+    const timeEl = document.getElementById('audioPlayerTime');
+    if (bar) bar.classList.remove('visible');
+    if (fill) fill.style.width = '0%';
+    if (timeEl) timeEl.textContent = '0:00';
+  }
+  document.querySelectorAll('.seg-play-btn').forEach(b => b.classList.remove('playing'));
+}
+
+function onPlayerProgressClick(e) {
+  if (!_audioEl || !_audioEndSec) return;
+  const bar = document.getElementById('audioPlayerProgress');
+  const rect = bar.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  const startSec = _audioEl.currentTime - (_audioEndSec - _audioEl.currentTime);
+  _audioEl.currentTime = startSec + pct * (_audioEndSec - startSec);
+}
+
+// Écouter une sélection dans le viewer SRT
+function playAudioSelection() {
+  if (!_srtSelection) return;
+  const { startSec, endSec, text } = _srtSelection;
+  playAudioRange(startSec, endSec, text.slice(0, 60) + (text.length > 60 ? '…' : ''));
+}
+
+// Écouter un segment dans les résultats
+function playSegment(ch, idx) {
+  const seg = window._lastChannelResults && window._lastChannelResults[ch] && window._lastChannelResults[ch].segments[idx];
+  if (!seg) return;
+  const startSec = tcToSec((seg.start || '').replace(',', '.'));
+  const endSec = tcToSec((seg.end || '').replace(',', '.'));
+  const btn = document.querySelector(`.segment[data-ch="${ch}"][data-idx="${idx}"] .seg-play-btn`);
+
+  // Toggle
+  if (btn && btn.classList.contains('playing')) {
+    stopAudioPlayer(true);
+    return;
+  }
+
+  playAudioRange(startSec, endSec, seg.text ? seg.text.slice(0, 60) : 'Segment ' + (idx + 1));
+  if (btn) btn.classList.add('playing');
+}
 function resetAudio() {
   const audioInput = document.getElementById('audioFile');
   if (audioInput) audioInput.value = '';
@@ -1750,6 +1960,12 @@ function setFormat(fmt, btn) {
   sequenceWidth = fmt === '9:16' ? 1080 : 1920;
   sequenceHeight = fmt === '9:16' ? 1920 : 1080;
   document.querySelectorAll('#fmt169, #fmt916').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function setFPS(fps, btn) {
+  sequenceFPS = fps;
+  document.querySelectorAll('#fps25, #fps30').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 }
 
@@ -1948,7 +2164,7 @@ function parseSRT(text, filename) {
   ).join('') + `<span style="color:var(--muted2)">... ${parsedSRT.length-5} blocs de plus</span>`;
   preview.classList.add('visible');
 
-  // V5.3 — Affiche le viewer SRT interactif complet
+  // V5.5 — Affiche le viewer SRT interactif complet
   renderSRTViewer();
 
   dz.querySelector('.drop-main').textContent = '✓ ' + filename;
@@ -1969,63 +2185,148 @@ function analyzeRushQuality() {
   const fillerWords = /\b(euh|hum|hmm|donc euh|c'est-à-dire|voilà voilà|enfin voilà|bah|ben|alors euh|du coup|genre|en fait|tu vois|comment dire)\b/gi;
   const repetitionPattern = /\b(\w{3,})\s+\1\b/gi;
 
-  let silences = [];       // gaps > 1.5s
-  let hesitations = [];    // filler words
-  let repetitions = [];    // repeated words
-  let corrections = [];    // mid-phrase corrections (restart patterns)
+  let silences = [];
+  let hesitations = [];
+  let repetitions = [];
+  let corrections = [];
 
   parsedSRT.forEach((b, i) => {
-    // Silences entre blocs
     if (i > 0) {
       const gap = b.startSec - parsedSRT[i-1].endSec;
-      if (gap > 1.5) {
-        silences.push({ tc: parsedSRT[i-1].end, duration: gap });
-      }
+      if (gap > 1.5) silences.push({ tc: parsedSRT[i-1].end, duration: gap });
     }
-
-    // Mots de remplissage
     fillerWords.lastIndex = 0;
-    if (fillerWords.test(b.text)) {
-      hesitations.push({ tc: b.start, text: b.text });
-    }
-
-    // Répétitions
+    if (fillerWords.test(b.text)) hesitations.push({ tc: b.start, text: b.text });
     repetitionPattern.lastIndex = 0;
-    if (repetitionPattern.test(b.text)) {
-      repetitions.push({ tc: b.start, text: b.text });
-    }
-
-    // Corrections mid-phrase (pattern : phrase courte < 4 mots suivie immédiatement)
+    if (repetitionPattern.test(b.text)) repetitions.push({ tc: b.start, text: b.text });
     if (b.text.split(' ').length <= 3 && i < parsedSRT.length - 1) {
       const nextGap = parsedSRT[i+1].startSec - b.endSec;
-      if (nextGap < 0.5) {
-        corrections.push({ tc: b.start, text: b.text });
-      }
+      if (nextGap < 0.5) corrections.push({ tc: b.start, text: b.text });
     }
   });
 
-  rushQuality = { silences, hesitations, repetitions, corrections };
+  rushQuality = { silences, hesitations, repetitions, corrections, audioAnalysis: null };
 
-  // Affiche un résumé sous la prévisualisation SRT
+  // Affiche résumé texte
   const totalIssues = silences.length + hesitations.length + repetitions.length + corrections.length;
-  if (totalIssues > 0) {
-    const preview = document.getElementById('srtPreview');
-    const qualityDiv = document.createElement('div');
-    qualityDiv.id = 'rushQualityBar';
-    qualityDiv.style.cssText = 'margin-top:10px;padding:10px 14px;background:rgba(245,200,66,0.07);border:1px solid rgba(245,200,66,0.25);border-radius:3px;font-size:11px;line-height:1.9;';
-    qualityDiv.innerHTML = `
-      <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#F5C842;margin-bottom:6px;">⚡ Analyse qualité rush</div>
-      ${silences.length ? `<span style="color:var(--muted)">🔇 ${silences.length} silence${silences.length>1?'s':''} > 1.5s</span> &nbsp;` : ''}
-      ${hesitations.length ? `<span style="color:var(--muted)">💬 ${hesitations.length} hésitation${hesitations.length>1?'s':''}</span> &nbsp;` : ''}
-      ${repetitions.length ? `<span style="color:var(--muted)">🔁 ${repetitions.length} répétition${repetitions.length>1?'s':''}</span> &nbsp;` : ''}
-      ${corrections.length ? `<span style="color:var(--muted)">✂️ ${corrections.length} correction${corrections.length>1?'s':''} mid-phrase</span>` : ''}
-      <div style="margin-top:6px;color:rgba(255,255,255,0.5);font-size:10px;">L'IA en tiendra compte dans l'analyse — les segments propres seront privilégiés.</div>
-    `;
-    preview.parentNode.insertBefore(qualityDiv, preview.nextSibling);
+  const preview = document.getElementById('srtPreview');
+  const oldBar = document.getElementById('rushQualityBar');
+  if (oldBar) oldBar.remove();
+
+  const qualityDiv = document.createElement('div');
+  qualityDiv.id = 'rushQualityBar';
+  qualityDiv.style.cssText = 'margin-top:10px;padding:10px 14px;background:rgba(245,200,66,0.07);border:1px solid rgba(245,200,66,0.25);border-radius:3px;font-size:11px;line-height:1.9;';
+  qualityDiv.innerHTML = `
+    <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#F5C842;margin-bottom:6px;">⚡ Analyse qualité rush</div>
+    ${silences.length ? `<span style="color:var(--muted)">🔇 ${silences.length} silence${silences.length>1?'s':''} > 1.5s</span> &nbsp;` : ''}
+    ${hesitations.length ? `<span style="color:var(--muted)">💬 ${hesitations.length} hésitation${hesitations.length>1?'s':''}</span> &nbsp;` : ''}
+    ${repetitions.length ? `<span style="color:var(--muted)">🔁 ${repetitions.length} répétition${repetitions.length>1?'s':''}</span> &nbsp;` : ''}
+    ${corrections.length ? `<span style="color:var(--muted)">✂️ ${corrections.length} correction${corrections.length>1?'s':''} mid-phrase</span>` : ''}
+    <span id="audioQualityBadge" style="color:var(--muted2);font-size:10px;">🎙 Analyse audio en cours...</span>
+    <div style="margin-top:6px;color:rgba(255,255,255,0.5);font-size:10px;">RUSHUP.AI en tiendra compte — les segments propres seront privilégiés.</div>
+  `;
+  if (preview) preview.parentNode.insertBefore(qualityDiv, preview.nextSibling);
+
+  // Lance l'analyse audio réelle si MP3 disponible
+  if (window._audioFile) analyzeAudioQuality(window._audioFile);
+}
+
+// ── V5.5 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
+async function analyzeAudioQuality(file) {
+  const badge = document.getElementById('audioQualityBadge');
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    audioCtx.close();
+
+    const channelData = audioBuffer.getChannelData(0); // canal gauche
+    const sampleRate = audioBuffer.sampleRate;
+    const chunkSize = Math.floor(sampleRate * 0.1); // analyse par chunks de 100ms
+
+    let trueSilences = [];    // silences détectés par décibels
+    let saturations = [];     // saturation (clipping)
+    let noisyZones = [];      // bruit de fond élevé
+
+    const SILENCE_THRESHOLD = 0.015;  // amplitude < 1.5% = silence
+    const SATURATION_THRESHOLD = 0.97; // amplitude > 97% = saturation
+    const NOISE_THRESHOLD = 0.04;      // bruit de fond > 4%
+
+    let silenceStart = null;
+
+    for (let i = 0; i < channelData.length; i += chunkSize) {
+      const chunk = channelData.slice(i, i + chunkSize);
+      const startSec = i / sampleRate;
+
+      // RMS du chunk
+      let sum = 0;
+      let maxAmp = 0;
+      for (let j = 0; j < chunk.length; j++) {
+        sum += chunk[j] * chunk[j];
+        maxAmp = Math.max(maxAmp, Math.abs(chunk[j]));
+      }
+      const rms = Math.sqrt(sum / chunk.length);
+
+      // Détection silences réels
+      if (rms < SILENCE_THRESHOLD) {
+        if (silenceStart === null) silenceStart = startSec;
+      } else {
+        if (silenceStart !== null) {
+          const dur = startSec - silenceStart;
+          if (dur > 0.8) { // silence > 800ms = significatif
+            trueSilences.push({ start: silenceStart, end: startSec, dur });
+          }
+          silenceStart = null;
+        }
+      }
+
+      // Détection saturation
+      if (maxAmp >= SATURATION_THRESHOLD) {
+        saturations.push({ tc: secToSRTTC(startSec), sec: startSec });
+      }
+    }
+
+    // Stocke dans rushQuality
+    if (rushQuality) {
+      rushQuality.audioAnalysis = { trueSilences, saturations };
+    }
+
+    // Tague les blocs SRT avec les problèmes audio
+    if (trueSilences.length > 0) {
+      parsedSRT.forEach(block => {
+        const hasSilenceInBlock = trueSilences.some(s =>
+          s.start >= block.startSec && s.start <= block.endSec
+        );
+        if (hasSilenceInBlock) block._hasTrueSilence = true;
+
+        const hasSaturation = saturations.some(s =>
+          s.sec >= block.startSec && s.sec <= block.endSec
+        );
+        if (hasSaturation) block._hasSaturation = true;
+      });
+    }
+
+    // Met à jour le badge
+    if (badge) {
+      const issues = [];
+      if (trueSilences.length > 0) issues.push(`🔇 ${trueSilences.length} silence${trueSilences.length>1?'s':''} réel${trueSilences.length>1?'s':''}`);
+      if (saturations.length > 0) issues.push(`⚡ ${saturations.length} saturation${saturations.length>1?'s':''}`);
+      badge.style.color = issues.length > 0 ? '#F55252' : '#4BC97A';
+      badge.textContent = issues.length > 0
+        ? '🎙 ' + issues.join(' · ')
+        : '🎙 Audio propre';
+    }
+
+    // Re-render le viewer SRT avec les nouvelles infos audio
+    renderSRTViewer();
+
+  } catch(e) {
+    console.warn('Analyse audio échouée:', e);
+    if (badge) { badge.style.color = 'var(--muted2)'; badge.textContent = '🎙 Analyse audio indisponible'; }
   }
 }
 
-// ── V5.3 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
+// ── V5.5 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
 let _srtSelection = null; // { startIdx, endIdx, startSec, endSec, text }
 
 function renderSRTViewer() {
@@ -2057,8 +2358,14 @@ function renderSRTViewer() {
       const wordLower = part.toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
       const isFiller = fillerRx.test(part); fillerRx.lastIndex = 0;
       const isRepeated = repeatedWords.has(wordLower);
-      const cls = isFiller ? 'srt-word filler' : isRepeated ? 'srt-word repeated' : 'srt-word';
-      html += `<span class="${cls}" data-block="${blockIdx}" data-part="${partIdx}">${part}</span>`;
+      const blockHasSilence = block._hasTrueSilence;
+      const blockHasSat = block._hasSaturation;
+      let cls = 'srt-word';
+      if (isFiller) cls += ' filler';
+      else if (isRepeated) cls += ' repeated';
+      if (blockHasSilence) cls += ' has-silence';
+      if (blockHasSat) cls += ' has-saturation';
+      html += `<span class="${cls}" data-block="${blockIdx}" data-part="${partIdx}" title="${blockHasSilence ? '🔇 Silence détecté' : ''}${blockHasSat ? ' ⚡ Saturation' : ''}">${part}</span>`;
     });
     html += ' ';
   });
@@ -2596,7 +2903,7 @@ function calcPerfScore(channelKey, segments, accroches, totalSec) {
   };
 }
 
-// ── V5.3 — REVALIDATION CLAUDE ───────────────────────────────────────────────
+// ── V5.5 — REVALIDATION CLAUDE ───────────────────────────────────────────────
 // Détecte les répétitions dans un texte (mots > 3 lettres répétés)
 function detectRepetitionsInText(text) {
   const repetitions = [];
@@ -2766,7 +3073,7 @@ async function runStep3() {
       await runModeC(key);
     }
 
-    // ── V5.3 — Revalidation Claude ──────────────────────────────────────────
+    // ── V5.5 — Revalidation Claude ──────────────────────────────────────────
     if (rawResult) {
       btn.querySelector('.btn-text').textContent = '⚙️ Revalidation…';
       rawResult = await revalidateResult(key, rawResult);
@@ -2796,13 +3103,17 @@ async function runModeA(key, angle) {
   Type d'accroche recommandé : "${HOOK_TYPES[cfg.hookType]}"`;
   }).join('\n\n');
 
+  const audioData = rushQuality && rushQuality.audioAnalysis;
   const qualityContext = rushQuality ? `
 ANALYSE QUALITÉ DU RUSH (détectée automatiquement) :
-- ${rushQuality.silences.length} silence(s) > 1.5s détecté(s)
+- ${rushQuality.silences.length} silence(s) SRT > 1.5s détecté(s)
 - ${rushQuality.hesitations.length} hésitation(s) détectée(s) (euh, hm, du coup...)
 - ${rushQuality.repetitions.length} répétition(s) de mots détectée(s)
 - ${rushQuality.corrections.length} correction(s) mid-phrase détectée(s)
-Pour chaque segment sélectionné, PRIVILÉGIE les passages sans ces défauts. Si un passage contient des hésitations ou silences mais est le seul disponible sur un sujet clé, sélectionne-le et indique-le dans les warnings.
+${audioData ? `ANALYSE AUDIO RÉELLE (Web Audio API) :
+- ${audioData.trueSilences.length} silence(s) réel(s) détecté(s) par niveau sonore
+- ${audioData.saturations.length} saturation(s) audio détectée(s)` : ''}
+Pour chaque segment sélectionné, PRIVILÉGIE les passages sans ces défauts. Évite les passages avec saturations ou silences audio réels. Si un passage problématique est le seul disponible sur un sujet clé, sélectionne-le et indique-le dans les warnings.
 ` : '';
 
   const prompt = `Tu es un monteur-journaliste expert qui travaille pour plusieurs plateformes simultanément.
@@ -3649,6 +3960,7 @@ function buildChannelResultHTML(ch, data, cfg) {
         ${hasWarn ? `<div class="seg-warning-detail">⚠ ${seg.warnings.join(' · ')}</div>` : ''}
       </div>
       <div class="seg-meta">
+        <button class="seg-play-btn" onclick="playSegment('${ch}',${i})" title="Écouter ce passage">▶</button>
         <button class="seg-delete" onclick="deleteSegment('${ch}', ${i})" title="Supprimer ce segment">✕</button>
         <div class="seg-dur">${secToMin(dur)}</div>
         <div class="seg-score-dots">${dots}</div>
@@ -3874,7 +4186,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.3 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.5 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
@@ -4102,7 +4414,7 @@ function exportXML(ch) {
     return;
   }
   const cfg = CHANNEL_CONFIG[ch];
-  const fps = 25;
+  const fps = sequenceFPS || 25;
   const rushName = (currentFilename || 'rush').replace(/\.srt$/i, '').replace(/\.txt$/i, '');
   const seqName = rushName + " — " + cfg.name + " — " + new Date().toLocaleDateString('fr');
 
