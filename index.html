@@ -1189,7 +1189,10 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
             onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
         </div>
         <div id="whisperStatus" style="display:none;margin-top:12px;padding:12px 16px;background:rgba(151,71,255,0.06);border:1px solid rgba(151,71,255,0.2);border-radius:3px;font-size:12px;line-height:1.8;">
-          <div id="whisperStatusText" style="color:var(--accent);">⏳ Transcription en cours...</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div id="whisperStatusText" style="color:var(--accent);">⏳ Transcription en cours...</div>
+            <button onclick="resetAudio()" title="Changer de fichier audio" style="background:transparent;border:1px solid var(--border);border-radius:3px;padding:3px 10px;color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.color='var(--red)';this.style.borderColor='var(--red)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">✕ Changer</button>
+          </div>
           <div style="margin-top:6px;color:var(--muted);font-size:11px;">Whisper analyse l'audio — environ 30-60 secondes pour 30 minutes de rush</div>
         </div>
       </div>
@@ -1665,7 +1668,35 @@ function fileToBase64(file) {
   });
 }
 
-// ── REFORMATAGE SRT : 25 caractères max / 1 ligne (style Premiere Pro) ─────
+// ── RESET AUDIO ───────────────────────────────────────────────────────────────
+function resetAudio() {
+  const audioInput = document.getElementById('audioFile');
+  if (audioInput) audioInput.value = '';
+
+  const dz = document.getElementById('dropZoneAudio');
+  if (dz) {
+    dz.querySelector('.drop-main').textContent = 'Déposer le fichier MP3 ici';
+    dz.querySelector('.drop-sub').textContent = 'MP3 uniquement · max 25 Mo · 64-128 kbps recommandé · ~30 min de rush';
+  }
+
+  const statusDiv = document.getElementById('whisperStatus');
+  if (statusDiv) statusDiv.style.display = 'none';
+
+  const ctx = document.getElementById('whisperContext');
+  if (ctx) ctx.value = '';
+
+  parsedSRT = [];
+  const viewer = document.getElementById('srtViewer');
+  if (viewer) viewer.classList.remove('visible');
+  const preview = document.getElementById('srtPreview');
+  if (preview) { preview.innerHTML = ''; preview.classList.remove('visible'); }
+  const statsRow = document.getElementById('statsRow');
+  if (statsRow) statsRow.classList.remove('visible');
+  const qualBar = document.getElementById('rushQualityBar');
+  if (qualBar) qualBar.remove();
+}
+
+
 function reformatSRT(srtText, maxChars = 25) {
   const blocks = srtText.trim().split(/\n\s*\n/);
   const result = [];
@@ -3906,13 +3937,13 @@ function exportSegmentSRTs(ch) {
   });
 }
 
-function exportSequenceSRT(ch) {
+function exportSequenceSRT(ch, silent) {
   if (!window._lastChannelResults || !window._lastChannelResults[ch]) return;
   // Use current segments (may have been edited/deleted by user)
   const chData = window._lastChannelResults[ch];
   const segs = (chData && chData.segments) ? chData.segments : [];
   if (!segs.length) {
-    alert("Aucun segment dans cette sélection. Relance une analyse.");
+    if (!silent) alert("Aucun segment dans cette sélection. Relance une analyse.");
     return;
   }
 
@@ -3962,7 +3993,8 @@ function exportSequenceSRT(ch) {
     timelineOffset += segDur;
   });
 
-  download('sequence_' + ch + '_subtitles.srt', srt, 'text/plain');
+  const dateStr = new Date().toISOString().slice(0,10);
+  download('sequence_' + ch + '_subtitles_' + dateStr + '.srt', srt, 'text/plain');
 }
 
 function secToSRTTC(sec) {
@@ -4256,7 +4288,11 @@ function exportXML(ch) {
     alert(`⚠ ${missingSources.length} segment(s) ignoré(s) — source introuvable :\n${missingSources.join('\n')}\n\nVérifie que les fichiers source sont déclarés dans l'étape 00 avec les bonnes durées.`);
   }
 
-  download("sequence_" + ch + "_" + new Date().toISOString().slice(0,10) + ".xml", xml, "text/xml");
+  const dateStr = new Date().toISOString().slice(0,10);
+  download("sequence_" + ch + "_" + dateStr + ".xml", xml, "text/xml");
+
+  // Déclenche aussi le SRT séquence automatiquement
+  setTimeout(() => exportSequenceSRT(ch, true), 300);
 }
 
 // ── HISTORY ───────────────────────────────────────────────────────────────────
