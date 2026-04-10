@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.6</title>
+<title>RUSHUP.AI V5.7</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
@@ -249,7 +249,7 @@ header {
 .srt-preview.visible { display: block; }
 .srt-preview .tc { color: #9F58F5; }
 
-/* ── V5.6 SRT VIEWER INTERACTIF ── */
+/* ── V5.7 SRT VIEWER INTERACTIF ── */
 .srt-viewer {
   margin-top: 12px;
   border: 1px solid var(--border);
@@ -1254,7 +1254,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <body>
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.6</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.7</span></div>
   <div class="header-right">
     <button class="hist-btn" onclick="openHistory()">⏱ Historique</button>
   </div>
@@ -1399,7 +1399,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         <div class="stat"><div class="stat-val" id="stTakes">—</div><div class="stat-lbl">Prises est.</div></div>
       </div>
       <div class="srt-preview" id="srtPreview"></div>
-      <!-- V5.6 — SRT Viewer interactif -->
+      <!-- V5.7 — SRT Viewer interactif -->
       <div class="srt-viewer" id="srtViewer">
         <div class="srt-viewer-header">
           <span>📄 Transcript complet — surligne pour créer un segment</span>
@@ -1825,9 +1825,10 @@ async function transcribeWithWhisper(file) {
     const formData = new FormData();
     formData.append('file', file, file.name);
     formData.append('model', 'whisper-1');
-    formData.append('response_format', 'srt');
+    formData.append('response_format', 'verbose_json'); // V5.7 — word timestamps mot par mot
+    formData.append('timestamp_granularities[]', 'word');
     formData.append('language', 'fr');
-    formData.append('temperature', '0'); // Réduit les hallucinations
+    formData.append('temperature', '0');
 
     // Contexte optionnel — guide Whisper et réduit les hallucinations
     const contextInput = document.getElementById('whisperContext');
@@ -1835,7 +1836,6 @@ async function transcribeWithWhisper(file) {
     if (contextVal) {
       formData.append('prompt', contextVal);
     } else {
-      // Prompt par défaut anti-hallucination
       formData.append('prompt', 'Transcription fidèle d\'une interview ou d\'un discours en français. Ne pas répéter les phrases. Transcrire exactement ce qui est dit.');
     }
 
@@ -1850,13 +1850,28 @@ async function transcribeWithWhisper(file) {
       throw new Error(`OpenAI Whisper error: ${err}`);
     }
 
-    const srtRaw = await response.text();
-    // Reformatage 25 caractères max / 1 ligne — style Premiere Pro
-    const srtText = reformatSRT(srtRaw, 25);
-    statusText.style.color = 'var(--green)';
-    statusText.textContent = '✅ Transcription terminée !';
-    try { localStorage.setItem('rushai_whisper_srt', srtText); } catch(e) {}
-    parseSRT(srtText, file.name);
+    const jsonData = await response.json();
+
+    // V5.7 — Construit parsedSRT mot par mot depuis word timestamps
+    statusText.textContent = '⚙️ Traitement des timecodes mot par mot...';
+
+    // Stocke les données brutes
+    window._whisperWords = (jsonData.words && jsonData.words.length) ? jsonData.words : [];
+    window._whisperSegments = jsonData.segments || [];
+
+    const wordSRT = buildWordTimestampSRT(jsonData);
+
+    const wordCount = window._whisperWords.length;
+    if (wordCount > 0) {
+      statusText.style.color = 'var(--green)';
+      statusText.textContent = '✅ Transcription terminée — ' + wordCount + ' mots alignés mot par mot !';
+    } else {
+      // Fallback — pas de word timestamps dans la réponse
+      statusText.style.color = 'var(--green)';
+      statusText.textContent = '✅ Transcription terminée — alignement par segments';
+    }
+    try { localStorage.setItem('rushai_whisper_srt', wordSRT); } catch(e) {}
+    parseSRT(wordSRT, file.name);
   } catch(err) {
     statusText.style.color = 'var(--red)';
     statusText.textContent = '❌ Erreur : ' + err.message;
@@ -1871,6 +1886,158 @@ function fileToBase64(file) {
     r.onerror = reject;
     r.readAsDataURL(file);
   });
+}
+
+// ── V5.7 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
+function buildWordTimestampSRT(jsonData, maxChars) {
+  maxChars = maxChars || 25;
+  const words = jsonData.words || [];
+  if (!words.length) {
+    // Fallback : si pas de word timestamps, utilise les segments
+    return buildSRTFromSegments(jsonData.segments || [], maxChars);
+  }
+
+  // Groupe les mots en blocs de maxChars avec leurs vrais timecodes
+  const blocks = [];
+  let currentText = '';
+  let currentStart = null;
+  let currentEnd = null;
+
+  words.forEach((w, i) => {
+    const word = (w.word || '').trim();
+    if (!word) return;
+
+    const wordStart = w.start || 0;
+    const wordEnd = w.end || wordStart + 0.1;
+
+    if (currentStart === null) currentStart = wordStart;
+
+    const test = currentText ? currentText + ' ' + word : word;
+
+    if (test.length <= maxChars) {
+      currentText = test;
+      currentEnd = wordEnd;
+    } else {
+      // Flush le bloc courant
+      if (currentText) {
+        blocks.push({
+          text: currentText,
+          start: currentStart,
+          end: currentEnd,
+          startSec: currentStart,
+          endSec: currentEnd
+        });
+      }
+      currentText = word;
+      currentStart = wordStart;
+      currentEnd = wordEnd;
+    }
+  });
+
+  // Dernier bloc
+  if (currentText) {
+    blocks.push({
+      text: currentText,
+      start: currentStart,
+      end: currentEnd,
+      startSec: currentStart,
+      endSec: currentEnd
+    });
+  }
+
+  // Génère le SRT
+  return blocks.map((b, i) =>
+    `${i+1}\n${secToSRTTC(b.start)} --> ${secToSRTTC(b.end)}\n${b.text}`
+  ).join('\n\n');
+}
+
+function buildSRTFromSegments(segments, maxChars) {
+  // Fallback quand word timestamps pas disponibles
+  maxChars = maxChars || 25;
+  let idx = 1;
+  let srt = '';
+  segments.forEach(seg => {
+    const text = seg.text || '';
+    const dur = (seg.end || 0) - (seg.start || 0);
+    const words2 = text.trim().split(' ');
+    let chunk = '';
+    let chunkStart = seg.start || 0;
+    const secPerWord = dur / Math.max(1, words2.length);
+
+    words2.forEach((w, wi) => {
+      const test = chunk ? chunk + ' ' + w : w;
+      if (test.length <= maxChars) {
+        chunk = test;
+      } else {
+        if (chunk) {
+          const chunkEnd = chunkStart + wi * secPerWord;
+          srt += `${idx}\n${secToSRTTC(chunkStart)} --> ${secToSRTTC(chunkEnd)}\n${chunk}\n\n`;
+          idx++;
+          chunkStart = chunkEnd;
+        }
+        chunk = w;
+      }
+    });
+    if (chunk) {
+      srt += `${idx}\n${secToSRTTC(chunkStart)} --> ${secToSRTTC(seg.end || 0)}\n${chunk}\n\n`;
+      idx++;
+    }
+  });
+  return srt;
+}
+
+// Trouve le timecode exact d'un mot dans _whisperWords
+function findWordTimecode(wordText, afterSec) {
+  if (!window._whisperWords || !window._whisperWords.length) return null;
+  afterSec = afterSec || 0;
+  const target = wordText.toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
+  for (const w of window._whisperWords) {
+    if (w.start < afterSec) continue;
+    const wt = (w.word || '').toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
+    if (wt === target || wt.includes(target) || target.includes(wt)) {
+      return { start: w.start, end: w.end };
+    }
+  }
+  return null;
+}
+
+// Trouve les timecodes exacts d'un passage textuel dans _whisperWords
+function findPassageTimecodes(text, afterSec) {
+  if (!window._whisperWords || !window._whisperWords.length) return null;
+  afterSec = afterSec || 0;
+
+  const passageWords = text.toLowerCase()
+    .replace(/[^a-zàâéèêëîïôùûü\s]/g, '')
+    .split(/\s+/)
+    .filter(w => w.length > 1);
+
+  if (!passageWords.length) return null;
+
+  // Cherche la première occurrence du premier mot après afterSec
+  const firstWord = passageWords[0];
+  const lastWord = passageWords[passageWords.length - 1];
+
+  let startTime = null, endTime = null;
+
+  for (let i = 0; i < window._whisperWords.length; i++) {
+    const w = window._whisperWords[i];
+    if (w.start < afterSec) continue;
+    const wt = (w.word || '').toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
+    if (wt.includes(firstWord) || firstWord.includes(wt)) {
+      startTime = w.start;
+      // Cherche le dernier mot dans les X mots suivants
+      for (let j = i; j < Math.min(i + passageWords.length + 5, window._whisperWords.length); j++) {
+        const w2 = window._whisperWords[j];
+        const wt2 = (w2.word || '').toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
+        if (wt2.includes(lastWord) || lastWord.includes(wt2)) {
+          endTime = w2.end;
+        }
+      }
+      if (endTime) break;
+    }
+  }
+
+  return startTime !== null && endTime !== null ? { start: startTime, end: endTime } : null;
 }
 
 // ── LECTEUR AUDIO V5.1 ───────────────────────────────────────────────────────
@@ -2005,6 +2172,12 @@ function resetAudio() {
   if (ctx) ctx.value = '';
 
   parsedSRT = [];
+  window._whisperWords = [];
+  window._whisperSegments = [];
+  window._audioFile = null;
+  window._openaiKey = null;
+  _waveformData = null;
+  _waveformView = null;
   const viewer = document.getElementById('srtViewer');
   if (viewer) viewer.classList.remove('visible');
   const preview = document.getElementById('srtPreview');
@@ -2273,7 +2446,7 @@ function parseSRT(text, filename) {
   ).join('') + `<span style="color:var(--muted2)">... ${parsedSRT.length-5} blocs de plus</span>`;
   preview.classList.add('visible');
 
-  // V5.6 — Affiche le viewer SRT interactif complet
+  // V5.7 — Affiche le viewer SRT interactif complet
   renderSRTViewer();
 
   dz.querySelector('.drop-main').textContent = '✓ ' + filename;
@@ -2340,7 +2513,7 @@ function analyzeRushQuality() {
   if (window._audioFile) analyzeAudioQuality(window._audioFile);
 }
 
-// ── V5.6 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
+// ── V5.7 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
 async function analyzeAudioQuality(file) {
   const badge = document.getElementById('audioQualityBadge');
   try {
@@ -2443,7 +2616,7 @@ async function analyzeAudioQuality(file) {
   }
 }
 
-// ── V5.6 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
+// ── V5.7 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
 let _srtSelection = null; // { startIdx, endIdx, startSec, endSec, text }
 
 function renderSRTViewer() {
@@ -2524,17 +2697,28 @@ function onSRTSelection() {
   const text = parsedSRT.slice(from, to + 1).map(b => b.text).join(' ');
   const dur = endSec - startSec;
 
+  // V5.7 — Affine avec word timestamps si disponibles
+  let adjStartSec = startSec;
+  let adjEndSec = endSec;
+  if (window._whisperWords && window._whisperWords.length) {
+    const exactTC = findPassageTimecodes(text, Math.max(0, startSec - 1));
+    if (exactTC) {
+      adjStartSec = exactTC.start;
+      adjEndSec = exactTC.end;
+    }
+  }
+
   _srtSelection = {
     startIdx: from, endIdx: to,
-    startTC: parsedSRT[from].start, endTC: parsedSRT[to].end,
-    startSec, endSec, text, dur,
-    adjustedStartSec: startSec, adjustedEndSec: endSec
+    startTC: secToSRTTC(adjStartSec), endTC: secToSRTTC(adjEndSec),
+    startSec: adjStartSec, endSec: adjEndSec, text, dur: adjEndSec - adjStartSec,
+    adjustedStartSec: adjStartSec, adjustedEndSec: adjEndSec
   };
 
   const bar = document.getElementById('srtSelectionBar');
   const info = document.getElementById('srtSelectionInfo');
   bar.classList.add('visible');
-  info.innerHTML = `<span style="color:var(--accent);">${parsedSRT[from].start} → ${parsedSRT[to].end}</span> · ${Math.round(dur)}s · "${text.slice(0, 50)}${text.length > 50 ? '…' : ''}"`;
+  info.innerHTML = `<span style="color:var(--accent);">${secToSRTTC(adjStartSec)} → ${secToSRTTC(adjEndSec)}</span> · ${Math.round(adjEndSec - adjStartSec)}s · "${text.slice(0, 50)}${text.length > 50 ? '…' : ''}"${window._whisperWords && window._whisperWords.length ? ' <span style="color:var(--green);font-size:9px;">● mot par mot</span>' : ''}`;
 
   // Avertissement multi-blocs
   const warning = document.getElementById('waveformWarning');
@@ -2877,6 +3061,14 @@ async function smartCutSegment(ch, idx) {
       audioEnergy = measureSegmentEnergy(startSec, endSec);
     }
 
+    // Récupère les word timestamps du segment pour enrichir le contexte
+    const segWords = window._whisperWords
+      ? window._whisperWords.filter(w => w.start >= startSec - 0.2 && w.end <= endSec + 0.2)
+      : [];
+    const wordTimestampsContext = segWords.length > 0
+      ? `\nWORD TIMESTAMPS (timecodes précis de chaque mot) :\n${segWords.map(w => `${w.word} [${w.start.toFixed(2)}s-${w.end.toFixed(2)}s]`).join(', ')}`
+      : '';
+
     // Appel Claude pour sélection intelligente
     const contextBefore = parsedSRT.filter(b => b.endSec <= startSec).slice(-3).map(b => b.text).join(' ');
     const contextAfter = parsedSRT.filter(b => b.startSec >= endSec).slice(0, 3).map(b => b.text).join(' ');
@@ -2892,18 +3084,18 @@ CONTEXTE AVANT CE SEGMENT :
 CONTEXTE APRÈS CE SEGMENT :
 "${contextAfter}"
 
-${audioEnergy ? `ÉNERGIE VOCALE MESURÉE : ${audioEnergy.toFixed(3)} (amplitude RMS — plus élevé = plus d'énergie/enthousiasme)` : ''}
+${audioEnergy ? `ÉNERGIE VOCALE MESURÉE : ${audioEnergy.toFixed(3)} (amplitude RMS — plus élevé = plus d'énergie/enthousiasme)` : ''}${wordTimestampsContext}
 
 MISSION :
 1. Identifie les répétitions dans ce segment
-2. Garde la version la plus cohérente avec le contexte avant/après
-3. Si plusieurs versions sont disponibles, privilégie celle avec le plus d'énergie vocale
+2. Garde LA VERSION EXACTE qui existe dans le texte original — ne reformule pas, ne résume pas
+3. Si plusieurs occurrences, privilégie celle avec le plus d'énergie vocale (timecodes les plus tardifs = souvent plus posée)
 4. Supprime les hésitations, corrections mid-phrase, répétitions inutiles
-5. Garde le sens complet
+5. Le cleanText doit être une SOUS-CHAÎNE EXACTE du texte original
 
 Réponds UNIQUEMENT en JSON :
 {
-  "cleanText": "texte nettoyé",
+  "cleanText": "texte nettoyé — doit être une portion exacte du texte original",
   "removed": "ce qui a été supprimé",
   "reason": "pourquoi cette version"
 }`;
@@ -2938,15 +3130,33 @@ Réponds UNIQUEMENT en JSON :
       // Stocke l'original pour restauration
       if (!seg._original) seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
 
-      // Recalcule le timecode proportionnellement au texte conservé
-      const originalWords = seg.text.split(' ').length;
-      const cleanWords = result.cleanText.split(' ').length;
-      const ratio = cleanWords / Math.max(1, originalWords);
-      const newDur = (seg.duration_sec || (endSec - startSec)) * ratio;
-      const newEndSec = startSec + newDur;
+      // V5.7 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
+      let newStartSec = startSec;
+      let newEndSec = endSec;
+      let tcSource = 'proportionnel';
 
-      seg.text = result.cleanText;
+      if (window._whisperWords && window._whisperWords.length) {
+        const exactTC = findPassageTimecodes(result.cleanText, startSec - 0.5);
+        if (exactTC && exactTC.start >= startSec - 1 && exactTC.end <= endSec + 1) {
+          newStartSec = exactTC.start;
+          newEndSec = exactTC.end;
+          tcSource = 'mot par mot ✓';
+        }
+      }
+
+      // Fallback proportionnel si word timestamps pas disponibles
+      if (tcSource === 'proportionnel') {
+        const originalWords = seg.text.split(' ').length;
+        const cleanWords = result.cleanText.split(' ').length;
+        const ratio = cleanWords / Math.max(1, originalWords);
+        newEndSec = startSec + (seg.duration_sec || (endSec - startSec)) * ratio;
+      }
+
+      const newDur = Math.max(0.1, newEndSec - newStartSec);
+
+      seg.start = secToSRTTC(newStartSec);
       seg.end = secToSRTTC(newEndSec);
+      seg.text = result.cleanText;
       seg.duration_sec = newDur;
       seg._trimmed = true;
       seg._smartCut = true;
@@ -2962,8 +3172,7 @@ Réponds UNIQUEMENT en JSON :
         setTimeout(() => updateQualityBar(ch), 50);
       }
 
-      // Toast de confirmation
-      showToast('✂️ Segment nettoyé — ' + result.removed);
+      showToast('✂️ Nettoyé — timecodes ' + tcSource + ' · ' + secToSRTTC(newStartSec) + ' → ' + secToSRTTC(newEndSec));
     }
 
   } catch(e) {
@@ -3068,25 +3277,31 @@ function onSegTextSelection(e, ch, idx) {
   const segEndSec = tcToSec((seg.end || '').replace(',', '.'));
   const totalDur = segEndSec - segStartSec;
 
-  // Cherche les vrais timecodes dans parsedSRT pour cette plage
-  const segBlocks = parsedSRT.filter(b => b.startSec >= segStartSec - 0.3 && b.endSec <= segEndSec + 0.3);
+  // V5.7 — Cherche d'abord dans les word timestamps précis
   let newStartSec = segStartSec + (start / Math.max(1, fullText.length)) * totalDur;
   let newEndSec = segStartSec + (end / Math.max(1, fullText.length)) * totalDur;
 
-  if (segBlocks.length > 0) {
-    // Trouve le bloc SRT dont le texte contient le début de la sélection
-    const selStart = selectedText.slice(0, 12).toLowerCase().replace(/[^a-zà-ÿ]/g, '');
-    const selEnd = selectedText.slice(-12).toLowerCase().replace(/[^a-zà-ÿ]/g, '');
-    let foundStart = false, foundEnd = false;
-    for (const block of segBlocks) {
-      const bt = block.text.toLowerCase().replace(/[^a-zà-ÿ\s]/g, '');
-      if (!foundStart && selStart.length > 4 && bt.includes(selStart.slice(0,8))) {
-        newStartSec = block.startSec;
-        foundStart = true;
-      }
-      if (selEnd.length > 4 && bt.includes(selEnd.slice(-8))) {
-        newEndSec = block.endSec;
-        foundEnd = true;
+  if (window._whisperWords && window._whisperWords.length) {
+    const exactTC = findPassageTimecodes(selectedText, segStartSec - 0.5);
+    if (exactTC) {
+      newStartSec = exactTC.start;
+      newEndSec = exactTC.end;
+    }
+  } else {
+    // Fallback blocs SRT
+    const segBlocks = parsedSRT.filter(b => b.startSec >= segStartSec - 0.3 && b.endSec <= segEndSec + 0.3);
+    if (segBlocks.length > 0) {
+      const selStart = selectedText.slice(0, 12).toLowerCase().replace(/[^a-zà-ÿ]/g, '');
+      const selEnd = selectedText.slice(-12).toLowerCase().replace(/[^a-zà-ÿ]/g, '');
+      let foundStart = false, foundEnd = false;
+      for (const block of segBlocks) {
+        const bt = block.text.toLowerCase().replace(/[^a-zà-ÿ\s]/g, '');
+        if (!foundStart && selStart.length > 4 && bt.includes(selStart.slice(0,8))) {
+          newStartSec = block.startSec; foundStart = true;
+        }
+        if (selEnd.length > 4 && bt.includes(selEnd.slice(-8))) {
+          newEndSec = block.endSec; foundEnd = true;
+        }
       }
     }
   }
@@ -3148,6 +3363,206 @@ function restoreSegment(ch, idx) {
     panel.innerHTML = buildChannelResultHTML(ch, chData, CHANNEL_CONFIG[ch]);
     setTimeout(() => updateQualityBar(ch), 50);
   }
+}
+
+// ── WAVEFORM INLINE SUR SEGMENT ───────────────────────────────────────────────
+let _segWaveformState = {}; // { 'ch-idx': { viewStart, viewEnd, selStart, selEnd } }
+
+async function toggleSegWaveform(ch, idx) {
+  const wfDiv = document.getElementById('seg-waveform-' + ch + '-' + idx);
+  if (!wfDiv) return;
+
+  if (wfDiv.style.display !== 'none') {
+    wfDiv.style.display = 'none';
+    return;
+  }
+
+  if (!window._audioFile) {
+    showToast('⚠ Charge un MP3 d\'abord pour affiner avec la waveform.');
+    return;
+  }
+
+  wfDiv.style.display = 'block';
+
+  const seg = window._lastChannelResults && window._lastChannelResults[ch] && window._lastChannelResults[ch].segments[idx];
+  if (!seg) return;
+
+  const startSec = tcToSec((seg.start || '').replace(',', '.'));
+  const endSec = tcToSec((seg.end || '').replace(',', '.'));
+
+  // Charge waveform data si pas encore fait
+  if (!_waveformData) {
+    try {
+      const arrayBuffer = await window._audioFile.arrayBuffer();
+      const actx = new (window.AudioContext || window.webkitAudioContext)();
+      const audioBuf = await actx.decodeAudioData(arrayBuffer);
+      actx.close();
+      _waveformData = audioBuf.getChannelData(0);
+      _waveformSampleRate = audioBuf.sampleRate;
+    } catch(e) { return; }
+  }
+
+  const margin = Math.min(1.5, startSec);
+  const totalDur = _waveformData.length / _waveformSampleRate;
+  const viewStart = Math.max(0, startSec - margin);
+  const viewEnd = Math.min(totalDur, endSec + margin);
+
+  _segWaveformState[ch + '-' + idx] = {
+    viewStart, viewEnd, selStart: startSec, selEnd: endSec
+  };
+
+  drawSegWaveform(ch, idx);
+  setupSegWaveformDrag(ch, idx);
+
+  // Timecodes
+  document.getElementById('seg-wf-tcin-' + ch + '-' + idx).textContent = secToSRTTC(startSec).replace(',', '.');
+  document.getElementById('seg-wf-tcout-' + ch + '-' + idx).textContent = secToSRTTC(endSec).replace(',', '.');
+}
+
+function drawSegWaveform(ch, idx) {
+  const state = _segWaveformState[ch + '-' + idx];
+  if (!state || !_waveformData) return;
+  const canvas = document.getElementById('seg-wf-canvas-' + ch + '-' + idx);
+  if (!canvas) return;
+
+  const { viewStart, viewEnd, selStart, selEnd } = state;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  if (rect.width === 0) return;
+  canvas.width = Math.floor(rect.width * dpr);
+  canvas.height = 40 * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = '40px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = 40;
+
+  const startSample = Math.floor(viewStart * _waveformSampleRate);
+  const endSample = Math.min(Math.floor(viewEnd * _waveformSampleRate), _waveformData.length);
+  const samplesPerPx = (endSample - startSample) / W;
+
+  ctx.fillStyle = 'rgba(24,24,38,0.95)';
+  ctx.fillRect(0, 0, W, H);
+
+  const selStartPct = Math.max(0, (selStart - viewStart) / (viewEnd - viewStart));
+  const selEndPct = Math.min(1, (selEnd - viewStart) / (viewEnd - viewStart));
+  ctx.fillStyle = 'rgba(151,71,255,0.12)';
+  ctx.fillRect(selStartPct * W, 0, (selEndPct - selStartPct) * W, H);
+
+  for (let x = 0; x < W; x++) {
+    const sStart = Math.floor(startSample + x * samplesPerPx);
+    const sEnd = Math.min(Math.floor(startSample + (x + 1) * samplesPerPx), _waveformData.length);
+    let min = 0, max = 0;
+    for (let s = sStart; s < sEnd; s++) {
+      if (_waveformData[s] > max) max = _waveformData[s];
+      if (_waveformData[s] < min) min = _waveformData[s];
+    }
+    const sec = viewStart + (x / W) * (viewEnd - viewStart);
+    const inSel = sec >= selStart && sec <= selEnd;
+    ctx.fillStyle = inSel ? 'rgba(75,201,122,0.9)' : 'rgba(144,144,176,0.3)';
+    ctx.fillRect(x, H/2 - max * H/2, 1, Math.max(1, (max - min) * H/2));
+  }
+
+  // Handles
+  const inEl = document.getElementById('seg-wf-in-' + ch + '-' + idx);
+  const outEl = document.getElementById('seg-wf-out-' + ch + '-' + idx);
+  const regionEl = document.getElementById('seg-wf-region-' + ch + '-' + idx);
+  const inPct = selStartPct * 100;
+  const outPct = selEndPct * 100;
+  if (inEl) inEl.style.left = inPct + '%';
+  if (outEl) outEl.style.left = outPct + '%';
+  if (regionEl) { regionEl.style.left = inPct + '%'; regionEl.style.width = (outPct - inPct) + '%'; }
+}
+
+function setupSegWaveformDrag(ch, idx) {
+  const container = document.getElementById('seg-wf-container-' + ch + '-' + idx);
+  if (!container || container._segWfSetup) return;
+  container._segWfSetup = true;
+  let dragging = null;
+  let panStart = null;
+
+  container.onmousedown = (e) => {
+    const state = _segWaveformState[ch + '-' + idx];
+    if (!state) return;
+    const inEl = document.getElementById('seg-wf-in-' + ch + '-' + idx);
+    const outEl = document.getElementById('seg-wf-out-' + ch + '-' + idx);
+    const inRect = inEl ? inEl.getBoundingClientRect() : null;
+    const outRect = outEl ? outEl.getBoundingClientRect() : null;
+
+    if (inRect && Math.abs(e.clientX - inRect.left) < 12) dragging = 'in';
+    else if (outRect && Math.abs(e.clientX - outRect.left) < 12) dragging = 'out';
+    else { dragging = 'pan'; panStart = { clientX: e.clientX, ...state }; }
+
+    const onMove = (ev) => {
+      const st = _segWaveformState[ch + '-' + idx];
+      if (!st) return;
+      const rect = container.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+      const sec = st.viewStart + pct * (st.viewEnd - st.viewStart);
+      const totalDur = _waveformData ? _waveformData.length / _waveformSampleRate : 999;
+
+      if (dragging === 'in') {
+        st.selStart = Math.max(st.viewStart, Math.min(sec, st.selEnd - 0.1));
+      } else if (dragging === 'out') {
+        st.selEnd = Math.min(st.viewEnd, Math.max(sec, st.selStart + 0.1));
+      } else if (dragging === 'pan' && panStart) {
+        const secPerPx = (panStart.viewEnd - panStart.viewStart) / rect.width;
+        const shift = -(ev.clientX - panStart.clientX) * secPerPx;
+        const dur = panStart.viewEnd - panStart.viewStart;
+        let vs = Math.max(0, panStart.viewStart + shift);
+        let ve = Math.min(totalDur, panStart.viewEnd + shift);
+        if (ve > totalDur) { ve = totalDur; vs = Math.max(0, totalDur - dur); }
+        st.viewStart = vs; st.viewEnd = ve;
+      }
+
+      drawSegWaveform(ch, idx);
+      document.getElementById('seg-wf-tcin-' + ch + '-' + idx).textContent = secToSRTTC(st.selStart).replace(',', '.');
+      document.getElementById('seg-wf-tcout-' + ch + '-' + idx).textContent = secToSRTTC(st.selEnd).replace(',', '.');
+    };
+
+    const onUp = (ev) => {
+      if (dragging === 'pan' && panStart && Math.abs(ev.clientX - panStart.clientX) < 5) {
+        const st = _segWaveformState[ch + '-' + idx];
+        if (st) {
+          const rect = container.getBoundingClientRect();
+          const pct = (ev.clientX - rect.left) / rect.width;
+          const clickSec = st.viewStart + pct * (st.viewEnd - st.viewStart);
+          playAudioRange(clickSec, st.selEnd, '');
+        }
+      }
+      dragging = null; panStart = null;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    e.preventDefault();
+  };
+}
+
+function applySegWaveformTrim(ch, idx) {
+  const state = _segWaveformState[ch + '-' + idx];
+  if (!state) return;
+  const seg = window._lastChannelResults && window._lastChannelResults[ch] && window._lastChannelResults[ch].segments[idx];
+  if (!seg) return;
+
+  if (!seg._original) seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
+
+  seg.start = secToSRTTC(state.selStart);
+  seg.end = secToSRTTC(state.selEnd);
+  seg.duration_sec = state.selEnd - state.selStart;
+  seg._trimmed = true;
+
+  const chData = window._lastChannelResults[ch];
+  chData.total_duration_sec = (chData.segments || []).reduce((a, s) => a + (s.duration_sec || 0), 0);
+
+  const panel = document.getElementById('result-' + ch);
+  if (panel) {
+    panel.innerHTML = buildChannelResultHTML(ch, chData, CHANNEL_CONFIG[ch]);
+    setTimeout(() => updateQualityBar(ch), 50);
+  }
+  showToast('✅ Timecodes ajustés — ' + secToSRTTC(state.selStart) + ' → ' + secToSRTTC(state.selEnd));
 }
 
 function clearSegTrim(ch, idx) {
@@ -3477,7 +3892,7 @@ function calcPerfScore(channelKey, segments, accroches, totalSec) {
   };
 }
 
-// ── V5.6 — REVALIDATION CLAUDE ───────────────────────────────────────────────
+// ── V5.7 — REVALIDATION CLAUDE ───────────────────────────────────────────────
 // Détecte les répétitions dans un texte (mots > 3 lettres répétés)
 function detectRepetitionsInText(text) {
   const repetitions = [];
@@ -3647,7 +4062,7 @@ async function runStep3() {
       await runModeC(key);
     }
 
-    // ── V5.6 — Revalidation Claude ──────────────────────────────────────────
+    // ── V5.7 — Revalidation Claude ──────────────────────────────────────────
     if (rawResult) {
       btn.querySelector('.btn-text').textContent = '⚙️ Revalidation…';
       rawResult = await revalidateResult(key, rawResult);
@@ -4529,12 +4944,27 @@ function buildChannelResultHTML(ch, data, cfg) {
           <button class="seg-trim-btn" onclick="applySegTrim('${ch}',${i})">✂️ Réduire au passage sélectionné</button>
           <button onclick="clearSegTrim('${ch}',${i})" style="background:transparent;border:1px solid var(--border);border-radius:2px;padding:3px 8px;color:var(--muted);font-size:10px;cursor:pointer;">✕</button>
         </div>
+        <!-- Waveform inline du segment -->
+        <div id="seg-waveform-${ch}-${i}" style="display:none;margin-top:8px;">
+          <div style="position:relative;height:40px;background:var(--surface3);border-radius:3px;overflow:hidden;cursor:pointer;" id="seg-wf-container-${ch}-${i}">
+            <canvas id="seg-wf-canvas-${ch}-${i}" style="width:100%;height:40px;display:block;"></canvas>
+            <div id="seg-wf-region-${ch}-${i}" style="position:absolute;top:0;bottom:0;background:rgba(151,71,255,0.15);pointer-events:none;"></div>
+            <div id="seg-wf-in-${ch}-${i}" style="position:absolute;top:0;bottom:0;width:4px;background:rgba(151,71,255,0.8);cursor:ew-resize;z-index:10;"></div>
+            <div id="seg-wf-out-${ch}-${i}" style="position:absolute;top:0;bottom:0;width:4px;background:rgba(151,71,255,0.8);cursor:ew-resize;z-index:10;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+            <span id="seg-wf-tcin-${ch}-${i}" style="font-size:9px;color:var(--muted2);"></span>
+            <button onclick="applySegWaveformTrim('${ch}',${i})" style="background:var(--accent);color:#fff;border:none;border-radius:2px;padding:3px 12px;font-size:10px;cursor:pointer;">Appliquer l'ajustement</button>
+            <span id="seg-wf-tcout-${ch}-${i}" style="font-size:9px;color:var(--muted2);"></span>
+          </div>
+        </div>
         ${seg._trimmed ? `<div style="margin-top:4px;"><button onclick="restoreSegment('${ch}',${i})" style="background:transparent;border:1px solid var(--border2);border-radius:2px;padding:3px 10px;color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">↩ Restaurer l'original</button></div>` : ''}
         <div class="seg-reason">${seg.reason||''}</div>
         ${hasWarn ? `<div class="seg-warning-detail">⚠ ${seg.warnings.join(' · ')}</div>` : ''}
       </div>
       <div class="seg-meta">
         <button class="seg-play-btn" onclick="playSegment('${ch}',${i})" title="Écouter ce passage">▶</button>
+        <button onclick="toggleSegWaveform('${ch}',${i})" title="Affiner avec la waveform" style="background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--muted);font-size:11px;width:28px;height:28px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">◈</button>
         <button class="seg-delete" onclick="deleteSegment('${ch}', ${i})" title="Supprimer ce segment">✕</button>
         <button id="smart-cut-btn-${ch}-${i}" onclick="smartCutSegment('${ch}',${i})" title="Nettoyer les répétitions intelligemment" style="background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--muted);font-size:10px;padding:3px 7px;cursor:pointer;transition:all 0.15s;width:28px;height:28px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.borderColor='var(--yellow)';this.style.color='var(--yellow)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">✂</button>
         <div class="seg-dur">${secToMin(dur)}</div>
@@ -4761,7 +5191,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.6 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.7 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
@@ -4841,39 +5271,49 @@ function exportSequenceSRT(ch, silent) {
   segs.forEach(function(seg) {
     const segStartSec = tcToSec((seg.start || '').replace(',','.'));
     const segEndSec = tcToSec((seg.end || '').replace(',','.'));
-    const segDur = Math.max(0, segEndSec - segStartSec);
+    const segDur = Math.max(0.1, segEndSec - segStartSec);
 
-    // If text was edited, use single block with edited text
-    if (seg._editedText) {
-      const editedBlocks = splitTextToSRTBlocks(seg._editedText, 0, segDur);
-      editedBlocks.forEach(function(b) {
-        srt += idx + "\n";
-        srt += secToSRTTC(timelineOffset + b.start) + " --> " + secToSRTTC(timelineOffset + b.end) + "\n";
-        srt += b.text + "\n\n";
+    // Segments édités manuellement ou trimmés → génère SRT depuis le texte
+    if (seg._editedText || seg._trimmed || seg.isManual || seg._smartCut) {
+      const textToUse = seg._editedText || seg.text || '';
+      const blocks2 = splitTextToSRTBlocks(textToUse, 0, segDur);
+      blocks2.forEach(function(b) {
+        srt += idx + '\n';
+        srt += secToSRTTC(timelineOffset + b.start) + ' --> ' + secToSRTTC(timelineOffset + b.end) + '\n';
+        srt += b.text + '\n\n';
         idx++;
       });
       timelineOffset += segDur;
       return;
     }
 
-    // Otherwise remap original SRT blocks
-    const blocks = parsedSRT.filter(function(b) {
-      return b.startSec >= segStartSec - 0.1 && b.endSec <= segEndSec + 0.1;
+    // Cherche les blocs SRT originaux avec tolérance plus large
+    let blocks = parsedSRT.filter(function(b) {
+      return b.startSec >= segStartSec - 0.15 && b.endSec <= segEndSec + 0.15;
     });
 
+    // Si toujours rien → génère depuis le texte du segment
     if (blocks.length === 0) {
+      const textToUse = seg.text || '';
+      if (textToUse) {
+        const generatedBlocks = splitTextToSRTBlocks(textToUse, 0, segDur);
+        generatedBlocks.forEach(function(b) {
+          srt += idx + '\n';
+          srt += secToSRTTC(timelineOffset + b.start) + ' --> ' + secToSRTTC(timelineOffset + b.end) + '\n';
+          srt += b.text + '\n\n';
+          idx++;
+        });
+      }
       timelineOffset += segDur;
       return;
     }
 
     blocks.forEach(function(b) {
-      const localStart = b.startSec - segStartSec;
-      const localEnd = b.endSec - segStartSec;
-      const newStart = timelineOffset + localStart;
-      const newEnd = timelineOffset + localEnd;
-      srt += idx + "\n";
-      srt += secToSRTTC(newStart) + " --> " + secToSRTTC(newEnd) + "\n";
-      srt += b.text + "\n\n";
+      const localStart = Math.max(0, b.startSec - segStartSec);
+      const localEnd = Math.min(segDur, b.endSec - segStartSec);
+      srt += idx + '\n';
+      srt += secToSRTTC(timelineOffset + localStart) + ' --> ' + secToSRTTC(timelineOffset + localEnd) + '\n';
+      srt += b.text + '\n\n';
       idx++;
     });
 
