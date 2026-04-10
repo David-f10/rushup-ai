@@ -3238,20 +3238,32 @@ Réponds UNIQUEMENT en JSON :
       window._apiKey = keyData.key;
     }
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': window._apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-allow-browser': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 500,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
+    // Appel Claude avec retry automatique
+    let res, retries = 0;
+    while (retries < 3) {
+      try {
+        res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': window._apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-allow-browser': 'true'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 500,
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+        break;
+      } catch(fetchErr) {
+        retries++;
+        if (retries >= 3) throw fetchErr;
+        if (btn) btn.textContent = '⏳ Retry ' + retries + '/3...';
+        await new Promise(r => setTimeout(r, 1500 * retries));
+      }
+    }
 
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
@@ -4301,6 +4313,7 @@ ACCROCHES (communes à tous les canaux) :
 - MAXIMUM 15 secondes chacune — 1 à 2 phrases uniquement
 - Les 3 accroches doivent être des passages DIFFÉRENTS, non-redondants, classés du plus fort au moins fort
 - Classe chaque accroche selon son mécanisme psychologique : curiosity_gap, pattern_interrupt, shock_statement, authority_fact, self_identification, cliffhanger, pain_point, contrarian
+${window._reanalyzing ? `\nRE-ANALYSE — VERSION ${_accrocheVersions.length + 1} : Tu dois proposer des accroches DIFFÉRENTES de la version précédente. Explore d'autres passages du transcript, d'autres mécanismes psychologiques, d'autres angles d'ouverture. Ne reprends PAS les mêmes passages qu'avant.` : ''}
 
 Pour CHAQUE canal sélectionné, génère une sélection adaptée avec :
 - Durée OBLIGATOIREMENT proche de la durée cible définie par le journaliste (±20% maximum)
@@ -4896,17 +4909,34 @@ function finalizeResults() {
     });
     const allSegs = [...accrocheSegs, ...bodySegs];
 
-    // V5.7 — Recalcule les timecodes de chaque segment avec word timestamps précis
+    // V5.7 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
     if (window._whisperWords && window._whisperWords.length) {
       allSegs.forEach(seg => {
-        if (seg._trimmed || seg.isManual) return; // déjà ajustés manuellement
-        const exactTC = findPassageTimecodes(seg.text || '', 0);
-        if (exactTC) {
-          seg._originalStart = seg.start;
-          seg._originalEnd = seg.end;
-          seg.start = secToSRTTC(exactTC.start);
-          seg.end = secToSRTTC(exactTC.end);
-          seg.duration_sec = exactTC.end - exactTC.start;
+        if (seg._trimmed || seg.isManual) return;
+
+        const segStartSec = tcToSec((seg.start || '').replace(',', '.'));
+        const segEndSec = tcToSec((seg.end || '').replace(',', '.'));
+
+        // Récupère les mots Whisper réels dans la plage du segment
+        const realWords = window._whisperWords.filter(w =>
+          w.start >= segStartSec - 0.3 && w.end <= segEndSec + 0.3
+        );
+
+        if (realWords.length > 0) {
+          const realText = realWords.map(w => (w.word || '').trim()).join(' ').trim();
+          const realStart = realWords[0].start;
+          const realEnd = realWords[realWords.length - 1].end;
+
+          // Stocke texte/timecodes Claude pour référence
+          seg._claudeText = seg.text;
+          seg._claudeStart = seg.start;
+          seg._claudeEnd = seg.end;
+
+          // Remplace par le vrai texte audio + timecodes précis
+          seg.text = realText;
+          seg.start = secToSRTTC(realStart);
+          seg.end = secToSRTTC(realEnd);
+          seg.duration_sec = realEnd - realStart;
           seg._wordAligned = true;
         }
       });
