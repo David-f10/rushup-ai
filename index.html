@@ -2161,11 +2161,17 @@ function playAudioSelection() {
 function playSegment(ch, idx) {
   const seg = window._lastChannelResults && window._lastChannelResults[ch] && window._lastChannelResults[ch].segments[idx];
   if (!seg) return;
-  const startSec = tcToSec((seg.start || '').replace(',', '.'));
-  const endSec = tcToSec((seg.end || '').replace(',', '.'));
-  const btn = document.querySelector(`.segment[data-ch="${ch}"][data-idx="${idx}"] .seg-play-btn`);
 
-  // Toggle
+  // Utilise les poignées waveform si elles sont ouvertes et ajustées
+  const wfState = _segWaveformState && _segWaveformState[ch + '-' + idx];
+  const wfDiv = document.getElementById('seg-waveform-' + ch + '-' + idx);
+  const wfOpen = wfDiv && wfDiv.style.display !== 'none';
+
+  const startSec = (wfOpen && wfState) ? wfState.selStart : tcToSec((seg.start || '').replace(',', '.'));
+  const endSec = (wfOpen && wfState) ? wfState.selEnd : tcToSec((seg.end || '').replace(',', '.'));
+
+  const btn = document.querySelector('.segment[data-ch="' + ch + '"][data-idx="' + idx + '"] .seg-play-btn');
+
   if (btn && btn.classList.contains('playing')) {
     stopAudioPlayer(true);
     return;
@@ -3248,6 +3254,7 @@ Réponds UNIQUEMENT en JSON :
     });
 
     const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
     const raw = data.content.map(c => c.text || '').join('').replace(/```json|```/g, '').trim();
     const result = JSON.parse(raw);
 
@@ -3261,15 +3268,21 @@ Réponds UNIQUEMENT en JSON :
       let tcSource = 'proportionnel';
 
       if (window._whisperWords && window._whisperWords.length) {
-        const exactTC = findPassageTimecodes(result.cleanText, startSec - 0.5);
-        if (exactTC && exactTC.start >= startSec - 1 && exactTC.end <= endSec + 1) {
+        // Essaie avec le texte exact d'abord
+        let exactTC = findPassageTimecodes(result.cleanText, Math.max(0, startSec - 2));
+        // Si pas trouvé, essaie avec les premiers mots seulement
+        if (!exactTC) {
+          const firstWords = result.cleanText.split(' ').slice(0, 5).join(' ');
+          exactTC = findPassageTimecodes(firstWords, Math.max(0, startSec - 2));
+        }
+        if (exactTC && exactTC.start >= Math.max(0, startSec - 3) && exactTC.end <= endSec + 3) {
           newStartSec = exactTC.start;
           newEndSec = exactTC.end;
           tcSource = 'mot par mot ✓';
         }
       }
 
-      // Fallback proportionnel si word timestamps pas disponibles
+      // Fallback proportionnel si word timestamps pas disponibles ou pas trouvés
       if (tcSource === 'proportionnel') {
         const originalWords = seg.text.split(' ').length;
         const cleanWords = result.cleanText.split(' ').length;
@@ -3298,11 +3311,15 @@ Réponds UNIQUEMENT en JSON :
       }
 
       showToast('✂️ Nettoyé — timecodes ' + tcSource + ' · ' + secToSRTTC(newStartSec) + ' → ' + secToSRTTC(newEndSec));
+    } else {
+      showToast('ℹ️ Aucune répétition détectée dans ce segment');
+      if (btn) { btn.textContent = '✂'; btn.disabled = false; }
     }
 
   } catch(e) {
     console.warn('Smart cut error:', e);
-    if (btn) { btn.textContent = '✂️ Nettoyer'; btn.disabled = false; }
+    showToast('❌ Erreur Nettoyer : ' + e.message);
+    if (btn) { btn.textContent = '✂'; btn.disabled = false; }
   }
 }
 
@@ -4734,25 +4751,66 @@ async function reanalyzeAccroches() {
 }
 
 // ── RENDER ACCROCHES ──────────────────────────────────────────────────────────
+let _accrocheVersions = [];
+let _currentAccrocheVersion = 0;
+
 function renderAccroches(accroches) {
+  // Stocke la nouvelle version
+  _accrocheVersions.push(accroches);
+  _currentAccrocheVersion = _accrocheVersions.length - 1;
+
+  renderAccrocheVersion(_currentAccrocheVersion);
+
+  const s5 = document.getElementById('step5');
+  s5.style.display = 'block';
+  s5.style.opacity = '1';
+  s5.style.pointerEvents = 'all';
+  s5.classList.add('active');
+  s5.scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('confirmAccroche').disabled = true;
+}
+
+function renderAccrocheVersion(vIdx) {
+  const accroches = _accrocheVersions[vIdx];
+  if (!accroches) return;
+
+  _currentAccrocheVersion = vIdx;
+  accrocheMode = null; pickedAccroche = null;
+
   const container = document.getElementById('accrocheCards');
   container.innerHTML = '';
-  accrocheMode = null; pickedAccroche = null;
+
+  // Barre de versions si plusieurs
+  let versionsBar = document.getElementById('accrocheVersionsBar');
+  if (!versionsBar) {
+    versionsBar = document.createElement('div');
+    versionsBar.id = 'accrocheVersionsBar';
+    versionsBar.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;';
+    container.parentNode.insertBefore(versionsBar, container);
+  }
+
+  if (_accrocheVersions.length > 1) {
+    versionsBar.style.display = 'flex';
+    versionsBar.innerHTML = _accrocheVersions.map((_, i) =>
+      '<button onclick="renderAccrocheVersion(' + i + ')" style="background:' + (i === vIdx ? 'rgba(151,71,255,0.15)' : 'var(--surface2)') + ';border:1px solid ' + (i === vIdx ? 'var(--accent)' : 'var(--border)') + ';border-radius:3px;padding:4px 12px;color:' + (i === vIdx ? 'var(--accent)' : 'var(--muted)') + ';font-family:\'DM Mono\',monospace;font-size:10px;cursor:pointer;">Analyse ' + (i + 1) + '</button>'
+    ).join('') + '<span style="font-size:10px;color:var(--muted2);margin-left:4px;">' + _accrocheVersions.length + ' version' + (_accrocheVersions.length > 1 ? 's' : '') + '</span>';
+  } else {
+    versionsBar.style.display = 'none';
+  }
 
   (accroches || []).forEach((a, i) => {
     const card = document.createElement('div');
     card.className = 'accroche-card';
     const hookLabel = HOOK_TYPES[a.hook_type] || a.hook_type || '';
-    card.innerHTML = `
-      <div class="accroche-rank">#${a.rank||i+1}</div>
-      <div>
-        ${hookLabel ? `<div class="accroche-type">${hookLabel}</div>` : ''}
-        <div class="accroche-text">${a.text}</div>
-        <div class="accroche-tc">${a.start} → ${a.end}</div>
-        <div class="accroche-why">${a.why||''}</div>
-      </div>
-      <div class="accroche-dur">${secToMin(a.duration_sec||0)}</div>
-    `;
+    card.innerHTML =
+      '<div class="accroche-rank">#' + (a.rank||i+1) + '</div>' +
+      '<div>' +
+      (hookLabel ? '<div class="accroche-type">' + hookLabel + '</div>' : '') +
+      '<div class="accroche-text">' + a.text + '</div>' +
+      '<div class="accroche-tc">' + a.start + ' → ' + a.end + '</div>' +
+      '<div class="accroche-why">' + (a.why||'') + '</div>' +
+      '</div>' +
+      '<div class="accroche-dur">' + secToMin(a.duration_sec||0) + '</div>';
     card.addEventListener('click', () => {
       if (accrocheMode !== 'pick') return;
       document.querySelectorAll('.accroche-card').forEach(c => c.classList.remove('selected'));
@@ -4763,12 +4821,6 @@ function renderAccroches(accroches) {
     container.appendChild(card);
   });
 
-  const s5 = document.getElementById('step5');
-  s5.style.display = 'block';
-  s5.style.opacity = '1';
-  s5.style.pointerEvents = 'all';
-  s5.classList.add('active');
-  s5.scrollIntoView({ behavior: 'smooth' });
   document.getElementById('confirmAccroche').disabled = true;
 }
 
