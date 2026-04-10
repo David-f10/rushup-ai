@@ -3430,24 +3430,25 @@ function drawSegWaveform(ch, idx) {
   const rect = canvas.parentElement.getBoundingClientRect();
   if (rect.width === 0) return;
   canvas.width = Math.floor(rect.width * dpr);
-  canvas.height = 40 * dpr;
+  canvas.height = 80 * dpr;
   canvas.style.width = rect.width + 'px';
-  canvas.style.height = '40px';
+  canvas.style.height = '80px';
 
   const ctx = canvas.getContext('2d');
   ctx.scale(dpr, dpr);
-  const W = rect.width, H = 40;
+  const W = rect.width, H = 80;
 
   const startSample = Math.floor(viewStart * _waveformSampleRate);
   const endSample = Math.min(Math.floor(viewEnd * _waveformSampleRate), _waveformData.length);
   const samplesPerPx = (endSample - startSample) / W;
 
-  ctx.fillStyle = 'rgba(24,24,38,0.95)';
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(14,14,22,0.96)';
   ctx.fillRect(0, 0, W, H);
 
   const selStartPct = Math.max(0, (selStart - viewStart) / (viewEnd - viewStart));
   const selEndPct = Math.min(1, (selEnd - viewStart) / (viewEnd - viewStart));
-  ctx.fillStyle = 'rgba(151,71,255,0.12)';
+  ctx.fillStyle = 'rgba(151,71,255,0.08)';
   ctx.fillRect(selStartPct * W, 0, (selEndPct - selStartPct) * W, H);
 
   for (let x = 0; x < W; x++) {
@@ -3458,11 +3459,18 @@ function drawSegWaveform(ch, idx) {
       if (_waveformData[s] > max) max = _waveformData[s];
       if (_waveformData[s] < min) min = _waveformData[s];
     }
+    const amplitude = max - min;
     const sec = viewStart + (x / W) * (viewEnd - viewStart);
     const inSel = sec >= selStart && sec <= selEnd;
-    ctx.fillStyle = inSel ? 'rgba(75,201,122,0.9)' : 'rgba(144,144,176,0.3)';
-    ctx.fillRect(x, H/2 - max * H/2, 1, Math.max(1, (max - min) * H/2));
+    const barH = Math.max(2, amplitude * H * 0.92);
+    const barY = (H - barH) / 2;
+    ctx.fillStyle = inSel
+      ? 'rgba(75,201,122,' + (0.5 + amplitude * 0.5) + ')'
+      : 'rgba(144,144,176,' + (0.15 + amplitude * 0.45) + ')';
+    ctx.fillRect(x, barY, 1.5, barH);
   }
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.fillRect(0, H/2, W, 1);
 
   // Handles
   const inEl = document.getElementById('seg-wf-in-' + ch + '-' + idx);
@@ -4710,6 +4718,23 @@ function finalizeResults() {
       return false;
     });
     const allSegs = [...accrocheSegs, ...bodySegs];
+
+    // V5.7 — Recalcule les timecodes de chaque segment avec word timestamps précis
+    if (window._whisperWords && window._whisperWords.length) {
+      allSegs.forEach(seg => {
+        if (seg._trimmed || seg.isManual) return; // déjà ajustés manuellement
+        const exactTC = findPassageTimecodes(seg.text || '', 0);
+        if (exactTC) {
+          seg._originalStart = seg.start;
+          seg._originalEnd = seg.end;
+          seg.start = secToSRTTC(exactTC.start);
+          seg.end = secToSRTTC(exactTC.end);
+          seg.duration_sec = exactTC.end - exactTC.start;
+          seg._wordAligned = true;
+        }
+      });
+    }
+
     const perf = calcPerfScore(ch, bodySegs, accrocheSegs, chData.total_duration_sec || 0);
     channelResults[ch] = {
       segments: allSegs,
@@ -4946,8 +4971,8 @@ function buildChannelResultHTML(ch, data, cfg) {
         </div>
         <!-- Waveform inline du segment -->
         <div id="seg-waveform-${ch}-${i}" style="display:none;margin-top:8px;">
-          <div style="position:relative;height:40px;background:var(--surface3);border-radius:3px;overflow:hidden;cursor:pointer;" id="seg-wf-container-${ch}-${i}">
-            <canvas id="seg-wf-canvas-${ch}-${i}" style="width:100%;height:40px;display:block;"></canvas>
+          <div style="position:relative;height:80px;background:var(--surface3);border-radius:3px;overflow:hidden;cursor:pointer;" id="seg-wf-container-${ch}-${i}">
+            <canvas id="seg-wf-canvas-${ch}-${i}" style="width:100%;height:80px;display:block;"></canvas>
             <div id="seg-wf-region-${ch}-${i}" style="position:absolute;top:0;bottom:0;background:rgba(151,71,255,0.15);pointer-events:none;"></div>
             <div id="seg-wf-in-${ch}-${i}" style="position:absolute;top:0;bottom:0;width:4px;background:rgba(151,71,255,0.8);cursor:ew-resize;z-index:10;"></div>
             <div id="seg-wf-out-${ch}-${i}" style="position:absolute;top:0;bottom:0;width:4px;background:rgba(151,71,255,0.8);cursor:ew-resize;z-index:10;"></div>
