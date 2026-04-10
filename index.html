@@ -1287,10 +1287,23 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
           <div></div>
         </div>
       </div>
-      <button class="add-source-btn" onclick="addSource()">+ Ajouter un rush source</button>
+
+      <!-- Drop zone vidéo — lecture métadonnées locale -->
+      <div id="videoDropZone"
+        style="border:1.5px dashed var(--border2);border-radius:4px;padding:16px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:8px;"
+        ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='rgba(151,71,255,0.04)'"
+        ondragleave="this.style.borderColor='var(--border2)';this.style.background=''"
+        ondrop="onVideoDrop(event)"
+        onclick="document.getElementById('videoFileInput').click()">
+        <input type="file" id="videoFileInput" accept="video/*,.mov,.mp4,.mxf,.mts,.m2ts,.avi" multiple style="display:none" onchange="onVideoFileSelect(this.files)">
+        <div style="font-size:12px;color:var(--muted);">🎬 Glisse tes fichiers vidéo ici pour remplir automatiquement</div>
+        <div style="font-size:10px;color:var(--muted2);margin-top:4px;">MOV, MP4, MXF... · Lecture locale uniquement, aucun upload</div>
+      </div>
+
+      <button class="add-source-btn" onclick="addSource()" style="margin-bottom:8px;">+ Ajouter manuellement</button>
       <div class="sources-note">
-        Déclare chaque fichier vidéo source dans l'ordre de tournage. RUSHUP utilisera ces noms et durées pour construire ta séquence Premiere.<br>
-        Ex : <span style="color:var(--accent)">FX30001.mp4</span> + <span style="color:var(--accent)">00:25:14:00</span> — le XML Premiere utilisera ces noms exacts pour relier les médias.
+        Glisse tes fichiers vidéo ci-dessus — nom et durée sont lus automatiquement. Vérifie l'ordre de tournage et ajuste si nécessaire.<br>
+        <span style="color:var(--muted2);">Le XML Premiere utilisera ces noms exacts pour relier les médias.</span>
       </div>
     </div>
   </div>
@@ -1872,6 +1885,12 @@ async function transcribeWithWhisper(file) {
     }
     try { localStorage.setItem('rushai_whisper_srt', wordSRT); } catch(e) {}
     parseSRT(wordSRT, file.name);
+
+    // V5.7 — Vérification cohérence durée MP3 vs sources déclarées
+    const audioDur = jsonData.duration || (window._whisperWords.length > 0
+      ? window._whisperWords[window._whisperWords.length - 1].end
+      : 0);
+    if (audioDur > 0) checkAudioDurationVsSources(audioDur);
   } catch(err) {
     statusText.style.color = 'var(--red)';
     statusText.textContent = '❌ Erreur : ' + err.message;
@@ -2249,6 +2268,112 @@ function setFPS(fps, btn) {
   sequenceFPS = fps;
   document.querySelectorAll('#fps25, #fps30').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+}
+
+// ── LECTURE MÉTADONNÉES VIDÉO ────────────────────────────────────────────────
+function onVideoDrop(e) {
+  e.preventDefault();
+  const zone = document.getElementById('videoDropZone');
+  if (zone) { zone.style.borderColor = 'var(--border2)'; zone.style.background = ''; }
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('video/') || /\.(mov|mp4|mxf|mts|m2ts|avi|mkv)$/i.test(f.name));
+  if (!files.length) return;
+  files.sort((a, b) => a.name.localeCompare(b.name)); // ordre alphabétique = ordre tournage
+  files.forEach(readVideoMetadata);
+}
+
+function onVideoFileSelect(files) {
+  const videoFiles = Array.from(files).filter(f => f.type.startsWith('video/') || /\.(mov|mp4|mxf|mts|m2ts|avi|mkv)$/i.test(f.name));
+  videoFiles.sort((a, b) => a.name.localeCompare(b.name));
+  videoFiles.forEach(readVideoMetadata);
+}
+
+function readVideoMetadata(file) {
+  const video = document.createElement('video');
+  video.preload = 'metadata';
+  const url = URL.createObjectURL(file);
+  video.src = url;
+
+  video.onloadedmetadata = () => {
+    const dur = video.duration; // en secondes
+    URL.revokeObjectURL(url);
+
+    if (!dur || isNaN(dur)) {
+      // Durée non lisible → ajoute quand même avec nom
+      addSourceWithData(file.name, null);
+      return;
+    }
+
+    addSourceWithData(file.name, dur);
+  };
+
+  video.onerror = () => {
+    URL.revokeObjectURL(url);
+    addSourceWithData(file.name, null);
+  };
+}
+
+// ── VÉRIFICATION COHÉRENCE DURÉE MP3 VS SOURCES ──────────────────────────────
+function checkAudioDurationVsSources(audioDurSec) {
+  if (!sources || sources.length === 0) return; // pas de sources déclarées
+
+  const totalSourcesDur = sources.reduce((a, s) => a + (s.durationSec || 0), 0);
+  if (totalSourcesDur === 0) return;
+
+  const diff = Math.abs(audioDurSec - totalSourcesDur);
+  const tolerance = 10; // 10 secondes de tolérance
+
+  // Supprime ancien message si existe
+  const oldMsg = document.getElementById('durationCheckMsg');
+  if (oldMsg) oldMsg.remove();
+
+  const msg = document.createElement('div');
+  msg.id = 'durationCheckMsg';
+
+  if (diff <= tolerance) {
+    // OK
+    msg.style.cssText = 'margin-top:10px;padding:8px 14px;background:rgba(75,201,122,0.07);border:1px solid rgba(75,201,122,0.25);border-radius:3px;font-size:11px;color:var(--green);';
+    msg.innerHTML = '✅ Cohérence vérifiée — MP3 : ' + secToMin(audioDurSec) + ' · Sources déclarées : ' + secToMin(totalSourcesDur);
+  } else {
+    const isLonger = audioDurSec > totalSourcesDur;
+    const hint = isLonger
+      ? 'Le MP3 est plus long que les sources — tu as peut-être oublié de déclarer un fichier vidéo.'
+      : 'Le MP3 est plus court que les sources — vérifie que tu as exporté le bon rush audio ou que toutes les sources sont correctes.';
+    msg.style.cssText = 'margin-top:10px;padding:10px 14px;background:rgba(245,200,66,0.07);border:1px solid rgba(245,200,66,0.3);border-radius:3px;font-size:11px;';
+    msg.innerHTML =
+      '<div style="color:#F5C842;font-weight:700;margin-bottom:4px;">⚠ Décalage de durée détecté</div>' +
+      '<div style="color:var(--muted);">MP3 importé : <strong style="color:var(--text)">' + secToMin(audioDurSec) + '</strong> · Sources déclarées : <strong style="color:var(--text)">' + secToMin(totalSourcesDur) + '</strong> · Écart : <strong style="color:#F5C842">' + secToMin(diff) + '</strong></div>' +
+      '<div style="margin-top:5px;color:var(--muted2);font-size:10px;">' + hint + '</div>';
+  }
+
+  // Insère sous la drop zone audio
+  const whisperStatus = document.getElementById('whisperStatus');
+  if (whisperStatus) whisperStatus.parentNode.insertBefore(msg, whisperStatus.nextSibling);
+}
+
+function addSourceWithData(filename, durationSec) {
+  addSource(); // crée la ligne
+
+  const nameEl = document.getElementById('source-name-' + sourceCount);
+  const durEl = document.getElementById('source-dur-' + sourceCount);
+
+  if (nameEl) nameEl.value = filename;
+
+  if (durEl && durationSec) {
+    // Convertit les secondes en HH:MM:SS:FF (25fps par défaut)
+    const fps = sequenceFPS || 25;
+    const totalFrames = Math.floor(durationSec * fps);
+    const frames = totalFrames % fps;
+    const totalSec = Math.floor(durationSec);
+    const hh = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+    const mm = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+    const ss = String(totalSec % 60).padStart(2, '0');
+    const ff = String(frames).padStart(2, '0');
+    durEl.value = hh + ':' + mm + ':' + ss + ':' + ff;
+    formatDurInput(durEl);
+  }
+
+  updateSources();
+  showToast('🎬 ' + filename + (durationSec ? ' · ' + secToMin(durationSec) : ' · durée non lisible'));
 }
 
 function addSource() {
