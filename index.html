@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.7</title>
+<title>RUSHUP.AI V5.8</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
@@ -249,7 +249,7 @@ header {
 .srt-preview.visible { display: block; }
 .srt-preview .tc { color: #9F58F5; }
 
-/* ── V5.7 SRT VIEWER INTERACTIF ── */
+/* ── V5.8 SRT VIEWER INTERACTIF ── */
 .srt-viewer {
   margin-top: 12px;
   border: 1px solid var(--border);
@@ -1253,9 +1253,161 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 </head>
 <body>
 
+<!-- ── LANDING PAGE ──────────────────────────────────────────────────────── -->
+<div id="landingPage" style="display:none;min-height:100vh;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;">
+  <div style="max-width:720px;width:100%;">
+
+    <!-- Logo + badge -->
+    <div style="text-align:center;margin-bottom:64px;">
+      <div style="font-family:'Outfit',sans-serif;font-size:32px;font-weight:900;letter-spacing:3px;margin-bottom:10px;">
+        RUSHUP<span style="color:var(--accent);">.</span>AI
+      </div>
+      <span style="display:inline-block;background:rgba(75,201,122,0.1);border:1px solid rgba(75,201,122,0.3);border-radius:20px;padding:4px 14px;font-size:10px;font-family:'DM Mono',monospace;color:var(--green);letter-spacing:2px;">BETA ACCÈS LIMITÉ</span>
+    </div>
+
+    <!-- Headline -->
+    <div style="text-align:center;margin-bottom:24px;">
+      <h1 style="font-family:'Outfit',sans-serif;font-size:clamp(32px,5vw,52px);font-weight:900;line-height:1.1;color:var(--text);margin-bottom:0;">
+        2 heures de rush.<br>
+        <span style="color:var(--green);">3 minutes</span> pour ta sélection<br>prête dans Premiere.
+      </h1>
+    </div>
+
+    <!-- Sous-titre -->
+    <p style="text-align:center;font-size:16px;color:var(--muted);line-height:1.8;margin-bottom:56px;max-width:540px;margin-left:auto;margin-right:auto;">
+      RUSHUP.AI transcrit ton rush mot par mot, identifie les meilleurs passages et exporte directement dans Premiere Pro.<br>
+      <span style="color:var(--text);font-weight:600;">Tu décides. Tu montes. Tu publies.</span>
+    </p>
+
+    <!-- 3 étapes -->
+    <div style="display:grid;grid-template-columns:1fr 24px 1fr 24px 1fr;gap:0;align-items:center;margin-bottom:56px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:24px 16px;text-align:center;">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(144,144,176,0.1);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:16px;">🎙</div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--muted2);text-transform:uppercase;margin-bottom:6px;">01 — Rush</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;">Dépose ton MP3 — interview, tournage, prise de parole</div>
+      </div>
+      <div style="text-align:center;color:var(--border2);font-size:18px;">→</div>
+      <div style="background:var(--surface2);border:1px solid var(--accent);border-radius:6px;padding:24px 16px;text-align:center;">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(151,71,255,0.1);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:16px;">⚡</div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--accent);text-transform:uppercase;margin-bottom:6px;">02 — Sélection</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;">RUSHUP identifie les passages qui accrochent, par canal</div>
+      </div>
+      <div style="text-align:center;color:var(--border2);font-size:18px;">→</div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:24px 16px;text-align:center;">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(75,201,122,0.1);border:1px solid rgba(75,201,122,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:16px;">🎬</div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--green);text-transform:uppercase;margin-bottom:6px;">03 — Export</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;">XML + SRT prêts à importer dans Premiere Pro</div>
+      </div>
+    </div>
+
+    <!-- 3 modes -->
+    <div style="margin-bottom:56px;">
+      <div style="font-size:10px;letter-spacing:2px;color:var(--muted2);text-transform:uppercase;text-align:center;margin-bottom:20px;font-family:'DM Mono',monospace;">— 3 modes d'analyse —</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:16px 20px;display:flex;gap:16px;align-items:flex-start;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted2);padding-top:2px;flex-shrink:0;width:28px;">A</div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px;letter-spacing:0.3px;">Questions — Interview</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.6;">Tu as interviewé quelqu'un. RUSHUP identifie les meilleures réponses et les moments de vérité, classés par impact pour chaque canal de diffusion.</div>
+          </div>
+        </div>
+
+        <div style="background:var(--surface2);border:1px solid var(--accent);border-radius:4px;padding:16px 20px;display:flex;gap:16px;align-items:flex-start;">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--accent);padding-top:2px;flex-shrink:0;width:28px;">B</div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:3px;letter-spacing:0.3px;">Découverte — Rush libre</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.6;">Tu as des heures de rush sans structure définie. RUSHUP explore, détecte les thématiques fortes et propose une sélection éditoriale cohérente. Idéal pour les documentaires et reportages.</div>
+          </div>
+        </div>
+
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:16px 20px;display:flex;gap:16px;align-items:flex-start;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted2);padding-top:2px;flex-shrink:0;width:28px;">C</div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px;letter-spacing:0.3px;">Script — Contenu planifié</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.6;">Tu as un angle éditorial précis. RUSHUP aligne le rush avec ta narration et génère une séquence prête à monter.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div style="text-align:center;">
+      <button onclick="showEmailGate()"
+        style="background:var(--accent);color:#fff;border:none;border-radius:4px;padding:18px 56px;font-family:'Outfit',sans-serif;font-size:17px;font-weight:800;cursor:pointer;letter-spacing:0.5px;transition:all 0.15s;display:inline-block;"
+        onmouseover="this.style.background='#7c3aed';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='var(--accent)';this.style.transform='translateY(0)'">
+        Tester avec mon rush →
+      </button>
+      <div style="margin-top:14px;font-size:10px;color:var(--muted2);font-family:'DM Mono',monospace;letter-spacing:1px;">ACCÈS BETA GRATUIT · JOURNALISTES & CRÉATEURS</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── EMAIL GATE ──────────────────────────────────────────────────────────── -->
+<div id="emailGate" style="display:none;min-height:100vh;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;">
+  <div style="max-width:400px;width:100%;">
+
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:40px;">
+      <div style="font-family:'Outfit',sans-serif;font-size:24px;font-weight:900;letter-spacing:3px;margin-bottom:8px;">
+        RUSHUP<span style="color:var(--accent);">.</span>AI
+      </div>
+      <div style="width:40px;height:1px;background:var(--border2);margin:0 auto;"></div>
+    </div>
+
+    <h2 style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px;text-align:center;">Accès beta</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:32px;line-height:1.7;text-align:center;">Entre tes infos pour accéder à l'outil.<br>On te tient au courant des nouveautés.</p>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+      <input id="gateFirstname" type="text" placeholder="Ton prénom"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:13px 16px;color:var(--text);font-size:14px;outline:none;transition:border-color 0.15s;font-family:'DM Mono',monospace;letter-spacing:0.3px;"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+        onkeydown="if(event.key==='Enter')document.getElementById('gateEmail').focus()">
+      <input id="gateEmail" type="email" placeholder="Ton email professionnel"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:13px 16px;color:var(--text);font-size:14px;outline:none;transition:border-color 0.15s;font-family:'DM Mono',monospace;letter-spacing:0.3px;"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+        onkeydown="if(event.key==='Enter')document.getElementById('gateJob').focus()">
+      <div style="position:relative;">
+        <select id="gateJob"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:13px 40px 13px 16px;color:var(--text);font-size:14px;outline:none;transition:border-color 0.15s;font-family:'DM Mono',monospace;cursor:pointer;width:100%;appearance:none;-webkit-appearance:none;"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+          <option value="" disabled selected style="color:var(--muted);">Tu es...</option>
+          <option value="journaliste">Journaliste</option>
+          <option value="createur">Créateur de contenu</option>
+          <option value="monteur">Monteur</option>
+          <option value="producteur">Producteur / Réalisateur</option>
+          <option value="autre">Autre</option>
+        </select>
+        <div style="position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted2);font-size:10px;">▼</div>
+      </div>
+    </div>
+
+    <button onclick="submitEmailGate()" id="gateSubmitBtn"
+      style="background:var(--accent);color:#fff;border:none;border-radius:3px;padding:14px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;cursor:pointer;width:100%;transition:all 0.15s;letter-spacing:0.3px;"
+      onmouseover="this.style.background='#7c3aed'" onmouseout="this.style.background='var(--accent)'">
+      Accéder à RUSHUP.AI →
+    </button>
+
+    <div id="gateError" style="display:none;color:var(--red);font-size:11px;margin-top:10px;text-align:center;font-family:'DM Mono',monospace;"></div>
+
+    <div style="margin-top:20px;text-align:center;">
+      <span style="font-size:10px;color:var(--muted2);font-family:'DM Mono',monospace;letter-spacing:0.5px;">Pas de spam · Juste les updates produit</span>
+    </div>
+
+    <button onclick="showLanding()" style="display:block;width:100%;background:transparent;border:none;color:var(--muted2);font-size:11px;cursor:pointer;margin-top:16px;text-align:center;font-family:'DM Mono',monospace;">← Retour</button>
+  </div>
+</div>
+
+<!-- ── APP (cachée jusqu'à validation email gate) ──────────────────────────── -->
+<div id="mainApp" style="display:none;">
+
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.7</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.8</span></div>
   <div class="header-right">
+    <span id="userGreeting" style="font-size:11px;color:var(--muted);margin-right:12px;"></span>
+    <button id="adminResetBtn" onclick="adminReset()" style="display:none;background:transparent;border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--muted2);font-size:10px;font-family:'DM Mono',monospace;cursor:pointer;margin-right:8px;" title="Reset expérience (admin)">↺ Reset</button>
     <button class="hist-btn" onclick="openHistory()">⏱ Historique</button>
   </div>
 </header>
@@ -1412,7 +1564,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         <div class="stat"><div class="stat-val" id="stTakes">—</div><div class="stat-lbl">Prises est.</div></div>
       </div>
       <div class="srt-preview" id="srtPreview"></div>
-      <!-- V5.7 — SRT Viewer interactif -->
+      <!-- V5.8 — SRT Viewer interactif -->
       <div class="srt-viewer" id="srtViewer">
         <div class="srt-viewer-header">
           <span>📄 Transcript complet — surligne pour créer un segment</span>
@@ -1838,7 +1990,7 @@ async function transcribeWithWhisper(file) {
     const formData = new FormData();
     formData.append('file', file, file.name);
     formData.append('model', 'whisper-1');
-    formData.append('response_format', 'verbose_json'); // V5.7 — word timestamps mot par mot
+    formData.append('response_format', 'verbose_json'); // V5.8 — word timestamps mot par mot
     formData.append('timestamp_granularities[]', 'word');
     formData.append('language', 'fr');
     formData.append('temperature', '0');
@@ -1865,7 +2017,7 @@ async function transcribeWithWhisper(file) {
 
     const jsonData = await response.json();
 
-    // V5.7 — Construit parsedSRT mot par mot depuis word timestamps
+    // V5.8 — Construit parsedSRT mot par mot depuis word timestamps
     statusText.textContent = '⚙️ Traitement des timecodes mot par mot...';
 
     // Stocke les données brutes
@@ -1886,7 +2038,7 @@ async function transcribeWithWhisper(file) {
     try { localStorage.setItem('rushai_whisper_srt', wordSRT); } catch(e) {}
     parseSRT(wordSRT, file.name);
 
-    // V5.7 — Vérification cohérence durée MP3 vs sources déclarées
+    // V5.8 — Vérification cohérence durée MP3 vs sources déclarées
     const audioDur = jsonData.duration || (window._whisperWords.length > 0
       ? window._whisperWords[window._whisperWords.length - 1].end
       : 0);
@@ -1907,7 +2059,7 @@ function fileToBase64(file) {
   });
 }
 
-// ── V5.7 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
+// ── V5.8 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
 function buildWordTimestampSRT(jsonData, maxChars) {
   maxChars = maxChars || 25;
   const words = jsonData.words || [];
@@ -2577,7 +2729,7 @@ function parseSRT(text, filename) {
   ).join('') + `<span style="color:var(--muted2)">... ${parsedSRT.length-5} blocs de plus</span>`;
   preview.classList.add('visible');
 
-  // V5.7 — Affiche le viewer SRT interactif complet
+  // V5.8 — Affiche le viewer SRT interactif complet
   renderSRTViewer();
 
   dz.querySelector('.drop-main').textContent = '✓ ' + filename;
@@ -2644,7 +2796,7 @@ function analyzeRushQuality() {
   if (window._audioFile) analyzeAudioQuality(window._audioFile);
 }
 
-// ── V5.7 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
+// ── V5.8 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
 async function analyzeAudioQuality(file) {
   const badge = document.getElementById('audioQualityBadge');
   try {
@@ -2747,7 +2899,7 @@ async function analyzeAudioQuality(file) {
   }
 }
 
-// ── V5.7 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
+// ── V5.8 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
 let _srtSelection = null; // { startIdx, endIdx, startSec, endSec, text }
 
 function renderSRTViewer() {
@@ -2828,7 +2980,7 @@ function onSRTSelection() {
   const text = parsedSRT.slice(from, to + 1).map(b => b.text).join(' ');
   const dur = endSec - startSec;
 
-  // V5.7 — Affine avec word timestamps si disponibles
+  // V5.8 — Affine avec word timestamps si disponibles
   let adjStartSec = startSec;
   let adjEndSec = endSec;
   if (window._whisperWords && window._whisperWords.length) {
@@ -3274,7 +3426,7 @@ Réponds UNIQUEMENT en JSON :
       // Stocke l'original pour restauration
       if (!seg._original) seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
 
-      // V5.7 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
+      // V5.8 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
       let newStartSec = startSec;
       let newEndSec = endSec;
       let tcSource = 'proportionnel';
@@ -3431,7 +3583,7 @@ function onSegTextSelection(e, ch, idx) {
   const segEndSec = tcToSec((seg.end || '').replace(',', '.'));
   const totalDur = segEndSec - segStartSec;
 
-  // V5.7 — Cherche d'abord dans les word timestamps précis
+  // V5.8 — Cherche d'abord dans les word timestamps précis
   let newStartSec = segStartSec + (start / Math.max(1, fullText.length)) * totalDur;
   let newEndSec = segStartSec + (end / Math.max(1, fullText.length)) * totalDur;
 
@@ -4054,7 +4206,7 @@ function calcPerfScore(channelKey, segments, accroches, totalSec) {
   };
 }
 
-// ── V5.7 — REVALIDATION CLAUDE ───────────────────────────────────────────────
+// ── V5.8 — REVALIDATION CLAUDE ───────────────────────────────────────────────
 // Détecte les répétitions dans un texte (mots > 3 lettres répétés)
 function detectRepetitionsInText(text) {
   const repetitions = [];
@@ -4224,7 +4376,7 @@ async function runStep3() {
       await runModeC(key);
     }
 
-    // ── V5.7 — Revalidation Claude ──────────────────────────────────────────
+    // ── V5.8 — Revalidation Claude ──────────────────────────────────────────
     if (rawResult) {
       btn.querySelector('.btn-text').textContent = '⚙️ Revalidation…';
       rawResult = await revalidateResult(key, rawResult);
@@ -4909,7 +5061,7 @@ function finalizeResults() {
     });
     const allSegs = [...accrocheSegs, ...bodySegs];
 
-    // V5.7 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
+    // V5.8 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
     if (window._whisperWords && window._whisperWords.length) {
       allSegs.forEach(seg => {
         if (seg._trimmed || seg.isManual) return;
@@ -5423,7 +5575,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.7 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.8 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
@@ -5488,7 +5640,6 @@ function exportSegmentSRTs(ch) {
 
 function exportSequenceSRT(ch, silent) {
   if (!window._lastChannelResults || !window._lastChannelResults[ch]) return;
-  // Use current segments (may have been edited/deleted by user)
   const chData = window._lastChannelResults[ch];
   const segs = (chData && chData.segments) ? chData.segments : [];
   if (!segs.length) {
@@ -5498,16 +5649,65 @@ function exportSequenceSRT(ch, silent) {
 
   let srt = '';
   let idx = 1;
-  let timelineOffset = 0; // running position in the new sequence (seconds)
+  let timelineOffset = 0;
 
   segs.forEach(function(seg) {
     const segStartSec = tcToSec((seg.start || '').replace(',','.'));
     const segEndSec = tcToSec((seg.end || '').replace(',','.'));
     const segDur = Math.max(0.1, segEndSec - segStartSec);
 
-    // Segments édités manuellement ou trimmés → génère SRT depuis le texte
-    if (seg._editedText || seg._trimmed || seg.isManual || seg._smartCut) {
-      const textToUse = seg._editedText || seg.text || '';
+    // Stratégie 1 — Word timestamps disponibles → découpe mot par mot précise
+    if (window._whisperWords && window._whisperWords.length && !seg._editedText) {
+      const segWords = window._whisperWords.filter(function(w) {
+        return w.start >= segStartSec - 0.1 && w.end <= segEndSec + 0.1;
+      });
+
+      if (segWords.length > 0) {
+        // Groupe les mots en blocs de 25 caractères avec leurs vrais timecodes
+        const blocks = [];
+        let chunk = '';
+        let chunkStart = null;
+        let chunkEnd = null;
+
+        segWords.forEach(function(w, wi) {
+          const word = (w.word || '').trim();
+          if (!word) return;
+          const test = chunk ? chunk + ' ' + word : word;
+          if (chunkStart === null) chunkStart = w.start;
+
+          if (test.length <= 25) {
+            chunk = test;
+            chunkEnd = w.end;
+          } else {
+            if (chunk) {
+              blocks.push({ text: chunk, start: chunkStart, end: chunkEnd });
+            }
+            chunk = word;
+            chunkStart = w.start;
+            chunkEnd = w.end;
+          }
+        });
+        if (chunk) blocks.push({ text: chunk, start: chunkStart, end: chunkEnd });
+
+        if (blocks.length > 0) {
+          const firstStart = blocks[0].start;
+          blocks.forEach(function(b) {
+            const localStart = b.start - firstStart;
+            const localEnd = b.end - firstStart;
+            srt += idx + '\n';
+            srt += secToSRTTC(timelineOffset + localStart) + ' --> ' + secToSRTTC(timelineOffset + localEnd) + '\n';
+            srt += b.text + '\n\n';
+            idx++;
+          });
+          timelineOffset += segDur;
+          return;
+        }
+      }
+    }
+
+    // Stratégie 2 — Texte édité ou pas de word timestamps → distribue uniformément
+    const textToUse = seg._editedText || seg.text || '';
+    if (textToUse) {
       const blocks2 = splitTextToSRTBlocks(textToUse, 0, segDur);
       blocks2.forEach(function(b) {
         srt += idx + '\n';
@@ -5515,40 +5715,7 @@ function exportSequenceSRT(ch, silent) {
         srt += b.text + '\n\n';
         idx++;
       });
-      timelineOffset += segDur;
-      return;
     }
-
-    // Cherche les blocs SRT originaux avec tolérance plus large
-    let blocks = parsedSRT.filter(function(b) {
-      return b.startSec >= segStartSec - 0.15 && b.endSec <= segEndSec + 0.15;
-    });
-
-    // Si toujours rien → génère depuis le texte du segment
-    if (blocks.length === 0) {
-      const textToUse = seg.text || '';
-      if (textToUse) {
-        const generatedBlocks = splitTextToSRTBlocks(textToUse, 0, segDur);
-        generatedBlocks.forEach(function(b) {
-          srt += idx + '\n';
-          srt += secToSRTTC(timelineOffset + b.start) + ' --> ' + secToSRTTC(timelineOffset + b.end) + '\n';
-          srt += b.text + '\n\n';
-          idx++;
-        });
-      }
-      timelineOffset += segDur;
-      return;
-    }
-
-    blocks.forEach(function(b) {
-      const localStart = Math.max(0, b.startSec - segStartSec);
-      const localEnd = Math.min(segDur, b.endSec - segStartSec);
-      srt += idx + '\n';
-      srt += secToSRTTC(timelineOffset + localStart) + ' --> ' + secToSRTTC(timelineOffset + localEnd) + '\n';
-      srt += b.text + '\n\n';
-      idx++;
-    });
-
     timelineOffset += segDur;
   });
 
@@ -5852,6 +6019,9 @@ function exportXML(ch) {
 
   // Déclenche aussi le SRT séquence automatiquement
   setTimeout(() => exportSequenceSRT(ch, true), 300);
+
+  // Liste d'attente V6 — affiché après le premier export
+  setTimeout(() => showV6Waitlist(), 1500);
 }
 
 // ── HISTORY ───────────────────────────────────────────────────────────────────
@@ -6048,5 +6218,139 @@ function markDone(id) { const el = document.getElementById(id); el.classList.add
 })();
 
 </script>
+</div><!-- end mainApp -->
+
+<script>
+// ── MODAL LISTE D'ATTENTE V6 ─────────────────────────────────────────────────
+let _v6WaitlistShown = false;
+
+function showV6Waitlist() {
+  if (_v6WaitlistShown) return;
+  try { if (localStorage.getItem('rushup_v6_waitlist')) return; } catch(e) {}
+
+  _v6WaitlistShown = true;
+
+  const modal = document.createElement('div');
+  modal.id = 'v6WaitlistModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  modal.innerHTML =
+    '<div style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:36px;max-width:420px;width:100%;text-align:center;">' +
+    '<div style="font-size:32px;margin-bottom:16px;">🚀</div>' +
+    '<h2 style="font-family:Outfit,sans-serif;font-size:22px;font-weight:800;margin-bottom:10px;">Ton XML est dans Premiere !</h2>' +
+    '<p style="color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:24px;">La V6 de RUSHUP.AI arrive — auth, projets cloud, collaboration équipe.<br><strong style="color:var(--text);">Tu veux être le premier à y accéder ?</strong></p>' +
+    '<button onclick="joinV6Waitlist()" style="background:var(--accent);color:#fff;border:none;border-radius:4px;padding:14px 32px;font-family:Outfit,sans-serif;font-size:15px;font-weight:700;cursor:pointer;width:100%;margin-bottom:10px;">Oui, je veux accès en priorité →</button>' +
+    '<button onclick="closeV6Waitlist()" style="background:transparent;border:none;color:var(--muted2);font-size:12px;cursor:pointer;text-decoration:underline;">Non merci</button>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+}
+
+function joinV6Waitlist() {
+  try { localStorage.setItem('rushup_v6_waitlist', '1'); } catch(e) {}
+  // Renvoie l'email déjà stocké vers le sheet avec flag V6
+  try {
+    const saved = JSON.parse(localStorage.getItem('rushup_user') || '{}');
+    if (saved.email) {
+      fetch(GOOGLE_SHEET_URL + '?firstname=' + encodeURIComponent(saved.firstname || '') + '&email=' + encodeURIComponent(saved.email) + '&v6=1&date=' + encodeURIComponent(new Date().toISOString()), { method: 'GET', mode: 'no-cors' });
+    }
+  } catch(e) {}
+  const modal = document.getElementById('v6WaitlistModal');
+  if (modal) {
+    modal.querySelector('div').innerHTML =
+      '<div style="font-size:40px;margin-bottom:16px;">✅</div>' +
+      '<h2 style="font-family:Outfit,sans-serif;font-size:20px;font-weight:800;margin-bottom:10px;">Tu es sur la liste !</h2>' +
+      '<p style="color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:24px;">On te contacte en priorité dès que la V6 est disponible.</p>' +
+      '<button onclick="closeV6Waitlist()" style="background:var(--surface3);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:10px 24px;font-size:13px;cursor:pointer;">Fermer</button>';
+  }
+}
+
+function closeV6Waitlist() {
+  const modal = document.getElementById('v6WaitlistModal');
+  if (modal) modal.remove();
+}
+
+// ── LANDING + EMAIL GATE ──────────────────────────────────────────────────────
+// URL de ton Google Apps Script (à remplacer après création)
+const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxenFgXboyEwRmAqde0msJnru6pXfdNYLvioh5d8VddYiOKy0yNasUQhelKn7DnlI1s/exec';
+
+function showLanding() {
+  document.getElementById('landingPage').style.display = 'flex';
+  document.getElementById('emailGate').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'none';
+}
+
+function showEmailGate() {
+  document.getElementById('landingPage').style.display = 'none';
+  document.getElementById('emailGate').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
+  setTimeout(() => document.getElementById('gateFirstname').focus(), 100);
+}
+
+function showApp(firstname) {
+  document.getElementById('landingPage').style.display = 'none';
+  document.getElementById('emailGate').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+
+  if (firstname) {
+    const greeting = document.getElementById('userGreeting');
+    if (greeting) greeting.textContent = 'Bonjour ' + firstname + ' 👋';
+  }
+
+  // Bouton reset visible uniquement pour david@rushup.io
+  try {
+    const saved = JSON.parse(localStorage.getItem('rushup_user') || '{}');
+    if (saved.email === 'david@rushup.io') {
+      const btn = document.getElementById('adminResetBtn');
+      if (btn) btn.style.display = 'inline-block';
+    }
+  } catch(e) {}
+}
+
+function adminReset() {
+  if (!confirm('Reset complet — retour à la landing page ?')) return;
+  try { localStorage.removeItem('rushup_user'); } catch(e) {}
+  location.reload();
+}
+
+async function submitEmailGate() {
+  const firstname = (document.getElementById('gateFirstname').value || '').trim();
+  const email = (document.getElementById('gateEmail').value || '').trim();
+  const job = (document.getElementById('gateJob').value || '').trim();
+  const errEl = document.getElementById('gateError');
+  const btn = document.getElementById('gateSubmitBtn');
+
+  errEl.style.display = 'none';
+
+  if (!firstname) { errEl.textContent = 'Entre ton prénom.'; errEl.style.display = 'block'; return; }
+  if (!email || !email.includes('@')) { errEl.textContent = 'Entre un email valide.'; errEl.style.display = 'block'; return; }
+  if (!job) { errEl.textContent = 'Dis-nous ce que tu fais.'; errEl.style.display = 'block'; return; }
+
+  btn.textContent = 'Accès en cours...'; btn.disabled = true;
+
+  // Stocke localement
+  try { localStorage.setItem('rushup_user', JSON.stringify({ firstname, email, job, date: new Date().toISOString() })); } catch(e) {}
+
+  // Envoie vers Google Sheet
+  try {
+    fetch(GOOGLE_SHEET_URL + '?firstname=' + encodeURIComponent(firstname) + '&email=' + encodeURIComponent(email) + '&job=' + encodeURIComponent(job) + '&date=' + encodeURIComponent(new Date().toISOString()), { method: 'GET', mode: 'no-cors' });
+  } catch(e) {}
+
+  showApp(firstname);
+}
+
+// Au chargement — vérifie si déjà inscrit
+window.addEventListener('DOMContentLoaded', function() {
+  try {
+    const saved = localStorage.getItem('rushup_user');
+    if (saved) {
+      const user = JSON.parse(saved);
+      showApp(user.firstname);
+      return;
+    }
+  } catch(e) {}
+  showLanding();
+});
+</script>
+
 </body>
 </html>
