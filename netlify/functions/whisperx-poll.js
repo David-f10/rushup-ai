@@ -1,18 +1,15 @@
 // Netlify Function — whisperx-poll.js
-// Vérifie le statut d'un job WhisperX via son event_id HF
-// Appelé toutes les 3s par le navigateur
+// Vérifie le statut d'un job WhisperX via son event_id
 
-exports.handler = async (event) => {
-  if (event.httpMethod !== 'GET') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
-
+export default async (req, context) => {
   const HF_TOKEN = process.env.HF_TOKEN;
   const HF_SPACE_URL = 'https://rushup-ai-rushup-whisperx.hf.space';
 
-  const eventId = event.queryStringParameters && event.queryStringParameters.event_id;
+  const url = new URL(req.url);
+  const eventId = url.searchParams.get('event_id');
+
   if (!eventId) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'event_id manquant' }) };
+    return new Response(JSON.stringify({ error: 'event_id manquant' }), { status: 400 });
   }
 
   try {
@@ -23,7 +20,10 @@ exports.handler = async (event) => {
     console.log('[WhisperX-Poll] Status:', getRes.status, 'event_id:', eventId);
 
     if (!getRes.ok) {
-      return { statusCode: 200, body: JSON.stringify({ status: 'processing' }) };
+      return new Response(JSON.stringify({ status: 'processing' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     const text = await getRes.text();
@@ -34,7 +34,6 @@ exports.handler = async (event) => {
         const data = JSON.parse(dataMatch[1]);
         const rawResult = data[0];
 
-        // Parse le JSON retourné par app.py
         let words;
         if (typeof rawResult === 'string') {
           const parsed = JSON.parse(rawResult);
@@ -46,21 +45,19 @@ exports.handler = async (event) => {
         }
 
         console.log('[WhisperX-Poll] Complet —', words && words.length, 'mots');
-        return {
-          statusCode: 200,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'complete', words })
-        };
+        return new Response(JSON.stringify({ status: 'complete', words }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
       }
     } else if (text.includes('event: error')) {
-      return { statusCode: 200, body: JSON.stringify({ status: 'error', error: 'WhisperX erreur' }) };
+      return new Response(JSON.stringify({ status: 'error' }), { status: 200 });
     }
 
-    // Toujours en cours
-    return { statusCode: 200, body: JSON.stringify({ status: 'processing' }) };
+    return new Response(JSON.stringify({ status: 'processing' }), { status: 200 });
 
   } catch (err) {
     console.error('[WhisperX-Poll] Exception:', err.message);
-    return { statusCode: 200, body: JSON.stringify({ status: 'processing' }) };
+    return new Response(JSON.stringify({ status: 'processing' }), { status: 200 });
   }
 };
