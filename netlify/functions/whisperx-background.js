@@ -1,29 +1,31 @@
 // Netlify Background Function — whisperx-background.js
-// Lance le job WhisperX et retourne immédiatement l'event_id HF
-// Timeout : 15 minutes (Background Function)
+// Syntaxe correcte pour Netlify Background Functions
 
-exports.handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
-
+export default async (req, context) => {
   const HF_TOKEN = process.env.HF_TOKEN;
   const HF_SPACE_URL = 'https://rushup-ai-rushup-whisperx.hf.space';
 
+  if (req.method !== 'POST') {
+    return new Response('Method Not Allowed', { status: 405 });
+  }
+
   if (!HF_TOKEN) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'HF_TOKEN manquant' }) };
+    return new Response(JSON.stringify({ error: 'HF_TOKEN manquant' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
   let body;
   try {
-    body = JSON.parse(event.body);
+    body = await req.json();
   } catch (e) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Body JSON invalide' }) };
+    return new Response(JSON.stringify({ error: 'Body JSON invalide' }), { status: 400 });
   }
 
   const { audioBase64, mimeType } = body;
   if (!audioBase64) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'audioBase64 manquant' }) };
+    return new Response(JSON.stringify({ error: 'audioBase64 manquant' }), { status: 400 });
   }
 
   try {
@@ -51,7 +53,7 @@ exports.handler = async (event) => {
 
     if (!uploadRes.ok) {
       const errText = await uploadRes.text();
-      return { statusCode: 500, body: JSON.stringify({ error: 'Upload échoué: ' + errText.slice(0, 200) }) };
+      return new Response(JSON.stringify({ error: 'Upload échoué: ' + errText.slice(0, 200) }), { status: 500 });
     }
 
     const uploadData = await uploadRes.json();
@@ -77,7 +79,7 @@ exports.handler = async (event) => {
 
     if (!postRes.ok) {
       const errText = await postRes.text();
-      return { statusCode: 500, body: JSON.stringify({ error: 'POST predict échoué: ' + errText.slice(0, 200) }) };
+      return new Response(JSON.stringify({ error: 'POST predict échoué: ' + errText.slice(0, 200) }), { status: 500 });
     }
 
     const postData = await postRes.json();
@@ -85,18 +87,20 @@ exports.handler = async (event) => {
     console.log('[WhisperX-BG] event_id:', eventId);
 
     if (!eventId) {
-      return { statusCode: 500, body: JSON.stringify({ error: 'Pas d\'event_id' }) };
+      return new Response(JSON.stringify({ error: 'Pas d\'event_id' }), { status: 500 });
     }
 
-    // Retourne immédiatement l'event_id — pas besoin d'attendre
-    return {
-      statusCode: 202,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ event_id: eventId, status: 'processing' })
-    };
+    return new Response(JSON.stringify({ event_id: eventId, status: 'processing' }), {
+      status: 202,
+      headers: { 'Content-Type': 'application/json' }
+    });
 
   } catch (err) {
     console.error('[WhisperX-BG] Exception:', err.message);
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    return new Response(JSON.stringify({ error: err.message }), { status: 500 });
   }
+};
+
+export const config = {
+  type: 'experimental-background'
 };
