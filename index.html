@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.86</title>
+<title>RUSHUP.AI V5.87</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -249,7 +249,7 @@ header {
 .srt-preview.visible { display: block; }
 .srt-preview .tc { color: #9F58F5; }
 
-/* ── V5.86 SRT VIEWER INTERACTIF ── */
+/* ── V5.87 SRT VIEWER INTERACTIF ── */
 .srt-viewer {
   margin-top: 12px;
   border: 1px solid var(--border);
@@ -1404,7 +1404,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <div id="mainApp" style="display:none;">
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.86</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.87</span></div>
   <div class="header-right">
     <span id="userGreeting" style="font-size:11px;color:var(--muted);margin-right:12px;"></span>
     <button id="adminResetBtn" onclick="adminReset()" style="display:none;background:transparent;border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--muted2);font-size:10px;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;margin-right:8px;" title="Reset expérience (admin)">↺ Reset</button>
@@ -1574,7 +1574,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         <div class="stat"><div class="stat-val" id="stTakes">—</div><div class="stat-lbl">Prises est.</div></div>
       </div>
       <div class="srt-preview" id="srtPreview"></div>
-      <!-- V5.86 — SRT Viewer interactif -->
+      <!-- V5.87 — SRT Viewer interactif -->
       <div class="srt-viewer" id="srtViewer">
         <div class="srt-viewer-header">
           <span>📄 Transcript complet — surligne pour créer un segment</span>
@@ -2000,7 +2000,7 @@ async function transcribeWithWhisper(file) {
     const formData = new FormData();
     formData.append('file', file, file.name);
     formData.append('model', 'whisper-1');
-    formData.append('response_format', 'verbose_json'); // V5.86 — word timestamps mot par mot
+    formData.append('response_format', 'verbose_json'); // V5.87 — word timestamps mot par mot
     formData.append('timestamp_granularities[]', 'word');
     formData.append('language', 'fr');
     formData.append('temperature', '0');
@@ -2027,7 +2027,7 @@ async function transcribeWithWhisper(file) {
 
     const jsonData = await response.json();
 
-    // V5.86 — Construit parsedSRT mot par mot depuis word timestamps
+    // V5.87 — Construit parsedSRT mot par mot depuis word timestamps
     statusText.textContent = '⚙️ Traitement des timecodes mot par mot...';
 
     // Stocke les données brutes
@@ -2048,7 +2048,7 @@ async function transcribeWithWhisper(file) {
     try { localStorage.setItem('rushai_whisper_srt', wordSRT); } catch(e) {}
     parseSRT(wordSRT, file.name);
 
-    // V5.86 — Vérification cohérence durée MP3 vs sources déclarées
+    // V5.87 — Vérification cohérence durée MP3 vs sources déclarées
     const audioDur = jsonData.duration || (window._whisperWords.length > 0
       ? window._whisperWords[window._whisperWords.length - 1].end
       : 0);
@@ -2069,7 +2069,7 @@ function fileToBase64(file) {
   });
 }
 
-// ── V5.86 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
+// ── V5.87 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
 function buildWordTimestampSRT(jsonData, maxChars) {
   maxChars = maxChars || 25;
   const words = jsonData.words || [];
@@ -2782,7 +2782,7 @@ function parseSRT(text, filename) {
   ).join('') + `<span style="color:var(--muted2)">... ${parsedSRT.length-5} blocs de plus</span>`;
   preview.classList.add('visible');
 
-  // V5.86 — Affiche le viewer SRT interactif complet
+  // V5.87 — Affiche le viewer SRT interactif complet
   renderSRTViewer();
 
   dz.querySelector('.drop-main').textContent = '✓ ' + filename;
@@ -2849,7 +2849,7 @@ function analyzeRushQuality() {
   if (window._audioFile) analyzeAudioQuality(window._audioFile);
 }
 
-// ── V5.86 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
+// ── V5.87 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
 async function analyzeAudioQuality(file) {
   const badge = document.getElementById('audioQualityBadge');
   try {
@@ -2952,7 +2952,7 @@ async function analyzeAudioQuality(file) {
   }
 }
 
-// ── V5.86 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
+// ── V5.87 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
 let _srtSelection = null; // { startIdx, endIdx, startSec, endSec, text }
 
 function renderSRTViewer() {
@@ -3033,7 +3033,7 @@ function onSRTSelection() {
   const text = parsedSRT.slice(from, to + 1).map(b => b.text).join(' ');
   const dur = endSec - startSec;
 
-  // V5.86 — Affine avec word timestamps si disponibles
+  // V5.87 — Affine avec word timestamps si disponibles
   let adjStartSec = startSec;
   let adjEndSec = endSec;
   if (window._whisperWords && window._whisperWords.length) {
@@ -3479,7 +3479,7 @@ Réponds UNIQUEMENT en JSON :
       // Stocke l'original pour restauration
       if (!seg._original) seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
 
-      // V5.86 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
+      // V5.87 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
       let newStartSec = startSec;
       let newEndSec = endSec;
       let tcSource = 'proportionnel';
@@ -3695,7 +3695,7 @@ function onSegTextSelection(e, ch, idx) {
   const segEndSec = tcToSec((seg.end || '').replace(',', '.'));
   const totalDur = segEndSec - segStartSec;
 
-  // V5.86 — Cherche d'abord dans les word timestamps précis
+  // V5.87 — Cherche d'abord dans les word timestamps précis
   let newStartSec = segStartSec + (start / Math.max(1, fullText.length)) * totalDur;
   let newEndSec = segStartSec + (end / Math.max(1, fullText.length)) * totalDur;
 
@@ -4318,7 +4318,7 @@ function calcPerfScore(channelKey, segments, accroches, totalSec) {
   };
 }
 
-// ── V5.86 — REVALIDATION CLAUDE ───────────────────────────────────────────────
+// ── V5.87 — REVALIDATION CLAUDE ───────────────────────────────────────────────
 // Détecte les répétitions dans un texte (mots > 3 lettres répétés)
 function detectRepetitionsInText(text) {
   const repetitions = [];
@@ -4488,7 +4488,7 @@ async function runStep3() {
       await runModeC(key);
     }
 
-    // ── V5.86 — Revalidation Claude ──────────────────────────────────────────
+    // ── V5.87 — Revalidation Claude ──────────────────────────────────────────
     if (rawResult) {
       btn.querySelector('.btn-text').textContent = '⚙️ Revalidation…';
       rawResult = await revalidateResult(key, rawResult);
@@ -4651,143 +4651,174 @@ Réponds UNIQUEMENT en JSON valide, sans markdown :
 
 async function runModeC(key) {
   const script = document.getElementById('scriptC').value.trim();
-  const transcript = buildCompressedTranscript();
 
   if (!script) {
     showError("Mode Script : colle ton script dans le champ texte avant de lancer l'analyse.");
     return;
   }
 
-  // Découpe le script en blocs numérotés
+  if (!window._whisperWords || !window._whisperWords.length) {
+    showError("Mode Script : transcris d'abord le rush audio avant de lancer l'analyse.");
+    return;
+  }
+
+  // Découpe le script en blocs
   const scriptBlocs = script
     .split(/\n+/)
     .map(l => l.trim())
     .filter(l => l.length > 5);
 
-  const blocsNumbered = scriptBlocs
-    .map((bloc, i) => `BLOC ${i+1} : "${bloc}"`)
-    .join('\n');
+  // Pour chaque bloc — cherche TOUTES les occurrences dans _whisperWords
+  const allSegments = [];
 
-  const channelsDesc = selectedChannels.map(c => {
-    const cfg = CHANNEL_CONFIG[c];
-    const durMin = Math.floor(globalDurationSec / 60);
-    const durSec = globalDurationSec % 60;
-    const durLabel = durSec > 0 ? `${durMin}m${durSec}s` : `${durMin} min`;
-    const isPrio = priorityChannel === c ? ' [CANAL PRIORITAIRE]' : '';
-    return `- ${cfg.name}${isPrio} : durée cible ${durLabel}, style : ${cfg.style}`;
-  }).join('\n');
+  scriptBlocs.forEach((bloc, blocIdx) => {
+    // Cherche toutes les occurrences du bloc dans les word timestamps
+    const occurrences = findAllPassageOccurrences(bloc);
 
-  const prompt = [
-    'Tu es un expert en montage documentaire. Tu travailles comme Eddie AI ou Simon Says Assemble.',
-    'Ta mission : pour chaque bloc du script, trouver les 3 MEILLEURES PRISES dans les rushs.',
-    '',
-    '═══════════════════════════════════════',
-    'TRANSCRIPTION COMPLÈTE DES RUSHS :',
-    '═══════════════════════════════════════',
-    transcript,
-    '',
-    '═══════════════════════════════════════',
-    'SCRIPT DÉCOUPÉ EN BLOCS (définit l\'ordre final) :',
-    '═══════════════════════════════════════',
-    blocsNumbered,
-    '',
-    '═══════════════════════════════════════',
-    'CANAUX :',
-    channelsDesc,
-    '═══════════════════════════════════════',
-    '',
-    'MISSION BLOC PAR BLOC :',
-    'Pour chaque BLOC du script :',
-    '1. Cherche dans TOUS les rushs les passages qui correspondent à ce bloc',
-    '2. Retourne LES 3 MEILLEURES PRISES classées par qualité (1=meilleure)',
-    '3. Si moins de 3 prises existent, retourne celles disponibles',
-    '4. Pour chaque prise, évalue :',
-    '   - clarté : 1-5 (5=parfaite, sans hésitation)',
-    '   - fluidité : 1-5 (5=phrase complète et bien articulée)',
-    '   - énergie : 1-5 (5=très enthousiaste)',
-    '5. L\'ordre des segments suit L\'ORDRE DU SCRIPT, pas l\'ordre chronologique',
-    '',
-    'RÈGLES ABSOLUES :',
-    '- PAS d\'accroche séparée',
-    '- L\'ordre des segments = l\'ordre du script',
-    '- Ne résume pas — texte exact de la prise',
-    '- arc_part = label du bloc : accroche, presentation, cause, ampleur, action, realisme, appel_final',
-    '',
-    'Réponds UNIQUEMENT en JSON valide, sans markdown :',
-    '{',
-    '  "editorial_note": "Résumé des choix",',
-    '  "accroches": [],',
-    '  "channels": {',
-    '    "CHANNEL_KEY": {',
-    '      "editorial_note": "Note sur le matching",',
-    '      "segments": [',
-    '        {',
-    '          "order": 1,',
-    '          "arc_part": "accroche",',
-    '          "script_bloc": 1,',
-    '          "prises": [',
-    '            {',
-    '              "rank": 1,',
-    '              "start": "00:00:00,000",',
-    '              "end": "00:00:00,000",',
-    '              "text": "Texte exact de la prise",',
-    '              "clarte": 5,',
-    '              "fluidite": 5,',
-    '              "energie": 4,',
-    '              "reason": "Pourquoi cette prise"',
-    '            },',
-    '            { "rank": 2, "start": "...", "end": "...", "text": "...", "clarte": 4, "fluidite": 4, "energie": 5, "reason": "..." },',
-    '            { "rank": 3, "start": "...", "end": "...", "text": "...", "clarte": 3, "fluidite": 4, "energie": 3, "reason": "..." }',
-    '          ],',
-    '          "start": "00:00:00,000",',
-    '          "end": "00:00:00,000",',
-    '          "text": "Texte de la prise rank 1",',
-    '          "reason": "Pourquoi rank 1 est la meilleure",',
-    '          "score_force": 5,',
-    '          "duration_sec": 0',
-    '        }',
-    '      ],',
-    '      "total_duration_sec": 0',
-    '    }',
-    '  }',
-    '}'
-  ].join('\n');
-
-  rawResult = await callAPI(key, prompt);
-
-  // Mode Script — garde les timecodes Claude tels quels
-  // findPassageTimecodes n'est PAS utilisé ici car il peut trouver la mauvaise occurrence
-  // L'énergie RMS est mesurée pour affichage uniquement
-  if (rawResult && rawResult.channels && _waveformData) {
-    Object.values(rawResult.channels).forEach(chData => {
-      (chData.segments || []).forEach(seg => {
-        (seg.prises || []).forEach(prise => {
-          const startSec = tcToSec((prise.start || '').replace(',', '.'));
-          const endSec = tcToSec((prise.end || '').replace(',', '.'));
-          if (startSec < endSec) {
-            prise.energie_rms = measureSegmentEnergy(startSec, endSec);
-          }
-        });
-      });
+    // Classe par énergie RMS si audio disponible
+    occurrences.forEach(occ => {
+      occ.energie_rms = (_waveformData && occ.start < occ.end)
+        ? measureSegmentEnergy(occ.start, occ.end)
+        : 0;
     });
-  }
 
-  // Stocke les prises alternatives pour l'interface de validation
+    // Trie par énergie RMS décroissante
+    occurrences.sort((a, b) => (b.energie_rms || 0) - (a.energie_rms || 0));
+
+    // Prend la meilleure occurrence + 2 alternatives
+    const bestOcc = occurrences[0];
+    if (!bestOcc) {
+      // Pas trouvé — segment vide pour signaler le manque
+      allSegments.push({
+        order: blocIdx + 1,
+        arc_part: 'bloc_' + (blocIdx + 1),
+        script_bloc: blocIdx + 1,
+        start: '00:00:00,000',
+        end: '00:00:00,000',
+        text: bloc + ' [NON TROUVÉ DANS LE RUSH]',
+        reason: 'Passage non trouvé dans les rushs',
+        score_force: 1,
+        duration_sec: 0,
+        _notFound: true,
+        prises: []
+      });
+      return;
+    }
+
+    const seg = {
+      order: blocIdx + 1,
+      arc_part: 'bloc_' + (blocIdx + 1),
+      script_bloc: blocIdx + 1,
+      start: secToSRTTC(bestOcc.start),
+      end: secToSRTTC(bestOcc.end),
+      text: bestOcc.text,
+      reason: 'Meilleure prise — énergie RMS : ' + (bestOcc.energie_rms || 0).toFixed(3),
+      score_force: 5,
+      duration_sec: bestOcc.end - bestOcc.start,
+      prises: occurrences.slice(0, 3).map((occ, pi) => ({
+        rank: pi + 1,
+        start: secToSRTTC(occ.start),
+        end: secToSRTTC(occ.end),
+        text: occ.text,
+        energie_rms: occ.energie_rms,
+        clarte: 5,
+        energie: Math.round((occ.energie_rms || 0) * 100),
+        reason: 'Occurrence ' + (pi + 1) + ' — énergie ' + (occ.energie_rms || 0).toFixed(3)
+      }))
+    };
+
+    allSegments.push(seg);
+  });
+
+  // Construit rawResult sans Claude
+  rawResult = {
+    accroches: [],
+    editorial_note: 'Matching local via word timestamps — ' + allSegments.filter(s => !s._notFound).length + '/' + scriptBlocs.length + ' blocs trouvés',
+    channels: {}
+  };
+
+  selectedChannels.forEach(ch => {
+    rawResult.channels[ch] = {
+      editorial_note: 'Segments dans l\'ordre du script',
+      segments: JSON.parse(JSON.stringify(allSegments)),
+      total_duration_sec: allSegments.reduce((a, s) => a + (s.duration_sec || 0), 0)
+    };
+  });
+
+  // Stocke les prises alternatives
   window._scriptPrises = {};
-  if (rawResult && rawResult.channels) {
-    Object.entries(rawResult.channels).forEach(([ch, chData]) => {
-      window._scriptPrises[ch] = {};
-      (chData.segments || []).forEach((seg, i) => {
-        if (seg.prises && seg.prises.length > 1) {
-          window._scriptPrises[ch][i] = seg.prises;
-        }
-      });
+  selectedChannels.forEach(ch => {
+    window._scriptPrises[ch] = {};
+    allSegments.forEach((seg, i) => {
+      if (seg.prises && seg.prises.length > 1) {
+        window._scriptPrises[ch][i] = seg.prises;
+      }
     });
-  }
+  });
 
-  // Mode Script — bypass étape accroche
+  // Bypass étape accroche
   accrocheMode = 'none';
   finalizeResults();
+}
+
+// Cherche toutes les occurrences d'un texte dans _whisperWords
+function findAllPassageOccurrences(text) {
+  if (!window._whisperWords || !window._whisperWords.length) return [];
+
+  // Mots clés du bloc (filtre les mots courts)
+  const keywords = text.toLowerCase()
+    .replace(/[^a-zàâéèêëîïôùûü\s]/g, '')
+    .split(/\s+/)
+    .filter(w => w.length > 3);
+
+  if (!keywords.length) return [];
+
+  const firstKeyword = keywords[0];
+  const lastKeyword = keywords[keywords.length - 1];
+  const occurrences = [];
+
+  // Cherche toutes les positions où le premier mot clé apparaît
+  window._whisperWords.forEach((w, idx) => {
+    const wt = (w.word || '').toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
+    if (!wt.includes(firstKeyword) && !firstKeyword.includes(wt)) return;
+
+    // Cherche le dernier mot clé dans les mots suivants (fenêtre de 50 mots)
+    let endIdx = idx;
+    for (let j = idx; j < Math.min(idx + 50, window._whisperWords.length); j++) {
+      const wt2 = (window._whisperWords[j].word || '').toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
+      if (wt2.includes(lastKeyword) || lastKeyword.includes(wt2)) {
+        endIdx = j;
+      }
+    }
+
+    const startSec = w.start;
+    const endSec = window._whisperWords[endIdx].end;
+
+    if (endSec > startSec + 0.3) {
+      // Reconstruit le texte réel de cette occurrence
+      const realText = window._whisperWords
+        .slice(idx, endIdx + 1)
+        .map(ww => (ww.word || '').trim())
+        .join(' ');
+
+      occurrences.push({
+        start: startSec,
+        end: endSec,
+        text: realText,
+        wordStart: idx,
+        wordEnd: endIdx
+      });
+    }
+  });
+
+  // Déduplique les occurrences trop proches (< 2s d'écart)
+  const deduped = [];
+  occurrences.forEach(occ => {
+    const tooClose = deduped.some(d => Math.abs(d.start - occ.start) < 2);
+    if (!tooClose) deduped.push(occ);
+  });
+
+  return deduped;
 }
 
 async function runModeB(key) {
@@ -5237,7 +5268,7 @@ function finalizeResults() {
     });
     const allSegs = [...accrocheSegs, ...bodySegs];
 
-    // V5.86 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
+    // V5.87 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
     if (window._whisperWords && window._whisperWords.length) {
       allSegs.forEach(seg => {
         if (seg._trimmed || seg.isManual) return;
@@ -5776,7 +5807,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.86 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.87 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
