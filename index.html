@@ -4605,8 +4605,18 @@ async function runModeC(key) {
   }).join("\n");
 
   const missionText = script
-    ? "Le script final est fourni. Pour CHAQUE ligne ou phrase du script, trouve la MEILLEURE PRISE dans le rush - la plus claire, fluide, sans hesitation. Garde TOUTES les parties du script dans l ordre exact. Ne supprime rien."
-    : "Detecte le message complet repete dans le rush. Pour CHAQUE passage du message, selectionne la meilleure prise. Garde l integralite du message dans l ordre original. Ne supprime aucune partie du discours.";
+    ? `Tu as un script composé par le journaliste. Ce script définit l'ordre et le contenu de la séquence finale.
+
+MISSION : Pour CHAQUE phrase ou passage du script, cherche dans TOUS les rushs disponibles (peu importe leur ordre chronologique) la meilleure prise. 
+
+CRITÈRES DE SÉLECTION pour chaque passage :
+1. Clarté — la prise la plus propre, sans hésitation ni bégaiement
+2. Fluidité — la phrase est complète et bien articulée  
+3. Énergie vocale — la prise la plus enthousiaste et engagée
+4. Fidélité — le sens correspond exactement à la phrase du script
+
+RÈGLE ABSOLUE : L'ordre des segments doit suivre l'ordre du script, PAS l'ordre chronologique des rushs. Un segment du rush 2 peut et doit apparaître avant un segment du rush 1 si le script l'exige.`
+    : `Détecte le message complet répété dans le rush. Pour CHAQUE passage du message, sélectionne la meilleure prise (la plus claire, fluide, sans hésitation). Garde l'intégralité du message dans l'ordre original.`;
 
   const scriptSection = script ? "SCRIPT VALIDE :\n" + script + "\n\n" : "";
 
@@ -4625,17 +4635,15 @@ async function runModeC(key) {
     "TA MISSION UNIQUE :",
     missionText,
     "",
-    "REGLES ABSOLUES - MODE NETTOYAGE UNIQUEMENT :",
-    "- GARDE TOUT le discours - ne supprime aucun passage du script",
-    "- NE REORDONNE JAMAIS - respecte strictement l ordre original du message",
-    "- NE FAIS PAS de selection editoriale - ce n est pas ton role ici",
-    "- Pour chaque passage repete, selectionne LA prise la plus fluide et propre",
-    "- Elimine uniquement les repetitions/begaiements a l interieur d un meme passage",
-    "- Chaque timecode unique une seule fois",
-    "- Le resultat doit couvrir l integralite du script dans l ordre",
-    "",
-    "IMPORTANT : les arc_part doivent reflechir la STRUCTURE DU SCRIPT, pas un arc narratif impose.",
-    "Utilise des labels descriptifs comme : introduction, appel_action, temoignage, chiffre_cle, conclusion, etc.",
+    "RÈGLES ABSOLUES — MODE SCRIPT :",
+    "- L'ordre des segments suit STRICTEMENT l'ordre du script — jamais l'ordre chronologique des rushs",
+    "- Pour chaque phrase du script, cherche dans TOUS les rushs la meilleure prise",
+    "- Sélectionne la prise la plus claire, fluide et énergique pour chaque passage",
+    "- Si plusieurs prises existent pour une même phrase, choisis celle avec le moins d'hésitations",
+    "- Un segment du rush 2 peut apparaître avant un segment du rush 1 — c'est normal et attendu",
+    "- Chaque segment correspond à une phrase ou un bloc du script",
+    "- Ne résume pas, ne reformule pas — utilise le texte exact de la prise sélectionnée",
+    "- Les arc_part reflètent la STRUCTURE DU SCRIPT : accroche, presentation, cause, action, realisme, appel_final, etc.",
     "",
     'Reponds UNIQUEMENT en JSON valide, sans markdown :',
     '{',
