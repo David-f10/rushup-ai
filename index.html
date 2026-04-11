@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.92</title>
+<title>RUSHUP.AI V5.93</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -249,7 +249,7 @@ header {
 .srt-preview.visible { display: block; }
 .srt-preview .tc { color: #9F58F5; }
 
-/* ── V5.92 SRT VIEWER INTERACTIF ── */
+/* ── V5.93 SRT VIEWER INTERACTIF ── */
 .srt-viewer {
   margin-top: 12px;
   border: 1px solid var(--border);
@@ -1404,7 +1404,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <div id="mainApp" style="display:none;">
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.92</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.93</span></div>
   <div class="header-right">
     <span id="userGreeting" style="font-size:11px;color:var(--muted);margin-right:12px;"></span>
     <button id="adminResetBtn" onclick="adminReset()" style="display:none;background:transparent;border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--muted2);font-size:10px;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;margin-right:8px;" title="Reset expérience (admin)">↺ Reset</button>
@@ -1574,7 +1574,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         <div class="stat"><div class="stat-val" id="stTakes">—</div><div class="stat-lbl">Prises est.</div></div>
       </div>
       <div class="srt-preview" id="srtPreview"></div>
-      <!-- V5.92 — SRT Viewer interactif -->
+      <!-- V5.93 — SRT Viewer interactif -->
       <div class="srt-viewer" id="srtViewer">
         <div class="srt-viewer-header">
           <span>📄 Transcript complet — surligne pour créer un segment</span>
@@ -2000,7 +2000,7 @@ async function transcribeWithWhisper(file) {
     const formData = new FormData();
     formData.append('file', file, file.name);
     formData.append('model', 'whisper-1');
-    formData.append('response_format', 'verbose_json'); // V5.92 — word timestamps mot par mot
+    formData.append('response_format', 'verbose_json'); // V5.93 — word timestamps mot par mot
     formData.append('timestamp_granularities[]', 'word');
     formData.append('language', 'fr');
     formData.append('temperature', '0');
@@ -2027,7 +2027,7 @@ async function transcribeWithWhisper(file) {
 
     const jsonData = await response.json();
 
-    // V5.92 — Construit parsedSRT mot par mot depuis word timestamps
+    // V5.93 — Construit parsedSRT mot par mot depuis word timestamps
     statusText.textContent = '⚙️ Traitement des timecodes mot par mot...';
 
     // Stocke les données brutes
@@ -2048,7 +2048,7 @@ async function transcribeWithWhisper(file) {
     try { localStorage.setItem('rushai_whisper_srt', wordSRT); } catch(e) {}
     parseSRT(wordSRT, file.name);
 
-    // V5.92 — Vérification cohérence durée MP3 vs sources déclarées
+    // V5.93 — Vérification cohérence durée MP3 vs sources déclarées
     const audioDur = jsonData.duration || (window._whisperWords.length > 0
       ? window._whisperWords[window._whisperWords.length - 1].end
       : 0);
@@ -2069,7 +2069,7 @@ function fileToBase64(file) {
   });
 }
 
-// ── V5.92 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
+// ── V5.93 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
 function buildWordTimestampSRT(jsonData, maxChars) {
   maxChars = maxChars || 25;
   const words = jsonData.words || [];
@@ -2782,7 +2782,7 @@ function parseSRT(text, filename) {
   ).join('') + `<span style="color:var(--muted2)">... ${parsedSRT.length-5} blocs de plus</span>`;
   preview.classList.add('visible');
 
-  // V5.92 — Affiche le viewer SRT interactif complet
+  // V5.93 — Affiche le viewer SRT interactif complet
   renderSRTViewer();
 
   dz.querySelector('.drop-main').textContent = '✓ ' + filename;
@@ -2849,7 +2849,7 @@ function analyzeRushQuality() {
   if (window._audioFile) analyzeAudioQuality(window._audioFile);
 }
 
-// ── V5.92 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
+// ── V5.93 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
 async function analyzeAudioQuality(file) {
   const badge = document.getElementById('audioQualityBadge');
   try {
@@ -2952,7 +2952,7 @@ async function analyzeAudioQuality(file) {
   }
 }
 
-// ── V5.92 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
+// ── V5.93 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
 let _srtSelection = null; // { startIdx, endIdx, startSec, endSec, text }
 
 function renderSRTViewer() {
@@ -3033,7 +3033,7 @@ function onSRTSelection() {
   const text = parsedSRT.slice(from, to + 1).map(b => b.text).join(' ');
   const dur = endSec - startSec;
 
-  // V5.92 — Affine avec word timestamps si disponibles
+  // V5.93 — Affine avec word timestamps si disponibles
   let adjStartSec = startSec;
   let adjEndSec = endSec;
   if (window._whisperWords && window._whisperWords.length) {
@@ -3479,7 +3479,7 @@ Réponds UNIQUEMENT en JSON :
       // Stocke l'original pour restauration
       if (!seg._original) seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
 
-      // V5.92 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
+      // V5.93 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
       let newStartSec = startSec;
       let newEndSec = endSec;
       let tcSource = 'proportionnel';
@@ -3695,7 +3695,7 @@ function onSegTextSelection(e, ch, idx) {
   const segEndSec = tcToSec((seg.end || '').replace(',', '.'));
   const totalDur = segEndSec - segStartSec;
 
-  // V5.92 — Cherche d'abord dans les word timestamps précis
+  // V5.93 — Cherche d'abord dans les word timestamps précis
   let newStartSec = segStartSec + (start / Math.max(1, fullText.length)) * totalDur;
   let newEndSec = segStartSec + (end / Math.max(1, fullText.length)) * totalDur;
 
@@ -4318,7 +4318,7 @@ function calcPerfScore(channelKey, segments, accroches, totalSec) {
   };
 }
 
-// ── V5.92 — REVALIDATION CLAUDE ───────────────────────────────────────────────
+// ── V5.93 — REVALIDATION CLAUDE ───────────────────────────────────────────────
 // Détecte les répétitions dans un texte (mots > 3 lettres répétés)
 function detectRepetitionsInText(text) {
   const repetitions = [];
@@ -4488,7 +4488,7 @@ async function runStep3() {
       await runModeC(key);
     }
 
-    // ── V5.92 — Revalidation Claude ──────────────────────────────────────────
+    // ── V5.93 — Revalidation Claude ──────────────────────────────────────────
     if (rawResult) {
       btn.querySelector('.btn-text').textContent = '⚙️ Revalidation…';
       rawResult = await revalidateResult(key, rawResult);
@@ -4683,15 +4683,22 @@ async function runModeC(key) {
     return `- ${cfg.name}${isPrio} : durée cible ${durLabel}, style : ${cfg.style}`;
   }).join('\n');
 
-  // ÉTAPE 1 — Lance WhisperX en background + Claude en parallèle
+  // ÉTAPE 1 — WhisperX : appel direct HF depuis le navigateur (pas de timeout Netlify)
   let _whisperXWords = null;
-  let whisperXEventId = null;
 
-  // Lance WhisperX en background (retourne immédiatement l'event_id)
   const whisperXPromise = (async () => {
     if (!window._audioFile) return null;
     try {
+      // Récupère le HF_TOKEN depuis Netlify (comme claude.js)
+      const tokenRes = await fetch('/.netlify/functions/whisperx-token');
+      if (!tokenRes.ok) { console.warn('[WhisperX] Token non disponible'); return null; }
+      const { token } = await tokenRes.json();
+
+      const HF_SPACE_URL = 'https://rushup-ai-rushup-whisperx.hf.space';
+
       showToast('🎙 WhisperX lancé en parallèle…');
+
+      // Convertit le MP3 en base64
       const audioBase64 = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -4699,25 +4706,72 @@ async function runModeC(key) {
         reader.readAsDataURL(window._audioFile);
       });
 
-      const bgRes = await fetch('/.netlify/functions/whisperx-background', {
+      const audioBuffer = Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0));
+      const blob = new Blob([audioBuffer], { type: window._audioFile.type || 'audio/mpeg' });
+      const formData = new FormData();
+      formData.append('files', blob, 'audio.mp3');
+
+      // Upload direct vers HF
+      const uploadRes = await fetch(`${HF_SPACE_URL}/gradio_api/upload`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+      });
+
+      console.log('[WhisperX] Upload status:', uploadRes.status);
+      if (!uploadRes.ok) { console.warn('[WhisperX] Upload échoué'); return null; }
+
+      const uploadData = await uploadRes.json();
+      const audioPath = Array.isArray(uploadData) ? uploadData[0] : (uploadData.path || uploadData);
+      console.log('[WhisperX] Audio path:', audioPath);
+
+      // Lance le job WhisperX
+      const postRes = await fetch(`${HF_SPACE_URL}/gradio_api/call/predict`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          audioBase64,
-          mimeType: window._audioFile.type || 'audio/mpeg'
+          data: [{ path: audioPath, meta: { _type: 'gradio.FileData' } }, 'fr']
         })
       });
 
-      if (bgRes.ok) {
-        const bgData = await bgRes.json();
-        whisperXEventId = bgData.event_id;
-        console.log('[WhisperX] Job lancé, event_id:', whisperXEventId);
-        return whisperXEventId;
+      console.log('[WhisperX] POST predict status:', postRes.status);
+      if (!postRes.ok) { console.warn('[WhisperX] POST predict échoué'); return null; }
+
+      const { event_id } = await postRes.json();
+      console.log('[WhisperX] event_id:', event_id);
+      if (!event_id) return null;
+
+      // Poll depuis le navigateur — pas de timeout !
+      for (let i = 0; i < 40; i++) {
+        await new Promise(r => setTimeout(r, 3000));
+        const pollRes = await fetch(`${HF_SPACE_URL}/gradio_api/call/predict/${event_id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        console.log(`[WhisperX] Poll ${i+1} status:`, pollRes.status);
+        if (!pollRes.ok) continue;
+
+        const text = await pollRes.text();
+        if (text.includes('event: complete')) {
+          const dataMatch = text.match(/data:\s*(\[.*?\])/s);
+          if (dataMatch) {
+            const data = JSON.parse(dataMatch[1]);
+            const raw = data[0];
+            const words = typeof raw === 'string' ? JSON.parse(raw).words : (raw.words || raw);
+            console.log('[WhisperX] Succès —', words.length, 'mots');
+            return words;
+          }
+        } else if (text.includes('event: error')) {
+          console.warn('[WhisperX] Erreur pendant traitement');
+          return null;
+        }
       }
+      console.warn('[WhisperX] Timeout après 120s');
+      return null;
+
     } catch (err) {
-      console.warn('[WhisperX] Erreur lancement:', err);
+      console.warn('[WhisperX] Exception:', err.message);
+      return null;
     }
-    return null;
   })();
 
   // ÉTAPE 2 — Claude : jugement éditorial + identification du meilleur texte par bloc
@@ -4773,32 +4827,13 @@ async function runModeC(key) {
 
   rawResult = await callAPI(key, prompt);
 
-  // ÉTAPE 2b — Pendant que Claude finissait, on poll WhisperX
-  // Si WhisperX a été lancé, on attend son résultat (max 90s)
-  const eventId = await whisperXPromise;
-  if (eventId) {
-    showToast('⏳ Récupération résultat WhisperX…');
-    const maxPolls = 30; // 30 × 3s = 90s max
-    for (let i = 0; i < maxPolls; i++) {
-      await new Promise(r => setTimeout(r, 3000));
-      try {
-        const pollRes = await fetch(`/.netlify/functions/whisperx-poll?event_id=${eventId}`);
-        if (pollRes.ok) {
-          const pollData = await pollRes.json();
-          console.log('[WhisperX] Poll', i+1, '— status:', pollData.status);
-          if (pollData.status === 'complete' && pollData.words && pollData.words.length) {
-            _whisperXWords = pollData.words;
-            showToast('✅ WhisperX — ' + _whisperXWords.length + ' mots alignés');
-            break;
-          } else if (pollData.status === 'error') {
-            console.warn('[WhisperX] Erreur — fallback sur _whisperWords');
-            break;
-          }
-        }
-      } catch (err) {
-        console.warn('[WhisperX] Poll erreur:', err);
-      }
-    }
+  // ÉTAPE 2b — Récupère le résultat WhisperX (qui tournait en parallèle)
+  const whisperXResult = await whisperXPromise;
+  if (whisperXResult && whisperXResult.length) {
+    _whisperXWords = whisperXResult;
+    showToast('✅ WhisperX — ' + _whisperXWords.length + ' mots alignés');
+  } else {
+    console.warn('[WhisperX] Fallback sur _whisperWords');
   }
 
   // Utilise WhisperX si disponible, sinon fallback sur Whisper standard
@@ -5369,7 +5404,7 @@ function finalizeResults() {
     });
     const allSegs = [...accrocheSegs, ...bodySegs];
 
-    // V5.92 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
+    // V5.93 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
     if (window._whisperWords && window._whisperWords.length) {
       allSegs.forEach(seg => {
         if (seg._trimmed || seg.isManual) return;
@@ -5908,7 +5943,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.92 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.93 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
