@@ -1,44 +1,100 @@
-const { Client } = require("@gradio/client");
+// Netlify Function — whisperx.js
+// Envoie le MP3 au Space Hugging Face rushup-whisperx
+// Retourne les word timestamps WhisperX précis
 
-exports.handler = async function(event) {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json'
-  };
+exports.handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: 'Method Not Allowed' };
+  }
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+  const HF_TOKEN = process.env.HF_TOKEN;
+  const HF_SPACE_URL = 'https://rushup-ai-rushup-whisperx.hf.space';
+
+  if (!HF_TOKEN) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'HF_TOKEN manquant dans les variables Netlify' })
+    };
+  }
+
+  let body;
+  try {
+    body = JSON.parse(event.body);
+  } catch (e) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'Body JSON invalide' }) };
+  }
+
+  const { audioBase64, mimeType } = body;
+
+  if (!audioBase64) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'audioBase64 manquant' }) };
   }
 
   try {
-    const { audioBase64, mimeType } = JSON.parse(event.body);
-    if (!audioBase64) throw new Error('No audio provided');
-
-    // Convertit base64 en Blob
+    // Convertit base64 en Buffer
     const audioBuffer = Buffer.from(audioBase64, 'base64');
-    const audioBlob = new Blob([audioBuffer], { type: mimeType || 'audio/mpeg' });
 
-    // Appelle le Space HF
-    const client = await Client.connect("rushup-ai/rushup-whisperx", {
-      hf_token: process.env.HF_TOKEN
+    // Upload l'audio sur le Space HF via l'API Gradio
+    const uploadRes = await fetch(`${HF_SPACE_URL}/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${HF_TOKEN}`,
+        'Content-Type': mimeType || 'audio/mpeg'
+      },
+      body: audioBuffer
     });
 
-    const result = await client.predict("/predict", {
-      audio_file: audioBlob
+    if (!uploadRes.ok) {
+      const errText = await uploadRes.text();
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Erreur upload HF: ' + errText })
+      };
+    }
+
+    const uploadData = await uploadRes.json();
+    const audioPath = uploadData[0] || uploadData.file || uploadData;
+
+    // Appelle l'endpoint Gradio /run/predict
+    const predictRes = await fetch(`${HF_SPACE_URL}/run/predict`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${HF_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        fn_index: 0,
+        data: [audioPath, 'fr']  // audio + langue
+      })
     });
+
+    if (!predictRes.ok) {
+      const errText = await predictRes.text();
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Erreur WhisperX: ' + errText })
+      };
+    }
+
+    const predictData = await predictRes.json();
+    const words = predictData.data && predictData.data[0];
+
+    if (!words || !words.length) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'WhisperX n\'a retourné aucun mot' })
+      };
+    }
 
     return {
       statusCode: 200,
-      headers,
-      body: result.data[0]
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ words })
     };
 
   } catch (err) {
     return {
       statusCode: 500,
-      headers,
       body: JSON.stringify({ error: err.message })
     };
   }
