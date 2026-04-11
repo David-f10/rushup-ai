@@ -4592,9 +4592,23 @@ Réponds UNIQUEMENT en JSON valide, sans markdown :
 
 async function runModeC(key) {
   const script = document.getElementById('scriptC').value.trim();
-  // For Mode Script: send all content but compress repetitions
-  // Group consecutive blocks into sentences for efficiency
   const transcript = buildCompressedTranscript();
+
+  if (!script) {
+    showError("Mode Script : colle ton script dans le champ texte avant de lancer l'analyse.");
+    return;
+  }
+
+  // Découpe le script en blocs numérotés (par paragraphe ou ligne non vide)
+  const scriptBlocs = script
+    .split(/\n+/)
+    .map(l => l.trim())
+    .filter(l => l.length > 5);
+
+  const blocsNumbered = scriptBlocs
+    .map((bloc, i) => `BLOC ${i+1} : "${bloc}"`)
+    .join('\n');
+
   const channelsDesc = selectedChannels.map(c => {
     const cfg = CHANNEL_CONFIG[c];
     const durMin = Math.floor(globalDurationSec / 60);
@@ -4602,77 +4616,77 @@ async function runModeC(key) {
     const durLabel = durSec > 0 ? `${durMin}m${durSec}s` : `${durMin} min`;
     const isPrio = priorityChannel === c ? ' [CANAL PRIORITAIRE]' : '';
     return `- ${cfg.name}${isPrio} : durée cible ${durLabel}, style : ${cfg.style}`;
-  }).join("\n");
-
-  const missionText = script
-    ? `Tu as un script composé par le journaliste. Ce script définit l'ordre et le contenu de la séquence finale.
-
-MISSION : Pour CHAQUE phrase ou passage du script, cherche dans TOUS les rushs disponibles (peu importe leur ordre chronologique) la meilleure prise. 
-
-CRITÈRES DE SÉLECTION pour chaque passage :
-1. Clarté — la prise la plus propre, sans hésitation ni bégaiement
-2. Fluidité — la phrase est complète et bien articulée  
-3. Énergie vocale — la prise la plus enthousiaste et engagée
-4. Fidélité — le sens correspond exactement à la phrase du script
-
-RÈGLE ABSOLUE : L'ordre des segments doit suivre l'ordre du script, PAS l'ordre chronologique des rushs. Un segment du rush 2 peut et doit apparaître avant un segment du rush 1 si le script l'exige.`
-    : `Détecte le message complet répété dans le rush. Pour CHAQUE passage du message, sélectionne la meilleure prise (la plus claire, fluide, sans hésitation). Garde l'intégralité du message dans l'ordre original.`;
-
-  const scriptSection = script ? "SCRIPT VALIDE :\n" + script + "\n\n" : "";
+  }).join('\n');
 
   const prompt = [
-    "Tu es un expert en nettoyage de prises video. Ton role est UNIQUEMENT de trouver la meilleure prise de chaque passage.",
-    "Tu NE fais PAS de montage editorial. Tu NE choisis PAS quoi garder ou enlever. Tu NE reorganises PAS.",
-    "Le script/discours est sacre - il doit etre respecte integralement dans son ordre original.",
-    "",
-    "TRANSCRIPTION :",
+    'Tu es un expert en montage documentaire. Tu travailles comme Eddie AI ou Simon Says Assemble.',
+    'Ta mission : pour chaque bloc du script, trouver la MEILLEURE PRISE dans les rushs.',
+    '',
+    '═══════════════════════════════════════',
+    'TRANSCRIPTION COMPLÈTE DES RUSHS :',
+    '═══════════════════════════════════════',
     transcript,
-    "",
-    scriptSection,
-    "CANAUX DE DIFFUSION (style uniquement, pas de selection) :",
+    '',
+    '═══════════════════════════════════════',
+    'SCRIPT DÉCOUPÉ EN BLOCS (définit l\'ordre final) :',
+    '═══════════════════════════════════════',
+    blocsNumbered,
+    '',
+    '═══════════════════════════════════════',
+    'CANAUX :',
     channelsDesc,
-    "",
-    "TA MISSION UNIQUE :",
-    missionText,
-    "",
-    "RÈGLES ABSOLUES — MODE SCRIPT :",
-    "- L'ordre des segments suit STRICTEMENT l'ordre du script — jamais l'ordre chronologique des rushs",
-    "- Pour chaque phrase du script, cherche dans TOUS les rushs la meilleure prise",
-    "- Sélectionne la prise la plus claire, fluide et énergique pour chaque passage",
-    "- Si plusieurs prises existent pour une même phrase, choisis celle avec le moins d'hésitations",
-    "- Un segment du rush 2 peut apparaître avant un segment du rush 1 — c'est normal et attendu",
-    "- Chaque segment correspond à une phrase ou un bloc du script",
-    "- Ne résume pas, ne reformule pas — utilise le texte exact de la prise sélectionnée",
-    "- Les arc_part reflètent la STRUCTURE DU SCRIPT : accroche, presentation, cause, action, realisme, appel_final, etc.",
-    "",
-    'Reponds UNIQUEMENT en JSON valide, sans markdown :',
+    '═══════════════════════════════════════',
+    '',
+    'MISSION BLOC PAR BLOC :',
+    'Pour chaque BLOC du script ci-dessus :',
+    '1. Cherche dans TOUS les rushs la phrase ou passage qui correspond à ce bloc',
+    '2. Si ce passage est répété plusieurs fois, sélectionne LA MEILLEURE PRISE selon :',
+    '   - Clarté maximale (sans hésitation, sans bégaiement)',
+    '   - Fluidité (phrase complète, bien articulée)',
+    '   - Énergie vocale (la plus enthousiaste)',
+    '   - Fidélité au sens du bloc',
+    '3. Retourne UN segment par bloc — dans L\'ORDRE DU SCRIPT, pas l\'ordre chronologique',
+    '4. Un segment du rush 2 PEUT précéder un segment du rush 1 si le script l\'exige',
+    '',
+    'RÈGLES ABSOLUES :',
+    '- PAS d\'accroche séparée — le script définit déjà l\'ordre et l\'accroche',
+    '- Un segment par bloc du script minimum',
+    '- L\'ordre des segments = l\'ordre du script',
+    '- Ne résume pas, ne reformule pas — texte exact de la prise choisie',
+    '- arc_part = label descriptif du bloc : accroche, presentation, cause, ampleur, action, realisme, appel_final, etc.',
+    '- score_force = 5 si prise parfaite, 3 si acceptable, 1 si seule option disponible',
+    '',
+    'Réponds UNIQUEMENT en JSON valide, sans markdown :',
     '{',
-    '  "editorial_note": "Note expliquant quelles prises tu as choisies et pourquoi",',
-    '  "detected_message": "Resume du message en 2-3 phrases",',
-    '  "accroches": [{ "rank": 1, "start": "00:00:00,000", "end": "00:00:00,000", "text": "Texte", "hook_type": "pattern_interrupt", "why": "Pourquoi cest la meilleure ouverture", "duration_sec": 0 }, { "rank": 2, ... }, { "rank": 3, ... }],',
+    '  "editorial_note": "Résumé de tes choix de prises — quels blocs avaient plusieurs options et pourquoi tu as choisi celle-là",',
+    '  "accroches": [],',
     '  "channels": {',
     '    "CHANNEL_KEY": {',
-    '      "editorial_note": "Note sur le nettoyage effectue pour ce canal",',
-    '      "segments": [{ "order": 1, "arc_part": "introduction", "start": "00:00:00,000", "end": "00:00:00,000", "text": "Texte exact de la meilleure prise", "reordered": false, "original_position": "debut", "reason": "Pourquoi cette prise est la plus propre", "score_force": 5, "duration_sec": 0 }],',
+    '      "editorial_note": "Note sur la qualité du matching script/rushs",',
+    '      "segments": [',
+    '        {',
+    '          "order": 1,',
+    '          "arc_part": "accroche",',
+    '          "start": "00:00:00,000",',
+    '          "end": "00:00:00,000",',
+    '          "text": "Texte exact de la meilleure prise trouvée dans le rush",',
+    '          "script_bloc": 1,',
+    '          "reason": "Pourquoi cette prise est la meilleure pour ce bloc",',
+    '          "score_force": 5,',
+    '          "duration_sec": 0',
+    '        }',
+    '      ],',
     '      "total_duration_sec": 0',
     '    }',
     '  }',
     '}'
-  ].join("\n");
-
+  ].join('\n');
 
   rawResult = await callAPI(key, prompt);
 
-  // Show detected message if no script
-  if (!script && rawResult.detected_message) {
-    const s3body = document.getElementById('step3').querySelector('.step-body');
-    const msgDiv = document.createElement('div');
-    msgDiv.style.cssText = 'margin-top:14px;padding:12px 16px;background:rgba(180,127,255,0.06);border:1px solid rgba(180,127,255,0.2);border-radius:3px;font-size:12px;color:var(--accent3);line-height:1.7;';
-    msgDiv.innerHTML = `<strong style="font-size:10px;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:6px;">Message détecté</strong>${rawResult.detected_message}`;
-    s3body.appendChild(msgDiv);
-  }
-
-  renderAccroches(rawResult.accroches);
+  // Mode Script — bypass étape accroche, va directement aux résultats
+  accrocheMode = 'none';
+  finalizeResults();
 }
 
 async function runModeB(key) {
