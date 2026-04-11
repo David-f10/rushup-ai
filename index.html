@@ -4773,24 +4773,12 @@ async function runModeC(key) {
             prise.start = secToSRTTC(priseTC.start);
             prise.end = secToSRTTC(priseTC.end);
           }
-          // Score énergie vocale via Web Audio API
+          // Score énergie vocale — affiché dans l'interface, pas utilisé pour re-trier
           if (_waveformData && priseTC) {
             prise.energie_rms = measureSegmentEnergy(priseTC.start, priseTC.end);
           }
         });
-        // Re-trie les prises par score combiné si énergie mesurée
-        if (seg.prises && seg.prises[0] && seg.prises[0].energie_rms !== undefined) {
-          seg.prises.sort((a, b) => {
-            const scoreA = (a.clarte || 3) + (a.fluidite || 3) + ((a.energie_rms || 0) * 10);
-            const scoreB = (b.clarte || 3) + (b.fluidite || 3) + ((b.energie_rms || 0) * 10);
-            return scoreB - scoreA;
-          });
-          // Met à jour le segment principal avec la meilleure prise re-triée
-          const best = seg.prises[0];
-          seg.start = best.start;
-          seg.end = best.end;
-          seg.text = best.text;
-        }
+        // NE PAS re-trier — l'ordre du script est sacré
       });
     });
   }
