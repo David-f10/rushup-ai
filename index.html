@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.81</title>
+<title>RUSHUP.AI V5.82</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -249,7 +249,7 @@ header {
 .srt-preview.visible { display: block; }
 .srt-preview .tc { color: #9F58F5; }
 
-/* ── V5.81 SRT VIEWER INTERACTIF ── */
+/* ── V5.82 SRT VIEWER INTERACTIF ── */
 .srt-viewer {
   margin-top: 12px;
   border: 1px solid var(--border);
@@ -1404,7 +1404,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <div id="mainApp" style="display:none;">
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.81</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.82</span></div>
   <div class="header-right">
     <span id="userGreeting" style="font-size:11px;color:var(--muted);margin-right:12px;"></span>
     <button id="adminResetBtn" onclick="adminReset()" style="display:none;background:transparent;border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--muted2);font-size:10px;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;margin-right:8px;" title="Reset expérience (admin)">↺ Reset</button>
@@ -1574,7 +1574,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         <div class="stat"><div class="stat-val" id="stTakes">—</div><div class="stat-lbl">Prises est.</div></div>
       </div>
       <div class="srt-preview" id="srtPreview"></div>
-      <!-- V5.81 — SRT Viewer interactif -->
+      <!-- V5.82 — SRT Viewer interactif -->
       <div class="srt-viewer" id="srtViewer">
         <div class="srt-viewer-header">
           <span>📄 Transcript complet — surligne pour créer un segment</span>
@@ -2000,7 +2000,7 @@ async function transcribeWithWhisper(file) {
     const formData = new FormData();
     formData.append('file', file, file.name);
     formData.append('model', 'whisper-1');
-    formData.append('response_format', 'verbose_json'); // V5.81 — word timestamps mot par mot
+    formData.append('response_format', 'verbose_json'); // V5.82 — word timestamps mot par mot
     formData.append('timestamp_granularities[]', 'word');
     formData.append('language', 'fr');
     formData.append('temperature', '0');
@@ -2027,7 +2027,7 @@ async function transcribeWithWhisper(file) {
 
     const jsonData = await response.json();
 
-    // V5.81 — Construit parsedSRT mot par mot depuis word timestamps
+    // V5.82 — Construit parsedSRT mot par mot depuis word timestamps
     statusText.textContent = '⚙️ Traitement des timecodes mot par mot...';
 
     // Stocke les données brutes
@@ -2048,7 +2048,7 @@ async function transcribeWithWhisper(file) {
     try { localStorage.setItem('rushai_whisper_srt', wordSRT); } catch(e) {}
     parseSRT(wordSRT, file.name);
 
-    // V5.81 — Vérification cohérence durée MP3 vs sources déclarées
+    // V5.82 — Vérification cohérence durée MP3 vs sources déclarées
     const audioDur = jsonData.duration || (window._whisperWords.length > 0
       ? window._whisperWords[window._whisperWords.length - 1].end
       : 0);
@@ -2069,7 +2069,7 @@ function fileToBase64(file) {
   });
 }
 
-// ── V5.81 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
+// ── V5.82 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
 function buildWordTimestampSRT(jsonData, maxChars) {
   maxChars = maxChars || 25;
   const words = jsonData.words || [];
@@ -2782,7 +2782,7 @@ function parseSRT(text, filename) {
   ).join('') + `<span style="color:var(--muted2)">... ${parsedSRT.length-5} blocs de plus</span>`;
   preview.classList.add('visible');
 
-  // V5.81 — Affiche le viewer SRT interactif complet
+  // V5.82 — Affiche le viewer SRT interactif complet
   renderSRTViewer();
 
   dz.querySelector('.drop-main').textContent = '✓ ' + filename;
@@ -2849,7 +2849,7 @@ function analyzeRushQuality() {
   if (window._audioFile) analyzeAudioQuality(window._audioFile);
 }
 
-// ── V5.81 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
+// ── V5.82 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
 async function analyzeAudioQuality(file) {
   const badge = document.getElementById('audioQualityBadge');
   try {
@@ -2952,7 +2952,7 @@ async function analyzeAudioQuality(file) {
   }
 }
 
-// ── V5.81 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
+// ── V5.82 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
 let _srtSelection = null; // { startIdx, endIdx, startSec, endSec, text }
 
 function renderSRTViewer() {
@@ -3033,7 +3033,7 @@ function onSRTSelection() {
   const text = parsedSRT.slice(from, to + 1).map(b => b.text).join(' ');
   const dur = endSec - startSec;
 
-  // V5.81 — Affine avec word timestamps si disponibles
+  // V5.82 — Affine avec word timestamps si disponibles
   let adjStartSec = startSec;
   let adjEndSec = endSec;
   if (window._whisperWords && window._whisperWords.length) {
@@ -3479,7 +3479,7 @@ Réponds UNIQUEMENT en JSON :
       // Stocke l'original pour restauration
       if (!seg._original) seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
 
-      // V5.81 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
+      // V5.82 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
       let newStartSec = startSec;
       let newEndSec = endSec;
       let tcSource = 'proportionnel';
@@ -3547,6 +3547,65 @@ function measureSegmentEnergy(startSec, endSec) {
   let sum = 0;
   for (let i = startSample; i < endSample; i++) sum += _waveformData[i] * _waveformData[i];
   return Math.sqrt(sum / (endSample - startSample));
+}
+
+// ── PRISES ALTERNATIVES MODE SCRIPT ─────────────────────────────────────────
+function togglePrisesPanel(ch, idx) {
+  const panel = document.getElementById('prises-panel-' + ch + '-' + idx);
+  if (!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  const btn = document.getElementById('prises-btn-' + ch + '-' + idx);
+  if (btn) btn.style.background = isOpen ? 'transparent' : 'rgba(151,71,255,0.15)';
+}
+
+function playPrise(ch, idx, priseIdx) {
+  const prises = window._scriptPrises && window._scriptPrises[ch] && window._scriptPrises[ch][idx];
+  if (!prises || !prises[priseIdx]) return;
+  const prise = prises[priseIdx];
+  const startSec = tcToSec((prise.start || '').replace(',', '.'));
+  const endSec = tcToSec((prise.end || '').replace(',', '.'));
+  playAudioRange(startSec, endSec, 'Prise ' + (priseIdx + 1) + ' — ' + (prise.text || '').slice(0, 40));
+}
+
+function choosePrise(ch, idx, priseIdx) {
+  const prises = window._scriptPrises && window._scriptPrises[ch] && window._scriptPrises[ch][idx];
+  if (!prises || !prises[priseIdx]) return;
+  const prise = prises[priseIdx];
+
+  const seg = window._lastChannelResults && window._lastChannelResults[ch] && window._lastChannelResults[ch].segments[idx];
+  if (!seg) return;
+
+  // Sauvegarde original
+  if (!seg._original) seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
+
+  // Applique la prise choisie
+  seg.start = prise.start;
+  seg.end = prise.end;
+  seg.text = prise.text;
+  seg.duration_sec = tcToSec((prise.end || '').replace(',', '.')) - tcToSec((prise.start || '').replace(',', '.'));
+  seg._trimmed = true;
+  seg.reason = (seg.reason || '') + ' [Prise ' + (priseIdx + 1) + ' choisie manuellement]';
+
+  // Affine avec word timestamps si disponibles
+  if (window._whisperWords && window._whisperWords.length) {
+    const exactTC = findPassageTimecodes(prise.text || '', tcToSec((prise.start || '').replace(',', '.')) - 2);
+    if (exactTC) {
+      seg.start = secToSRTTC(exactTC.start);
+      seg.end = secToSRTTC(exactTC.end);
+      seg.duration_sec = exactTC.end - exactTC.start;
+    }
+  }
+
+  // Met à jour l'affichage
+  const chData = window._lastChannelResults[ch];
+  chData.total_duration_sec = (chData.segments || []).reduce((a, s) => a + (s.duration_sec || 0), 0);
+  const panel = document.getElementById('result-' + ch);
+  if (panel) {
+    panel.innerHTML = buildChannelResultHTML(ch, chData, CHANNEL_CONFIG[ch]);
+    setTimeout(() => updateQualityBar(ch), 50);
+  }
+  showToast('✅ Prise ' + (priseIdx + 1) + ' sélectionnée · ' + (prise.text || '').slice(0, 40) + '…');
 }
 
 function showToast(msg) {
@@ -3636,7 +3695,7 @@ function onSegTextSelection(e, ch, idx) {
   const segEndSec = tcToSec((seg.end || '').replace(',', '.'));
   const totalDur = segEndSec - segStartSec;
 
-  // V5.81 — Cherche d'abord dans les word timestamps précis
+  // V5.82 — Cherche d'abord dans les word timestamps précis
   let newStartSec = segStartSec + (start / Math.max(1, fullText.length)) * totalDur;
   let newEndSec = segStartSec + (end / Math.max(1, fullText.length)) * totalDur;
 
@@ -4259,7 +4318,7 @@ function calcPerfScore(channelKey, segments, accroches, totalSec) {
   };
 }
 
-// ── V5.81 — REVALIDATION CLAUDE ───────────────────────────────────────────────
+// ── V5.82 — REVALIDATION CLAUDE ───────────────────────────────────────────────
 // Détecte les répétitions dans un texte (mots > 3 lettres répétés)
 function detectRepetitionsInText(text) {
   const repetitions = [];
@@ -4429,7 +4488,7 @@ async function runStep3() {
       await runModeC(key);
     }
 
-    // ── V5.81 — Revalidation Claude ──────────────────────────────────────────
+    // ── V5.82 — Revalidation Claude ──────────────────────────────────────────
     if (rawResult) {
       btn.querySelector('.btn-text').textContent = '⚙️ Revalidation…';
       rawResult = await revalidateResult(key, rawResult);
@@ -4599,7 +4658,7 @@ async function runModeC(key) {
     return;
   }
 
-  // Découpe le script en blocs numérotés (par paragraphe ou ligne non vide)
+  // Découpe le script en blocs numérotés
   const scriptBlocs = script
     .split(/\n+/)
     .map(l => l.trim())
@@ -4620,7 +4679,7 @@ async function runModeC(key) {
 
   const prompt = [
     'Tu es un expert en montage documentaire. Tu travailles comme Eddie AI ou Simon Says Assemble.',
-    'Ta mission : pour chaque bloc du script, trouver la MEILLEURE PRISE dans les rushs.',
+    'Ta mission : pour chaque bloc du script, trouver les 3 MEILLEURES PRISES dans les rushs.',
     '',
     '═══════════════════════════════════════',
     'TRANSCRIPTION COMPLÈTE DES RUSHS :',
@@ -4638,40 +4697,52 @@ async function runModeC(key) {
     '═══════════════════════════════════════',
     '',
     'MISSION BLOC PAR BLOC :',
-    'Pour chaque BLOC du script ci-dessus :',
-    '1. Cherche dans TOUS les rushs la phrase ou passage qui correspond à ce bloc',
-    '2. Si ce passage est répété plusieurs fois, sélectionne LA MEILLEURE PRISE selon :',
-    '   - Clarté maximale (sans hésitation, sans bégaiement)',
-    '   - Fluidité (phrase complète, bien articulée)',
-    '   - Énergie vocale (la plus enthousiaste)',
-    '   - Fidélité au sens du bloc',
-    '3. Retourne UN segment par bloc — dans L\'ORDRE DU SCRIPT, pas l\'ordre chronologique',
-    '4. Un segment du rush 2 PEUT précéder un segment du rush 1 si le script l\'exige',
+    'Pour chaque BLOC du script :',
+    '1. Cherche dans TOUS les rushs les passages qui correspondent à ce bloc',
+    '2. Retourne LES 3 MEILLEURES PRISES classées par qualité (1=meilleure)',
+    '3. Si moins de 3 prises existent, retourne celles disponibles',
+    '4. Pour chaque prise, évalue :',
+    '   - clarté : 1-5 (5=parfaite, sans hésitation)',
+    '   - fluidité : 1-5 (5=phrase complète et bien articulée)',
+    '   - énergie : 1-5 (5=très enthousiaste)',
+    '5. L\'ordre des segments suit L\'ORDRE DU SCRIPT, pas l\'ordre chronologique',
     '',
     'RÈGLES ABSOLUES :',
-    '- PAS d\'accroche séparée — le script définit déjà l\'ordre et l\'accroche',
-    '- Un segment par bloc du script minimum',
+    '- PAS d\'accroche séparée',
     '- L\'ordre des segments = l\'ordre du script',
-    '- Ne résume pas, ne reformule pas — texte exact de la prise choisie',
-    '- arc_part = label descriptif du bloc : accroche, presentation, cause, ampleur, action, realisme, appel_final, etc.',
-    '- score_force = 5 si prise parfaite, 3 si acceptable, 1 si seule option disponible',
+    '- Ne résume pas — texte exact de la prise',
+    '- arc_part = label du bloc : accroche, presentation, cause, ampleur, action, realisme, appel_final',
     '',
     'Réponds UNIQUEMENT en JSON valide, sans markdown :',
     '{',
-    '  "editorial_note": "Résumé de tes choix de prises — quels blocs avaient plusieurs options et pourquoi tu as choisi celle-là",',
+    '  "editorial_note": "Résumé des choix",',
     '  "accroches": [],',
     '  "channels": {',
     '    "CHANNEL_KEY": {',
-    '      "editorial_note": "Note sur la qualité du matching script/rushs",',
+    '      "editorial_note": "Note sur le matching",',
     '      "segments": [',
     '        {',
     '          "order": 1,',
     '          "arc_part": "accroche",',
+    '          "script_bloc": 1,',
+    '          "prises": [',
+    '            {',
+    '              "rank": 1,',
+    '              "start": "00:00:00,000",',
+    '              "end": "00:00:00,000",',
+    '              "text": "Texte exact de la prise",',
+    '              "clarte": 5,',
+    '              "fluidite": 5,',
+    '              "energie": 4,',
+    '              "reason": "Pourquoi cette prise"',
+    '            },',
+    '            { "rank": 2, "start": "...", "end": "...", "text": "...", "clarte": 4, "fluidite": 4, "energie": 5, "reason": "..." },',
+    '            { "rank": 3, "start": "...", "end": "...", "text": "...", "clarte": 3, "fluidite": 4, "energie": 3, "reason": "..." }',
+    '          ],',
     '          "start": "00:00:00,000",',
     '          "end": "00:00:00,000",',
-    '          "text": "Texte exact de la meilleure prise trouvée dans le rush",',
-    '          "script_bloc": 1,',
-    '          "reason": "Pourquoi cette prise est la meilleure pour ce bloc",',
+    '          "text": "Texte de la prise rank 1",',
+    '          "reason": "Pourquoi rank 1 est la meilleure",',
     '          "score_force": 5,',
     '          "duration_sec": 0',
     '        }',
@@ -4684,7 +4755,60 @@ async function runModeC(key) {
 
   rawResult = await callAPI(key, prompt);
 
-  // Mode Script — bypass étape accroche, va directement aux résultats
+  // Fix timecodes — affine avec word timestamps après résultat Claude
+  if (rawResult && rawResult.channels && window._whisperWords && window._whisperWords.length) {
+    Object.values(rawResult.channels).forEach(chData => {
+      (chData.segments || []).forEach(seg => {
+        // Affine le segment principal
+        const exactTC = findPassageTimecodes(seg.text || '', 0);
+        if (exactTC) {
+          seg.start = secToSRTTC(exactTC.start);
+          seg.end = secToSRTTC(exactTC.end);
+          seg.duration_sec = exactTC.end - exactTC.start;
+        }
+        // Affine chaque prise alternative
+        (seg.prises || []).forEach(prise => {
+          const priseTC = findPassageTimecodes(prise.text || '', 0);
+          if (priseTC) {
+            prise.start = secToSRTTC(priseTC.start);
+            prise.end = secToSRTTC(priseTC.end);
+          }
+          // Score énergie vocale via Web Audio API
+          if (_waveformData && priseTC) {
+            prise.energie_rms = measureSegmentEnergy(priseTC.start, priseTC.end);
+          }
+        });
+        // Re-trie les prises par score combiné si énergie mesurée
+        if (seg.prises && seg.prises[0] && seg.prises[0].energie_rms !== undefined) {
+          seg.prises.sort((a, b) => {
+            const scoreA = (a.clarte || 3) + (a.fluidite || 3) + ((a.energie_rms || 0) * 10);
+            const scoreB = (b.clarte || 3) + (b.fluidite || 3) + ((b.energie_rms || 0) * 10);
+            return scoreB - scoreA;
+          });
+          // Met à jour le segment principal avec la meilleure prise re-triée
+          const best = seg.prises[0];
+          seg.start = best.start;
+          seg.end = best.end;
+          seg.text = best.text;
+        }
+      });
+    });
+  }
+
+  // Stocke les prises alternatives pour l'interface de validation
+  window._scriptPrises = {};
+  if (rawResult && rawResult.channels) {
+    Object.entries(rawResult.channels).forEach(([ch, chData]) => {
+      window._scriptPrises[ch] = {};
+      (chData.segments || []).forEach((seg, i) => {
+        if (seg.prises && seg.prises.length > 1) {
+          window._scriptPrises[ch][i] = seg.prises;
+        }
+      });
+    });
+  }
+
+  // Mode Script — bypass étape accroche
   accrocheMode = 'none';
   finalizeResults();
 }
@@ -5136,7 +5260,7 @@ function finalizeResults() {
     });
     const allSegs = [...accrocheSegs, ...bodySegs];
 
-    // V5.81 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
+    // V5.82 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
     if (window._whisperWords && window._whisperWords.length) {
       allSegs.forEach(seg => {
         if (seg._trimmed || seg.isManual) return;
@@ -5418,12 +5542,37 @@ function buildChannelResultHTML(ch, data, cfg) {
           </div>
         </div>
         ${seg._trimmed ? `<div style="margin-top:4px;"><button onclick="restoreSegment('${ch}',${i})" style="background:transparent;border:1px solid var(--border2);border-radius:2px;padding:3px 10px;color:var(--muted);font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">↩ Restaurer l'original</button></div>` : ''}
+
+        <!-- Prises alternatives Mode Script -->
+        ${(window._scriptPrises && window._scriptPrises[ch] && window._scriptPrises[ch][i]) ? `
+        <div id="prises-panel-${ch}-${i}" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
+          <div style="font-size:10px;letter-spacing:1px;color:var(--muted2);margin-bottom:8px;font-family:'DM Mono',monospace;">3 PRISES DISPONIBLES — ÉCOUTE ET CHOISIS</div>
+          ${(window._scriptPrises[ch][i] || []).map((prise, pi) => `
+            <div style="background:${pi===0?'rgba(151,71,255,0.06)':'var(--surface3)'};border:1px solid ${pi===0?'var(--accent)':'var(--border)'};border-radius:3px;padding:10px 12px;margin-bottom:6px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="font-size:10px;font-family:'DM Mono',monospace;color:${pi===0?'var(--accent)':'var(--muted2)'};">PRISE ${pi+1}${pi===0?' ★':''}</span>
+                <span style="font-size:10px;color:var(--muted2);">${prise.start} → ${prise.end}</span>
+                <span style="font-size:10px;color:var(--green);">Clarté ${prise.clarte||'?'}/5</span>
+                <span style="font-size:10px;color:var(--accent);">Énergie ${prise.energie||'?'}/5</span>
+                ${prise.energie_rms ? `<span style="font-size:10px;color:var(--muted2);">RMS ${prise.energie_rms.toFixed(3)}</span>` : ''}
+              </div>
+              <div style="font-size:12px;color:var(--text);margin-bottom:8px;line-height:1.5;">${prise.text||''}</div>
+              <div style="display:flex;gap:6px;">
+                <button onclick="playPrise('${ch}',${i},${pi})" style="background:transparent;border:1px solid var(--green);border-radius:2px;padding:3px 10px;color:var(--green);font-size:10px;cursor:pointer;">▶ Écouter</button>
+                <button onclick="choosePrise('${ch}',${i},${pi})" style="background:${pi===0?'var(--accent)':'transparent'};border:1px solid var(--accent);border-radius:2px;padding:3px 10px;color:${pi===0?'#fff':'var(--accent)'};font-size:10px;cursor:pointer;">${pi===0?'✓ Sélectionnée':'Choisir cette prise'}</button>
+              </div>
+              <div style="font-size:10px;color:var(--muted2);margin-top:4px;font-style:italic;">${prise.reason||''}</div>
+            </div>
+          `).join('')}
+        </div>` : ''}
+
         <div class="seg-reason">${seg.reason||''}</div>
         ${hasWarn ? `<div class="seg-warning-detail">⚠ ${seg.warnings.join(' · ')}</div>` : ''}
       </div>
       <div class="seg-meta">
         <button class="seg-play-btn" onclick="playSegment('${ch}',${i})" title="Écouter ce passage">▶</button>
         <button onclick="toggleSegWaveform('${ch}',${i})" title="Affiner avec la waveform" style="background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--muted);font-size:11px;width:28px;height:28px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">◈</button>
+        ${(window._scriptPrises && window._scriptPrises[ch] && window._scriptPrises[ch][i]) ? `<button onclick="togglePrisesPanel('${ch}',${i})" title="Voir les 3 prises" id="prises-btn-${ch}-${i}" style="background:transparent;border:1px solid var(--accent);border-radius:3px;color:var(--accent);font-size:10px;width:28px;height:28px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='rgba(151,71,255,0.1)'" onmouseout="this.style.background='transparent'">①</button>` : ''}
         <button class="seg-delete" onclick="deleteSegment('${ch}', ${i})" title="Supprimer ce segment">✕</button>
         <button id="smart-cut-btn-${ch}-${i}" onclick="smartCutSegment('${ch}',${i})" title="Nettoyer les répétitions intelligemment" style="background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--muted);font-size:10px;padding:3px 7px;cursor:pointer;transition:all 0.15s;width:28px;height:28px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.borderColor='var(--yellow)';this.style.color='var(--yellow)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">✂</button>
         <div class="seg-dur">${secToMin(dur)}</div>
@@ -5650,7 +5799,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.81 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.82 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
