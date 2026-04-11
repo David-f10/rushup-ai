@@ -2519,7 +2519,7 @@ function checkAudioDurationVsSources(audioDurSec) {
 }
 
 function addSourceWithData(filename, durationSec) {
-  addSource(); // crée la ligne
+  addSource();
 
   const nameEl = document.getElementById('source-name-' + sourceCount);
   const durEl = document.getElementById('source-dur-' + sourceCount);
@@ -2527,7 +2527,6 @@ function addSourceWithData(filename, durationSec) {
   if (nameEl) nameEl.value = filename;
 
   if (durEl && durationSec) {
-    // Convertit les secondes en HH:MM:SS:FF (25fps par défaut)
     const fps = sequenceFPS || 25;
     const totalFrames = Math.floor(durationSec * fps);
     const frames = totalFrames % fps;
@@ -2541,7 +2540,51 @@ function addSourceWithData(filename, durationSec) {
   }
 
   updateSources();
+  sortSourcesByName(); // Retrie automatiquement après chaque ajout
   showToast('🎬 ' + filename + (durationSec ? ' · ' + secToMin(durationSec) : ' · durée non lisible'));
+}
+
+function sortSourcesByName() {
+  // Collecte toutes les données des lignes sources existantes
+  const list = document.getElementById('sourcesList');
+  if (!list) return;
+
+  const rows = Array.from(list.querySelectorAll('.source-row'));
+  if (rows.length < 2) return;
+
+  // Extrait nom + durée + path + audio de chaque ligne
+  const data = rows.map(row => {
+    const id = row.id.replace('source-row-', '');
+    const nameEl = document.getElementById('source-name-' + id);
+    const durEl = document.getElementById('source-dur-' + id);
+    const pathEl = document.getElementById('source-path-' + id);
+    const audioCh = getAudioCh(parseInt(id));
+    return {
+      name: nameEl ? nameEl.value : '',
+      dur: durEl ? durEl.value : '',
+      path: pathEl ? pathEl.value : '',
+      audioCh
+    };
+  });
+
+  // Trie par nom de fichier alphabétiquement
+  data.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+  // Réécrit les valeurs dans les lignes (dans l'ordre DOM existant)
+  rows.forEach((row, i) => {
+    const id = row.id.replace('source-row-', '');
+    const nameEl = document.getElementById('source-name-' + id);
+    const durEl = document.getElementById('source-dur-' + id);
+    const pathEl = document.getElementById('source-path-' + id);
+    const numEl = row.querySelector('.source-num');
+
+    if (nameEl) nameEl.value = data[i].name;
+    if (durEl) durEl.value = data[i].dur;
+    if (pathEl) pathEl.value = data[i].path || '';
+    if (numEl) numEl.textContent = String(i + 1).padStart(2, '0');
+  });
+
+  updateSources();
 }
 
 function addSource() {
