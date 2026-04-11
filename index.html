@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V4.33</title>
+<title>RUSHUP.AI V5.81</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
   --bg: #08080F;
@@ -29,7 +29,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: 'DM Mono', monospace;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   background: var(--bg);
   background-image: radial-gradient(ellipse at 15% 0%, rgba(159,88,245,0.1) 0%, transparent 55%),
                     radial-gradient(ellipse at 85% 100%, rgba(75,201,122,0.05) 0%, transparent 55%);
@@ -168,7 +168,7 @@ header {
   border-radius: 3px;
   padding: 8px 12px;
   color: var(--text);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 12px;
   outline: none;
   transition: border-color 0.2s;
@@ -197,7 +197,7 @@ header {
   border-radius: 3px;
   padding: 8px 16px;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 11px;
   cursor: pointer;
   transition: all 0.15s;
@@ -248,6 +248,205 @@ header {
 .srt-preview { margin-top: 12px; border: 1px solid var(--border); padding: 12px; max-height: 110px; overflow-y: auto; background: var(--surface2); font-size: 11px; line-height: 1.9; color: var(--muted); display: none; border-radius: 3px; }
 .srt-preview.visible { display: block; }
 .srt-preview .tc { color: #9F58F5; }
+
+/* ── V5.81 SRT VIEWER INTERACTIF ── */
+.srt-viewer {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface2);
+  display: none;
+  overflow: hidden;
+}
+.srt-viewer.visible { display: block; }
+.srt-viewer-header {
+  padding: 10px 14px;
+  background: var(--surface3);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.srt-viewer-body {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 10px 14px;
+  font-size: 12px;
+  line-height: 2;
+  user-select: text;
+  cursor: text;
+}
+.srt-block {
+  display: inline;
+}
+.srt-word {
+  display: inline;
+  border-radius: 2px;
+  padding: 1px 0;
+  transition: background 0.1s;
+  cursor: text;
+}
+.srt-word.highlighted {
+  background: rgba(151,71,255,0.35);
+  color: #fff;
+}
+.srt-word.filler {
+  background: rgba(245,82,82,0.15);
+  color: #F55252;
+}
+.srt-word.repeated {
+  background: rgba(245,200,66,0.15);
+  color: #F5C842;
+}
+.srt-word.has-silence {
+  border-bottom: 2px solid rgba(75,201,122,0.5);
+}
+.srt-word.has-saturation {
+  border-bottom: 2px solid rgba(245,82,82,0.6);
+}
+.srt-word.search-match {
+  background: rgba(245,200,66,0.3);
+  border-radius: 2px;
+}
+.srt-word.search-current {
+  background: rgba(245,200,66,0.7);
+  color: #000;
+  border-radius: 2px;
+}
+.srt-selection-bar {
+  display: none;
+  padding: 8px 14px;
+  background: rgba(151,71,255,0.1);
+  border-top: 1px solid rgba(151,71,255,0.3);
+  font-size: 11px;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.srt-selection-bar.visible { display: flex; }
+
+/* ── WAVEFORM ── */
+.waveform-wrap {
+  width: 100%;
+  padding: 8px 0 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 6px;
+  display: none;
+}
+.waveform-wrap.visible { display: block; }
+.waveform-container {
+  position: relative;
+  height: 48px;
+  background: var(--surface3);
+  border-radius: 3px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.waveform-canvas { width: 100%; height: 100%; display: block; }
+.waveform-playhead {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 2px;
+  background: var(--green);
+  pointer-events: none;
+  transition: left 0.05s linear;
+}
+.waveform-handle {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 4px;
+  cursor: ew-resize;
+  z-index: 10;
+}
+.waveform-handle-in {
+  background: rgba(151,71,255,0.8);
+  border-right: 1px solid var(--accent);
+}
+.waveform-handle-out {
+  background: rgba(151,71,255,0.8);
+  border-left: 1px solid var(--accent);
+}
+.waveform-region {
+  position: absolute;
+  top: 0; bottom: 0;
+  background: rgba(151,71,255,0.12);
+  pointer-events: none;
+}
+.waveform-tc {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--muted2);
+  margin-top: 3px;
+  letter-spacing: 0.5px;
+}
+.waveform-warning {
+  font-size: 10px;
+  color: var(--warn);
+  margin-top: 4px;
+  display: none;
+}
+.waveform-warning.visible { display: block; }
+.srt-add-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 5px 14px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: background 0.15s;
+}
+.srt-add-btn:hover { background: var(--accent-dark); }
+
+/* ── DRAG & DROP SEGMENTS ── */
+.segment {
+  cursor: grab;
+}
+.segment.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+.segment.drag-over-top {
+  border-top: 2px solid var(--accent) !important;
+}
+.segment.drag-over-bottom {
+  border-bottom: 2px solid var(--accent) !important;
+}
+
+/* ── TRIM SELECTION DANS SEGMENT ── */
+.seg-trim-bar {
+  display: none;
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: rgba(151,71,255,0.08);
+  border: 1px solid rgba(151,71,255,0.25);
+  border-radius: 3px;
+  font-size: 10px;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.seg-trim-bar.visible { display: flex; }
+.seg-trim-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 2px;
+  padding: 3px 10px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.seg-trim-btn:hover { background: var(--accent-dark); }
 
 /* ── CHANNELS ── */
 .channels-grid {
@@ -309,7 +508,7 @@ textarea, input[type="number"] {
   border-radius: 3px;
   padding: 10px 13px;
   color: var(--text);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 12px;
   outline: none;
   transition: border-color 0.2s;
@@ -426,7 +625,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   border-radius: 3px;
   padding: 7px 13px;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 11px;
   cursor: pointer;
   transition: all 0.15s;
@@ -452,7 +651,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   border-radius: 3px;
   padding: 4px 12px;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 11px;
   cursor: pointer;
   transition: all 0.15s;
@@ -465,7 +664,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   border-radius: 3px;
   padding: 5px 14px;
   color: #9F58F5;
-  font-family: 'DM Mono', monospace;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 11px;
   cursor: pointer;
   transition: all 0.15s;
@@ -528,7 +727,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   border-radius: 3px;
   padding: 5px 12px;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 11px;
   cursor: pointer;
   transition: all 0.15s;
@@ -697,6 +896,68 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 }
 .seg-delete:hover { border-color: #ff7070; color: #ff7070; background: rgba(255,70,70,0.08); }
 
+/* ── LECTEUR AUDIO V5.1 ── */
+.seg-play-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.seg-play-btn:hover { border-color: var(--green); color: var(--green); }
+.seg-play-btn.playing { border-color: var(--green); color: var(--green); background: rgba(75,201,122,0.1); }
+
+.audio-player-bar {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(8,8,15,0.97);
+  border-top: 1px solid var(--border2);
+  padding: 10px 24px;
+  z-index: 1000;
+  align-items: center;
+  gap: 14px;
+  backdrop-filter: blur(12px);
+}
+.audio-player-bar.visible { display: flex; }
+.audio-player-title { font-size: 11px; color: var(--muted); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.audio-player-title strong { color: var(--text); }
+.audio-player-progress {
+  flex: 2;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.audio-player-progress-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 2px;
+  transition: width 0.1s linear;
+  width: 0%;
+}
+.audio-player-time { font-size: 10px; color: var(--muted); min-width: 60px; text-align: right; }
+.audio-player-stop {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.audio-player-stop:hover { border-color: var(--red); color: var(--red); }
+
 /* ── PERFORMANCE SCORE ── */
 .perf-block {
   border: 1px solid var(--border);
@@ -796,7 +1057,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   border-radius: 3px;
   padding: 5px 12px;
   color: #ff7070;
-  font-family: 'DM Mono', monospace;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 11px;
   cursor: pointer;
   transition: all 0.15s;
@@ -870,7 +1131,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   border-radius: 3px;
   padding: 7px 14px;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 12px;
   cursor: pointer;
   transition: all 0.15s;
@@ -896,7 +1157,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   border-radius: 2px;
   padding: 6px 10px;
   color: var(--text);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 12px;
   outline: none;
   width: 100%;
@@ -947,7 +1208,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   border-radius: 3px;
   padding: 5px 12px;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 11px;
   cursor: pointer;
   transition: all 0.15s;
@@ -967,7 +1228,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   border-radius: 3px;
   padding: 4px 12px;
   color: var(--muted);
-  font-family: 'DM Mono', monospace;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   font-size: 11px;
   cursor: pointer;
   transition: all 0.15s;
@@ -992,12 +1253,174 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 </head>
 <body>
 
+<!-- ── LANDING PAGE ──────────────────────────────────────────────────────── -->
+<div id="landingPage" style="display:none;min-height:100vh;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;">
+  <div style="max-width:720px;width:100%;">
+
+    <!-- Logo + badge -->
+    <div style="text-align:center;margin-bottom:64px;">
+      <div style="font-family:'Outfit',sans-serif;font-size:32px;font-weight:900;letter-spacing:3px;margin-bottom:10px;">
+        RUSHUP<span style="color:var(--accent);">.</span>AI
+      </div>
+      <span style="display:inline-block;background:rgba(75,201,122,0.1);border:1px solid rgba(75,201,122,0.3);border-radius:20px;padding:4px 14px;font-size:10px;font-family:'Plus Jakarta Sans',sans-serif;color:var(--green);letter-spacing:2px;">BETA ACCÈS LIMITÉ</span>
+    </div>
+
+    <!-- Headline -->
+    <div style="text-align:center;margin-bottom:24px;">
+      <h1 style="font-family:'Outfit',sans-serif;font-size:clamp(32px,5vw,52px);font-weight:900;line-height:1.1;color:var(--text);margin-bottom:0;">
+        2 heures de rush.<br>
+        <span style="color:var(--green);">3 minutes</span> pour ta sélection<br>prête dans Premiere.
+      </h1>
+    </div>
+
+    <!-- Sous-titre -->
+    <p style="text-align:center;font-size:16px;color:var(--muted);line-height:1.8;margin-bottom:56px;max-width:540px;margin-left:auto;margin-right:auto;">
+      RUSHUP.AI transcrit ton rush mot par mot, identifie les meilleurs passages et exporte directement dans Premiere Pro.<br>
+      <span style="color:var(--text);font-weight:600;">Tu décides. Tu montes. Tu publies.</span>
+    </p>
+
+    <!-- 3 étapes -->
+    <div style="display:grid;grid-template-columns:1fr 24px 1fr 24px 1fr;gap:0;align-items:center;margin-bottom:56px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:24px 16px;text-align:center;">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(144,144,176,0.1);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:16px;">🎙</div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--muted2);text-transform:uppercase;margin-bottom:6px;">01 — Rush</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;">Dépose ton MP3 — interview, tournage, prise de parole</div>
+      </div>
+      <div style="text-align:center;color:var(--border2);font-size:18px;">→</div>
+      <div style="background:var(--surface2);border:1px solid var(--accent);border-radius:6px;padding:24px 16px;text-align:center;">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(151,71,255,0.1);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:16px;">⚡</div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--accent);text-transform:uppercase;margin-bottom:6px;">02 — Sélection</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;">RUSHUP identifie les passages qui accrochent, par canal</div>
+      </div>
+      <div style="text-align:center;color:var(--border2);font-size:18px;">→</div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:24px 16px;text-align:center;">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(75,201,122,0.1);border:1px solid rgba(75,201,122,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:16px;">🎬</div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--green);text-transform:uppercase;margin-bottom:6px;">03 — Export</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5;">XML + SRT prêts à importer dans Premiere Pro</div>
+      </div>
+    </div>
+
+    <!-- 3 modes -->
+    <div style="margin-bottom:56px;">
+      <div style="font-size:10px;letter-spacing:2px;color:var(--muted2);text-transform:uppercase;text-align:center;margin-bottom:20px;font-family:'Plus Jakarta Sans',sans-serif;">— 3 modes d'analyse —</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:16px 20px;display:flex;gap:16px;align-items:flex-start;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;color:var(--muted2);padding-top:2px;flex-shrink:0;width:28px;">A</div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px;letter-spacing:0.3px;">Questions — Interview</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.6;">Tu as interviewé quelqu'un. RUSHUP identifie les meilleures réponses et les moments de vérité, classés par impact pour chaque canal de diffusion.</div>
+          </div>
+        </div>
+
+        <div style="background:var(--surface2);border:1px solid var(--accent);border-radius:4px;padding:16px 20px;display:flex;gap:16px;align-items:flex-start;">
+          <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;color:var(--accent);padding-top:2px;flex-shrink:0;width:28px;">B</div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:3px;letter-spacing:0.3px;">Découverte — Rush libre</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.6;">Tu as des heures de rush sans structure définie. RUSHUP explore, détecte les thématiques fortes et propose une sélection éditoriale cohérente. Idéal pour les documentaires et reportages.</div>
+          </div>
+        </div>
+
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:16px 20px;display:flex;gap:16px;align-items:flex-start;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--border2)'" onmouseout="this.style.borderColor='var(--border)'">
+          <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;color:var(--muted2);padding-top:2px;flex-shrink:0;width:28px;">C</div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px;letter-spacing:0.3px;">Script — Contenu planifié</div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.6;">Tu as un angle éditorial précis. RUSHUP aligne le rush avec ta narration et génère une séquence prête à monter.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div style="text-align:center;">
+      <button onclick="showEmailGate()"
+        style="background:var(--accent);color:#fff;border:none;border-radius:4px;padding:18px 56px;font-family:'Outfit',sans-serif;font-size:17px;font-weight:800;cursor:pointer;letter-spacing:0.5px;transition:all 0.15s;display:inline-block;"
+        onmouseover="this.style.background='#7c3aed';this.style.transform='translateY(-1px)'" onmouseout="this.style.background='var(--accent)';this.style.transform='translateY(0)'">
+        Tester avec mon rush →
+      </button>
+      <div style="margin-top:14px;font-size:10px;color:var(--muted2);font-family:'DM Mono',monospace;letter-spacing:1px;">ACCÈS BETA GRATUIT · JOURNALISTES & CRÉATEURS</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── EMAIL GATE ──────────────────────────────────────────────────────────── -->
+<div id="emailGate" style="display:none;min-height:100vh;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;">
+  <div style="max-width:400px;width:100%;">
+
+    <!-- Logo -->
+    <div style="text-align:center;margin-bottom:40px;">
+      <div style="font-family:'Outfit',sans-serif;font-size:24px;font-weight:900;letter-spacing:3px;margin-bottom:8px;">
+        RUSHUP<span style="color:var(--accent);">.</span>AI
+      </div>
+      <div style="width:40px;height:1px;background:var(--border2);margin:0 auto;"></div>
+    </div>
+
+    <h2 style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px;text-align:center;">Accès beta</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:32px;line-height:1.7;text-align:center;">Entre tes infos pour accéder à l'outil.<br>On te tient au courant des nouveautés.</p>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+      <input id="gateFirstname" type="text" placeholder="Ton prénom"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:13px 16px;color:var(--text);font-size:14px;outline:none;transition:border-color 0.15s;font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:0.3px;"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+        onkeydown="if(event.key==='Enter')document.getElementById('gateEmail').focus()">
+      <input id="gateEmail" type="email" placeholder="Ton email professionnel"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:13px 16px;color:var(--text);font-size:14px;outline:none;transition:border-color 0.15s;font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:0.3px;"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+        onkeydown="if(event.key==='Enter')document.getElementById('gateJob').focus()">
+      <div style="position:relative;">
+        <select id="gateJob"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:13px 40px 13px 16px;color:var(--text);font-size:14px;outline:none;transition:border-color 0.15s;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;width:100%;appearance:none;-webkit-appearance:none;"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+          <option value="" disabled selected style="color:var(--muted);">Tu es...</option>
+          <option value="journaliste">Journaliste</option>
+          <option value="createur">Créateur de contenu</option>
+          <option value="monteur">Monteur</option>
+          <option value="producteur">Producteur / Réalisateur</option>
+          <option value="autre">Autre</option>
+        </select>
+        <div style="position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted2);font-size:10px;">▼</div>
+      </div>
+    </div>
+
+    <button onclick="submitEmailGate()" id="gateSubmitBtn"
+      style="background:var(--accent);color:#fff;border:none;border-radius:3px;padding:14px;font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;cursor:pointer;width:100%;transition:all 0.15s;letter-spacing:0.3px;"
+      onmouseover="this.style.background='#7c3aed'" onmouseout="this.style.background='var(--accent)'">
+      Accéder à RUSHUP.AI →
+    </button>
+
+    <div id="gateError" style="display:none;color:var(--red);font-size:11px;margin-top:10px;text-align:center;font-family:'Plus Jakarta Sans',sans-serif;"></div>
+
+    <div style="margin-top:20px;text-align:center;">
+      <span style="font-size:10px;color:var(--muted2);font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:0.5px;">Pas de spam · Juste les updates produit</span>
+    </div>
+
+    <button onclick="showLanding()" style="display:block;width:100%;background:transparent;border:none;color:var(--muted2);font-size:11px;cursor:pointer;margin-top:16px;text-align:center;font-family:'Plus Jakarta Sans',sans-serif;">← Retour</button>
+  </div>
+</div>
+
+<!-- ── APP (cachée jusqu'à validation email gate) ──────────────────────────── -->
+<div id="mainApp" style="display:none;">
+
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V4.33</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.81</span></div>
   <div class="header-right">
+    <span id="userGreeting" style="font-size:11px;color:var(--muted);margin-right:12px;"></span>
+    <button id="adminResetBtn" onclick="adminReset()" style="display:none;background:transparent;border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--muted2);font-size:10px;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;margin-right:8px;" title="Reset expérience (admin)">↺ Reset</button>
     <button class="hist-btn" onclick="openHistory()">⏱ Historique</button>
   </div>
 </header>
+
+<!-- LECTEUR AUDIO FIXE V5.1 -->
+<div class="audio-player-bar" id="audioPlayerBar">
+  <div class="audio-player-title"><strong id="audioPlayerLabel">—</strong></div>
+  <div class="audio-player-progress" id="audioPlayerProgress" onclick="onPlayerProgressClick(event)">
+    <div class="audio-player-progress-fill" id="audioPlayerFill"></div>
+  </div>
+  <div class="audio-player-time" id="audioPlayerTime">0:00</div>
+  <button class="audio-player-stop" onclick="stopAudioPlayer()">■ Stop</button>
+</div>
 
 <div class="container">
 
@@ -1009,6 +1432,16 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
       <span class="step-status" id="s0status">Optionnel — nécessaire pour l'export XML</span>
     </div>
     <div class="step-body">
+
+      <!-- Nom du projet -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:8px;font-family:'DM Mono',monospace;">Nom du projet</div>
+        <input id="projectNameInput" type="text" placeholder="ex: ENDO_INTERVIEW_MIYU"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:10px 14px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;outline:none;transition:border-color 0.2s;width:100%;text-transform:uppercase;letter-spacing:1px;"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+          oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9_]/g,'_')">
+        <div style="font-size:10px;color:var(--muted2);margin-top:5px;font-family:'DM Mono',monospace;">Utilisé pour nommer tes exports — lettres, chiffres et _ uniquement</div>
+      </div>
       <div class="sources-list" id="sourcesList">
         <div style="display:grid;grid-template-columns:1fr 120px 36px;gap:8px;margin-bottom:4px;">
           <div style="font-size:10px;color:#fff;opacity:0.8;letter-spacing:1px;text-transform:uppercase;">Nom du fichier</div>
@@ -1016,49 +1449,124 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
           <div></div>
         </div>
       </div>
-      <button class="add-source-btn" onclick="addSource()">+ Ajouter un rush source</button>
-      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap;">
-        <span style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.6);">Format séquence</span>
-        <button id="fmt169" class="dur-btn active" onclick="setFormat('16:9',this)" style="padding:5px 12px;font-size:11px;">16:9</button>
-        <button id="fmt916" class="dur-btn" onclick="setFormat('9:16',this)" style="padding:5px 12px;font-size:11px;">9:16</button>
-        <span style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-left:12px;">Scale alternance</span>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:11px;color:rgba(255,255,255,0.5);">A</span>
-          <input id="scaleA" type="text" value="100" onclick="event.stopPropagation()"
-            style="width:52px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:5px 8px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;text-align:center;outline:none;"
-            placeholder="100">
-          <span style="font-size:11px;color:rgba(255,255,255,0.3);">%</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span style="font-size:11px;color:rgba(255,255,255,0.5);">B</span>
-          <input id="scaleB" type="text" value="85" onclick="event.stopPropagation()"
-            style="width:52px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:5px 8px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;text-align:center;outline:none;"
-            placeholder="85">
-          <span style="font-size:11px;color:rgba(255,255,255,0.3);">%</span>
-        </div>
-        <span style="font-size:10px;color:rgba(255,255,255,0.35);font-style:italic;">alternance A/B par clip</span>
+
+      <!-- Drop zone vidéo — lecture métadonnées locale -->
+      <div id="videoDropZone"
+        style="border:1.5px dashed var(--border2);border-radius:4px;padding:16px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:8px;"
+        ondragover="event.preventDefault();this.style.borderColor='var(--accent)';this.style.background='rgba(151,71,255,0.04)'"
+        ondragleave="this.style.borderColor='var(--border2)';this.style.background=''"
+        ondrop="onVideoDrop(event)"
+        onclick="document.getElementById('videoFileInput').click()">
+        <input type="file" id="videoFileInput" accept="video/*,.mov,.mp4,.mxf,.mts,.m2ts,.avi" multiple style="display:none" onchange="onVideoFileSelect(this.files)">
+        <div style="font-size:12px;color:var(--muted);">🎬 Glisse tes fichiers vidéo ici pour remplir automatiquement</div>
+        <div style="font-size:10px;color:var(--muted2);margin-top:4px;">MOV, MP4, MXF... · Lecture locale uniquement, aucun upload</div>
       </div>
+
+      <button class="add-source-btn" onclick="addSource()" style="margin-bottom:8px;">+ Ajouter manuellement</button>
       <div class="sources-note">
-        Déclare tes fichiers dans l'ordre chronologique du SRT.<br>
-        Ex : <span style="color:var(--accent)">FX30001.mp4</span> + <span style="color:var(--accent)">00:25:14:00</span> — le XML Premiere utilisera ces noms exacts pour relier les médias.
+        Glisse tes fichiers vidéo ci-dessus — nom et durée sont lus automatiquement. Vérifie l'ordre de tournage et ajuste si nécessaire.<br>
+        <span style="color:var(--muted2);">Le XML Premiere utilisera ces noms exacts pour relier les médias.</span>
       </div>
     </div>
   </div>
 
-  <!-- 01 SRT -->
-  <div class="step active current" id="step1">
+  <!-- PARAMÈTRES SÉQUENCE — step 01 -->
+  <div class="step active" id="step-params">
     <div class="step-header">
       <span class="step-num">01</span>
-      <span class="step-title">Importer le fichier SRT</span>
+      <span class="step-title">Paramètres séquence</span>
+    </div>
+    <div class="step-body">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:10px;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;">Format</span>
+          <button id="fmt169" class="dur-btn active" onclick="setFormat('16:9',this)" style="padding:4px 12px;font-size:11px;">16:9</button>
+          <button id="fmt916" class="dur-btn" onclick="setFormat('9:16',this)" style="padding:4px 12px;font-size:11px;">9:16</button>
+        </div>
+        <div style="width:1px;height:16px;background:var(--border);"></div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:10px;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;">FPS</span>
+          <button id="fps25" class="dur-btn active" onclick="setFPS(25,this)" style="padding:4px 12px;font-size:11px;">25</button>
+          <button id="fps30" class="dur-btn" onclick="setFPS(30,this)" style="padding:4px 12px;font-size:11px;">30</button>
+        </div>
+        <div style="width:1px;height:16px;background:var(--border);"></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:10px;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;">Scale</span>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span style="font-size:10px;color:rgba(255,255,255,0.4);">A</span>
+            <input id="scaleA" type="text" value="100"
+              style="width:44px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:4px 6px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;text-align:center;outline:none;"
+              placeholder="100">
+            <span style="font-size:10px;color:rgba(255,255,255,0.3);">%</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <span style="font-size:10px;color:rgba(255,255,255,0.4);">B</span>
+            <input id="scaleB" type="text" value="85"
+              style="width:44px;background:var(--surface2);border:1px solid var(--border2);border-radius:3px;padding:4px 6px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;text-align:center;outline:none;"
+              placeholder="85">
+            <span style="font-size:10px;color:rgba(255,255,255,0.3);">%</span>
+          </div>
+          <span style="font-size:10px;color:rgba(255,255,255,0.25);font-style:italic;">alternance A/B par clip</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 01 WHISPER / SRT -->
+  <div class="step active current" id="step1">
+    <div class="step-header">
+      <span class="step-num">02</span>
+      <span class="step-title">Importer le rush audio</span>
       <span class="step-status" id="s1status">En attente</span>
     </div>
     <div class="step-body">
-      <div class="drop-zone" id="dropZone">
-        <input type="file" id="srtFile" accept=".srt,.txt,.SRT,text/plain,text/srt,application/x-subrip">
-        <span class="drop-icon">📄</span>
-        <div class="drop-main">Déposer le fichier SRT ici</div>
-        <div class="drop-sub">Exporté depuis Premiere Pro · .srt · jusqu'à 2h de rush</div>
+
+      <!-- Mode Whisper — PRIMARY -->
+      <div id="mode-whisper">
+        <div style="margin-bottom:10px;">
+          <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Contexte du rush <span style="color:var(--muted2);font-size:9px;letter-spacing:0;">(optionnel — améliore la précision de la transcription)</span></div>
+          <input id="whisperContext" type="text" placeholder="Sujet du rush, intervenants, termes techniques ou noms propres — RUSHUP.AI s'en sert pour transcrire avec précision."
+            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:8px 12px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;outline:none;transition:border-color 0.2s;"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+        <div class="drop-zone" id="dropZoneAudio" onclick="document.getElementById('audioFile').click()">
+          <input type="file" id="audioFile" accept=".mp3,audio/mpeg" style="display:none">
+          <span class="drop-icon">🎵</span>
+          <div class="drop-main">Dépose ton rush en MP3</div>
+          <div class="drop-sub">MP3 uniquement · max 25 Mo · 64-128 kbps recommandé · ~30 min de rush</div>
+        </div>
+        <div id="whisperStatus" style="display:none;margin-top:12px;padding:12px 16px;background:rgba(151,71,255,0.06);border:1px solid rgba(151,71,255,0.2);border-radius:3px;font-size:12px;line-height:1.8;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div id="whisperStatusText" style="color:var(--accent);">⏳ Transcription en cours...</div>
+            <button onclick="resetAudio()" title="Changer de fichier audio" style="background:transparent;border:1px solid var(--border);border-radius:3px;padding:3px 10px;color:var(--muted);font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.color='var(--red)';this.style.borderColor='var(--red)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">✕ Changer</button>
+          </div>
+          <div style="margin-top:6px;color:var(--muted);font-size:11px;">Whisper analyse l'audio — environ 30-60 secondes pour 30 minutes de rush</div>
+        </div>
       </div>
+
+      <!-- Mode SRT — SECONDARY -->
+      <div id="mode-srt" style="display:none;">
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="srtFile" accept=".srt,.txt,.SRT,text/plain,text/srt,application/x-subrip">
+          <span class="drop-icon">📄</span>
+          <div class="drop-main">Déposer le fichier SRT ici</div>
+          <div class="drop-sub">Exporté depuis Premiere Pro · .srt · jusqu'à 2h de rush</div>
+        </div>
+      </div>
+
+      <!-- Toggle discret -->
+      <div style="text-align:center;margin-top:10px;">
+        <button onclick="switchTranscriptMode('srt')" id="tab-srt"
+          style="background:transparent;border:none;color:var(--muted2);font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;cursor:pointer;text-decoration:underline;letter-spacing:0.5px;">
+          J'ai déjà un SRT Premiere Pro →
+        </button>
+        <button onclick="switchTranscriptMode('whisper')" id="tab-whisper"
+          style="display:none;background:transparent;border:none;color:var(--muted2);font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;cursor:pointer;text-decoration:underline;letter-spacing:0.5px;">
+          ← Retour à Whisper
+        </button>
+      </div>
+
+      <!-- Stats communes -->
       <div class="stats-row" id="statsRow">
         <div class="stat"><div class="stat-val" id="stBlocks">—</div><div class="stat-lbl">Blocs</div></div>
         <div class="stat"><div class="stat-val" id="stDur">—</div><div class="stat-lbl">Durée</div></div>
@@ -1066,13 +1574,57 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         <div class="stat"><div class="stat-val" id="stTakes">—</div><div class="stat-lbl">Prises est.</div></div>
       </div>
       <div class="srt-preview" id="srtPreview"></div>
+      <!-- V5.81 — SRT Viewer interactif -->
+      <div class="srt-viewer" id="srtViewer">
+        <div class="srt-viewer-header">
+          <span>📄 Transcript complet — surligne pour créer un segment</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="position:relative;">
+              <input id="srtFinder" type="text" placeholder="🔍 Rechercher..."
+                style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;outline:none;width:160px;transition:border-color 0.2s;"
+                oninput="onSRTFind(this.value)"
+                onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+                onkeydown="if(event.key==='Enter')nextSRTMatch()">
+            </div>
+            <span id="srtFinderCount" style="font-size:10px;color:var(--muted2);white-space:nowrap;"></span>
+            <button onclick="nextSRTMatch()" style="background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:2px 4px;" title="Résultat suivant">↓</button>
+            <button onclick="prevSRTMatch()" style="background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:2px 4px;" title="Résultat précédent">↑</button>
+          </div>
+          <span id="srtViewerStats"></span>
+        </div>
+        <div class="srt-viewer-body" id="srtViewerBody" onmouseup="debouncedSRTSelection()" ontouchend="debouncedSRTSelection()"></div>
+        <div class="srt-selection-bar" id="srtSelectionBar">
+          <div style="width:100%;display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <span id="srtSelectionInfo" style="color:var(--muted);flex:1;font-size:11px;"></span>
+              <button onclick="playAudioSelection()" style="background:transparent;border:1px solid var(--green);border-radius:3px;padding:5px 12px;color:var(--green);font-size:11px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(75,201,122,0.1)'" onmouseout="this.style.background='transparent'">▶ Écouter</button>
+              <button class="srt-add-btn" onclick="addSegmentFromSelection()">+ Ajouter comme segment</button>
+              <button onclick="clearSRTSelection()" style="background:transparent;border:1px solid var(--border);border-radius:3px;padding:5px 10px;color:var(--muted);font-size:11px;cursor:pointer;">✕</button>
+            </div>
+            <div class="waveform-wrap" id="waveformWrap">
+              <div class="waveform-container" id="waveformContainer">
+                <canvas class="waveform-canvas" id="waveformCanvas"></canvas>
+                <div class="waveform-region" id="waveformRegion"></div>
+                <div class="waveform-handle waveform-handle-in" id="waveformHandleIn"></div>
+                <div class="waveform-handle waveform-handle-out" id="waveformHandleOut"></div>
+                <div class="waveform-playhead" id="waveformPlayhead" style="display:none;"></div>
+              </div>
+              <div class="waveform-tc">
+                <span id="waveformTCIn"></span>
+                <span id="waveformTCOut"></span>
+              </div>
+              <div class="waveform-warning" id="waveformWarning"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- 02 CHANNELS -->
   <div class="step" id="step2">
     <div class="step-header">
-      <span class="step-num">02</span>
+      <span class="step-num">03</span>
       <span class="step-title">Canaux de diffusion</span>
       <span class="step-status">Sélectionne un ou plusieurs canaux</span>
     </div>
@@ -1156,7 +1708,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
           <button class="dur-btn" onclick="setGlobalDur(this,300)">5 min</button>
           <button class="dur-btn" onclick="setGlobalDur(this,600)">10 min</button>
           <input type="text" id="customGlobalDur" placeholder="ex: 4 min ou 90 sec"
-            style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:7px 12px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;width:160px;outline:none;"
+            style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:7px 12px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;width:160px;outline:none;"
             oninput="setCustomGlobalDur(this.value)"
             onfocus="document.querySelectorAll('.dur-btn').forEach(b=>b.classList.remove('active'))">
         </div>
@@ -1168,7 +1720,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   <!-- 03 MODE -->
   <div class="step" id="step3">
     <div class="step-header">
-      <span class="step-num">03</span>
+      <span class="step-num">04</span>
       <span class="step-title">Mode d'analyse</span>
       <span class="step-status" id="s3status">Choisis un mode</span>
     </div>
@@ -1231,7 +1783,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   <!-- 04 THEMATICS (Mode B) -->
   <div class="step" id="step4" style="display:none;">
     <div class="step-header">
-      <span class="step-num">04</span>
+      <span class="step-num">05</span>
       <span class="step-title">Sélectionner les thématiques</span>
       <span class="step-status">Coche les thèmes à développer</span>
     </div>
@@ -1253,7 +1805,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   <!-- 05 ACCROCHE -->
   <div class="step" id="step5" style="display:none;">
     <div class="step-header">
-      <span class="step-num">05</span>
+      <span class="step-num">06</span>
       <span class="step-title">Accroche — Les 3 phrases les plus fortes</span>
       <span class="step-status">Max 15 secondes · Choisir la stratégie d'ouverture</span>
     </div>
@@ -1282,7 +1834,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
   <!-- 06 RESULTS -->
   <div class="step" id="step6" style="display:none;">
     <div class="step-header">
-      <span class="step-num">06</span>
+      <span class="step-num">07</span>
       <span class="step-title">Sélection éditoriale finale</span>
       <span class="step-status" id="s6status"></span>
     </div>
@@ -1347,6 +1899,7 @@ const HOOK_TYPES = {
 let sources = []; // [{name, duration, durationSec, offset}]
 let sequenceFormat = '16:9'; // '16:9' or '9:16'
 let sequenceWidth = 1920;
+let sequenceFPS = 25; // 25 or 30
 let sequenceHeight = 1080;
 let scaleA = 100;
 let scaleB = 85;
@@ -1365,6 +1918,508 @@ let currentThematicVersion = 0;
 let resultVersions = [];     // historique des sélections finales
 let currentResultVersion = 0;
 
+// ── TRANSCRIPT MODE ───────────────────────────────────────────────────────────
+function switchTranscriptMode(mode) {
+  const srtBtn = document.getElementById('tab-srt');
+  const whisperBtn = document.getElementById('tab-whisper');
+  const srtDiv = document.getElementById('mode-srt');
+  const whisperDiv = document.getElementById('mode-whisper');
+
+  if (mode === 'srt') {
+    srtDiv.style.display = 'block';
+    whisperDiv.style.display = 'none';
+    if (srtBtn) srtBtn.style.display = 'none';
+    if (whisperBtn) whisperBtn.style.display = 'inline';
+  } else {
+    whisperDiv.style.display = 'block';
+    srtDiv.style.display = 'none';
+    if (srtBtn) srtBtn.style.display = 'inline';
+    if (whisperBtn) whisperBtn.style.display = 'none';
+  }
+}
+
+// ── WHISPER TRANSCRIPTION ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  const audioFile = document.getElementById('audioFile');
+  if (audioFile) {
+    audioFile.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) transcribeWithWhisper(file);
+    });
+  }
+  const dropZoneAudio = document.getElementById('dropZoneAudio');
+  if (dropZoneAudio) {
+    dropZoneAudio.addEventListener('dragover', e => { e.preventDefault(); dropZoneAudio.classList.add('drag-over'); });
+    dropZoneAudio.addEventListener('dragleave', () => dropZoneAudio.classList.remove('drag-over'));
+    dropZoneAudio.addEventListener('drop', e => {
+      e.preventDefault(); dropZoneAudio.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) transcribeWithWhisper(file);
+    });
+  }
+});
+
+async function transcribeWithWhisper(file) {
+  const statusDiv = document.getElementById('whisperStatus');
+  const statusText = document.getElementById('whisperStatusText');
+  const dz = document.getElementById('dropZoneAudio');
+
+  // Vérification taille max 25 Mo
+  const maxSize = 25 * 1024 * 1024;
+  if (file.size > maxSize) {
+    showError(`Fichier trop lourd : ${(file.size/1024/1024).toFixed(1)} Mo. Whisper accepte max 25 Mo. Exporte ton MP3 en 64-128 kbps depuis ton logiciel audio.`);
+    return;
+  }
+
+  // Vérification format MP3
+  if (!file.type.includes('mpeg') && !file.name.toLowerCase().endsWith('.mp3')) {
+    showError('Format non supporté. Utilise un fichier MP3 compressé (64-128 kbps).');
+    return;
+  }
+  statusDiv.style.display = 'block';
+  statusText.style.color = 'var(--accent)';
+  statusText.textContent = '⏳ Lecture du fichier...';
+  if (dz) {
+    dz.querySelector('.drop-main').textContent = '✓ ' + file.name;
+    dz.querySelector('.drop-sub').textContent = `${(file.size/1024/1024).toFixed(1)} Mo · transcription en cours...`;
+  }
+  currentFilename = file.name.replace(/\.(mp3|mp4|m4a|wav|ogg|mov)$/i, '');
+  window._audioFile = file; // Stocké pour le lecteur V5.1
+  try {
+    // Récupère la clé OpenAI depuis Netlify
+    statusText.textContent = '⏳ Connexion...';
+    if (!window._openaiKey) {
+      const keyRes = await fetch('/.netlify/functions/whisper-key');
+      if (!keyRes.ok) throw new Error('Impossible de récupérer la clé OpenAI');
+      const keyData = await keyRes.json();
+      window._openaiKey = keyData.key;
+    }
+
+    // Envoi direct du fichier à OpenAI depuis le navigateur (contourne limite 6Mo Netlify)
+    statusText.textContent = '🎵 Whisper transcrit l\'audio... (30-60 sec)';
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    formData.append('model', 'whisper-1');
+    formData.append('response_format', 'verbose_json'); // V5.81 — word timestamps mot par mot
+    formData.append('timestamp_granularities[]', 'word');
+    formData.append('language', 'fr');
+    formData.append('temperature', '0');
+
+    // Contexte optionnel — guide Whisper et réduit les hallucinations
+    const contextInput = document.getElementById('whisperContext');
+    const contextVal = contextInput ? contextInput.value.trim() : '';
+    if (contextVal) {
+      formData.append('prompt', contextVal);
+    } else {
+      formData.append('prompt', 'Transcription fidèle d\'une interview ou d\'un discours en français. Ne pas répéter les phrases. Transcrire exactement ce qui est dit.');
+    }
+
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${window._openaiKey}` },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(`OpenAI Whisper error: ${err}`);
+    }
+
+    const jsonData = await response.json();
+
+    // V5.81 — Construit parsedSRT mot par mot depuis word timestamps
+    statusText.textContent = '⚙️ Traitement des timecodes mot par mot...';
+
+    // Stocke les données brutes
+    window._whisperWords = (jsonData.words && jsonData.words.length) ? jsonData.words : [];
+    window._whisperSegments = jsonData.segments || [];
+
+    const wordSRT = buildWordTimestampSRT(jsonData);
+
+    const wordCount = window._whisperWords.length;
+    if (wordCount > 0) {
+      statusText.style.color = 'var(--green)';
+      statusText.textContent = '✅ Transcription terminée — ' + wordCount + ' mots alignés mot par mot !';
+    } else {
+      // Fallback — pas de word timestamps dans la réponse
+      statusText.style.color = 'var(--green)';
+      statusText.textContent = '✅ Transcription terminée — alignement par segments';
+    }
+    try { localStorage.setItem('rushai_whisper_srt', wordSRT); } catch(e) {}
+    parseSRT(wordSRT, file.name);
+
+    // V5.81 — Vérification cohérence durée MP3 vs sources déclarées
+    const audioDur = jsonData.duration || (window._whisperWords.length > 0
+      ? window._whisperWords[window._whisperWords.length - 1].end
+      : 0);
+    if (audioDur > 0) checkAudioDurationVsSources(audioDur);
+  } catch(err) {
+    statusText.style.color = 'var(--red)';
+    statusText.textContent = '❌ Erreur : ' + err.message;
+    showError('Erreur Whisper : ' + err.message);
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result.split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+// ── V5.81 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
+function buildWordTimestampSRT(jsonData, maxChars) {
+  maxChars = maxChars || 25;
+  const words = jsonData.words || [];
+  if (!words.length) {
+    // Fallback : si pas de word timestamps, utilise les segments
+    return buildSRTFromSegments(jsonData.segments || [], maxChars);
+  }
+
+  // Groupe les mots en blocs de maxChars avec leurs vrais timecodes
+  const blocks = [];
+  let currentText = '';
+  let currentStart = null;
+  let currentEnd = null;
+
+  words.forEach((w, i) => {
+    const word = (w.word || '').trim();
+    if (!word) return;
+
+    const wordStart = w.start || 0;
+    const wordEnd = w.end || wordStart + 0.1;
+
+    if (currentStart === null) currentStart = wordStart;
+
+    const test = currentText ? currentText + ' ' + word : word;
+
+    if (test.length <= maxChars) {
+      currentText = test;
+      currentEnd = wordEnd;
+    } else {
+      // Flush le bloc courant
+      if (currentText) {
+        blocks.push({
+          text: currentText,
+          start: currentStart,
+          end: currentEnd,
+          startSec: currentStart,
+          endSec: currentEnd
+        });
+      }
+      currentText = word;
+      currentStart = wordStart;
+      currentEnd = wordEnd;
+    }
+  });
+
+  // Dernier bloc
+  if (currentText) {
+    blocks.push({
+      text: currentText,
+      start: currentStart,
+      end: currentEnd,
+      startSec: currentStart,
+      endSec: currentEnd
+    });
+  }
+
+  // Génère le SRT
+  return blocks.map((b, i) =>
+    `${i+1}\n${secToSRTTC(b.start)} --> ${secToSRTTC(b.end)}\n${b.text}`
+  ).join('\n\n');
+}
+
+function buildSRTFromSegments(segments, maxChars) {
+  // Fallback quand word timestamps pas disponibles
+  maxChars = maxChars || 25;
+  let idx = 1;
+  let srt = '';
+  segments.forEach(seg => {
+    const text = seg.text || '';
+    const dur = (seg.end || 0) - (seg.start || 0);
+    const words2 = text.trim().split(' ');
+    let chunk = '';
+    let chunkStart = seg.start || 0;
+    const secPerWord = dur / Math.max(1, words2.length);
+
+    words2.forEach((w, wi) => {
+      const test = chunk ? chunk + ' ' + w : w;
+      if (test.length <= maxChars) {
+        chunk = test;
+      } else {
+        if (chunk) {
+          const chunkEnd = chunkStart + wi * secPerWord;
+          srt += `${idx}\n${secToSRTTC(chunkStart)} --> ${secToSRTTC(chunkEnd)}\n${chunk}\n\n`;
+          idx++;
+          chunkStart = chunkEnd;
+        }
+        chunk = w;
+      }
+    });
+    if (chunk) {
+      srt += `${idx}\n${secToSRTTC(chunkStart)} --> ${secToSRTTC(seg.end || 0)}\n${chunk}\n\n`;
+      idx++;
+    }
+  });
+  return srt;
+}
+
+// Trouve le timecode exact d'un mot dans _whisperWords
+function findWordTimecode(wordText, afterSec) {
+  if (!window._whisperWords || !window._whisperWords.length) return null;
+  afterSec = afterSec || 0;
+  const target = wordText.toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
+  for (const w of window._whisperWords) {
+    if (w.start < afterSec) continue;
+    const wt = (w.word || '').toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
+    if (wt === target || wt.includes(target) || target.includes(wt)) {
+      return { start: w.start, end: w.end };
+    }
+  }
+  return null;
+}
+
+// Trouve les timecodes exacts d'un passage textuel dans _whisperWords
+function findPassageTimecodes(text, afterSec) {
+  if (!window._whisperWords || !window._whisperWords.length) return null;
+  afterSec = afterSec || 0;
+
+  const passageWords = text.toLowerCase()
+    .replace(/[^a-zàâéèêëîïôùûü\s]/g, '')
+    .split(/\s+/)
+    .filter(w => w.length > 1);
+
+  if (!passageWords.length) return null;
+
+  // Cherche la première occurrence du premier mot après afterSec
+  const firstWord = passageWords[0];
+  const lastWord = passageWords[passageWords.length - 1];
+
+  let startTime = null, endTime = null;
+
+  for (let i = 0; i < window._whisperWords.length; i++) {
+    const w = window._whisperWords[i];
+    if (w.start < afterSec) continue;
+    const wt = (w.word || '').toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
+    if (wt.includes(firstWord) || firstWord.includes(wt)) {
+      startTime = w.start;
+      // Cherche le dernier mot dans les X mots suivants
+      for (let j = i; j < Math.min(i + passageWords.length + 5, window._whisperWords.length); j++) {
+        const w2 = window._whisperWords[j];
+        const wt2 = (w2.word || '').toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
+        if (wt2.includes(lastWord) || lastWord.includes(wt2)) {
+          endTime = w2.end;
+        }
+      }
+      if (endTime) break;
+    }
+  }
+
+  return startTime !== null && endTime !== null ? { start: startTime, end: endTime } : null;
+}
+
+// ── LECTEUR AUDIO V5.1 ───────────────────────────────────────────────────────
+let _audioEl = null;       // HTMLAudioElement courant
+let _audioRafId = null;    // requestAnimationFrame ID
+let _audioEndSec = null;   // timecode de fin du passage
+
+function getAudioElement() {
+  if (!window._audioFile) return null;
+  if (!_audioEl || _audioEl._file !== window._audioFile) {
+    _audioEl = new Audio(URL.createObjectURL(window._audioFile));
+    _audioEl._file = window._audioFile;
+  }
+  return _audioEl;
+}
+
+function playAudioRange(startSec, endSec, label) {
+  const audio = getAudioElement();
+  if (!audio) {
+    alert('Charge un fichier MP3 d\'abord pour écouter le passage.');
+    return;
+  }
+
+  // Stop lecture en cours
+  stopAudioPlayer(false);
+
+  _audioEndSec = endSec;
+  audio.currentTime = startSec;
+
+  // Barre lecteur
+  const bar = document.getElementById('audioPlayerBar');
+  const labelEl = document.getElementById('audioPlayerLabel');
+  const fill = document.getElementById('audioPlayerFill');
+  const timeEl = document.getElementById('audioPlayerTime');
+  if (bar) bar.classList.add('visible');
+  if (labelEl) labelEl.textContent = label || 'Lecture...';
+
+  audio.play().catch(e => console.warn('Audio play error:', e));
+
+  // Mise à jour progression
+  function tick() {
+    if (!audio || audio.paused) return;
+    const cur = audio.currentTime;
+    if (cur >= _audioEndSec) {
+      stopAudioPlayer(true);
+      return;
+    }
+    const pct = ((cur - startSec) / (endSec - startSec)) * 100;
+    if (fill) fill.style.width = Math.min(100, pct) + '%';
+    const elapsed = cur - startSec;
+    const m = Math.floor(elapsed / 60);
+    const s = Math.floor(elapsed % 60).toString().padStart(2, '0');
+    const totM = Math.floor((endSec - startSec) / 60);
+    const totS = Math.floor((endSec - startSec) % 60).toString().padStart(2, '0');
+    if (timeEl) timeEl.textContent = `${m}:${s} / ${totM}:${totS}`;
+    _audioRafId = requestAnimationFrame(tick);
+  }
+  _audioRafId = requestAnimationFrame(tick);
+
+  // Marque le bouton actif
+  document.querySelectorAll('.seg-play-btn').forEach(b => b.classList.remove('playing'));
+}
+
+function stopAudioPlayer(resetFill) {
+  if (_audioEl) { _audioEl.pause(); }
+  if (_audioRafId) { cancelAnimationFrame(_audioRafId); _audioRafId = null; }
+  if (resetFill !== false) {
+    const bar = document.getElementById('audioPlayerBar');
+    const fill = document.getElementById('audioPlayerFill');
+    const timeEl = document.getElementById('audioPlayerTime');
+    if (bar) bar.classList.remove('visible');
+    if (fill) fill.style.width = '0%';
+    if (timeEl) timeEl.textContent = '0:00';
+  }
+  document.querySelectorAll('.seg-play-btn').forEach(b => b.classList.remove('playing'));
+}
+
+function onPlayerProgressClick(e) {
+  if (!_audioEl || !_audioEndSec) return;
+  const bar = document.getElementById('audioPlayerProgress');
+  const rect = bar.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  const startSec = _audioEl.currentTime - (_audioEndSec - _audioEl.currentTime);
+  _audioEl.currentTime = startSec + pct * (_audioEndSec - startSec);
+}
+
+// Écouter une sélection dans le viewer SRT
+function playAudioSelection() {
+  if (!_srtSelection) return;
+  const startSec = _srtSelection.adjustedStartSec || _srtSelection.startSec;
+  const endSec = _srtSelection.adjustedEndSec || _srtSelection.endSec;
+  const text = _srtSelection.text;
+
+  // Met à jour le playhead sur la waveform
+  const playhead = document.getElementById('waveformPlayhead');
+  if (playhead) playhead.style.display = 'block';
+
+  playAudioRange(startSec, endSec, text.slice(0, 60) + (text.length > 60 ? '…' : ''));
+}
+
+// Écouter un segment dans les résultats
+function playSegment(ch, idx) {
+  const seg = window._lastChannelResults && window._lastChannelResults[ch] && window._lastChannelResults[ch].segments[idx];
+  if (!seg) return;
+
+  // Utilise les poignées waveform si elles sont ouvertes et ajustées
+  const wfState = _segWaveformState && _segWaveformState[ch + '-' + idx];
+  const wfDiv = document.getElementById('seg-waveform-' + ch + '-' + idx);
+  const wfOpen = wfDiv && wfDiv.style.display !== 'none';
+
+  const startSec = (wfOpen && wfState) ? wfState.selStart : tcToSec((seg.start || '').replace(',', '.'));
+  const endSec = (wfOpen && wfState) ? wfState.selEnd : tcToSec((seg.end || '').replace(',', '.'));
+
+  const btn = document.querySelector('.segment[data-ch="' + ch + '"][data-idx="' + idx + '"] .seg-play-btn');
+
+  if (btn && btn.classList.contains('playing')) {
+    stopAudioPlayer(true);
+    return;
+  }
+
+  playAudioRange(startSec, endSec, seg.text ? seg.text.slice(0, 60) : 'Segment ' + (idx + 1));
+  if (btn) btn.classList.add('playing');
+}
+function resetAudio() {
+  const audioInput = document.getElementById('audioFile');
+  if (audioInput) audioInput.value = '';
+
+  const dz = document.getElementById('dropZoneAudio');
+  if (dz) {
+    dz.querySelector('.drop-main').textContent = 'Déposer le fichier MP3 ici';
+    dz.querySelector('.drop-sub').textContent = 'MP3 uniquement · max 25 Mo · 64-128 kbps recommandé · ~30 min de rush';
+  }
+
+  const statusDiv = document.getElementById('whisperStatus');
+  if (statusDiv) statusDiv.style.display = 'none';
+
+  const ctx = document.getElementById('whisperContext');
+  if (ctx) ctx.value = '';
+
+  parsedSRT = [];
+  window._whisperWords = [];
+  window._whisperSegments = [];
+  window._audioFile = null;
+  window._openaiKey = null;
+  _waveformData = null;
+  _waveformView = null;
+  const viewer = document.getElementById('srtViewer');
+  if (viewer) viewer.classList.remove('visible');
+  const preview = document.getElementById('srtPreview');
+  if (preview) { preview.innerHTML = ''; preview.classList.remove('visible'); }
+  const statsRow = document.getElementById('statsRow');
+  if (statsRow) statsRow.classList.remove('visible');
+  const qualBar = document.getElementById('rushQualityBar');
+  if (qualBar) qualBar.remove();
+}
+
+
+function reformatSRT(srtText, maxChars = 25) {
+  const blocks = srtText.trim().split(/\n\s*\n/);
+  const result = [];
+  let index = 1;
+  for (const block of blocks) {
+    const lines = block.trim().split('\n');
+    const tcLine = lines.find(l => l.includes('-->'));
+    if (!tcLine) continue;
+    const [startTC, endTC] = tcLine.split('-->').map(x => x.trim());
+    const text = lines.slice(lines.indexOf(tcLine) + 1).join(' ').trim().replace(/<[^>]+>/g, '');
+    if (!text) continue;
+    const startSec = tcToSec(startTC);
+    const endSec = tcToSec(endTC);
+    const duration = endSec - startSec;
+    // Découpe en chunks de maxChars
+    const words = text.split(' ');
+    const chunks = [];
+    let current = '';
+    for (const word of words) {
+      const test = current ? current + ' ' + word : word;
+      if (test.length <= maxChars) { current = test; }
+      else { if (current) chunks.push(current); current = word; }
+    }
+    if (current) chunks.push(current);
+    // Distribue les timecodes proportionnellement
+    const chunkDur = chunks.length > 0 ? duration / chunks.length : duration;
+    chunks.forEach((chunk, i) => {
+      const chStart = startSec + i * chunkDur;
+      const chEnd = startSec + (i + 1) * chunkDur;
+      result.push(`${index}\n${secToSRTTC(chStart)} --> ${secToSRTTC(chEnd)}\n${chunk}`);
+      index++;
+    });
+  }
+  return result.join('\n\n');
+}
+
+function secToSRTTC(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  const ms = Math.round((sec % 1) * 1000);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(ms).padStart(3,'0')}`;
+}
+
 // ── SRT ──────────────────────────────────────────────────────────────────────
 // ── SOURCES ──────────────────────────────────────────────────────────────────
 let sourceCount = 0;
@@ -1375,6 +2430,118 @@ function setFormat(fmt, btn) {
   sequenceHeight = fmt === '9:16' ? 1920 : 1080;
   document.querySelectorAll('#fmt169, #fmt916').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+}
+
+function setFPS(fps, btn) {
+  sequenceFPS = fps;
+  document.querySelectorAll('#fps25, #fps30').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── LECTURE MÉTADONNÉES VIDÉO ────────────────────────────────────────────────
+function onVideoDrop(e) {
+  e.preventDefault();
+  const zone = document.getElementById('videoDropZone');
+  if (zone) { zone.style.borderColor = 'var(--border2)'; zone.style.background = ''; }
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('video/') || /\.(mov|mp4|mxf|mts|m2ts|avi|mkv)$/i.test(f.name));
+  if (!files.length) return;
+  files.sort((a, b) => a.name.localeCompare(b.name)); // ordre alphabétique = ordre tournage
+  files.forEach(readVideoMetadata);
+}
+
+function onVideoFileSelect(files) {
+  const videoFiles = Array.from(files).filter(f => f.type.startsWith('video/') || /\.(mov|mp4|mxf|mts|m2ts|avi|mkv)$/i.test(f.name));
+  videoFiles.sort((a, b) => a.name.localeCompare(b.name));
+  videoFiles.forEach(readVideoMetadata);
+}
+
+function readVideoMetadata(file) {
+  const video = document.createElement('video');
+  video.preload = 'metadata';
+  const url = URL.createObjectURL(file);
+  video.src = url;
+
+  video.onloadedmetadata = () => {
+    const dur = video.duration; // en secondes
+    URL.revokeObjectURL(url);
+
+    if (!dur || isNaN(dur)) {
+      // Durée non lisible → ajoute quand même avec nom
+      addSourceWithData(file.name, null);
+      return;
+    }
+
+    addSourceWithData(file.name, dur);
+  };
+
+  video.onerror = () => {
+    URL.revokeObjectURL(url);
+    addSourceWithData(file.name, null);
+  };
+}
+
+// ── VÉRIFICATION COHÉRENCE DURÉE MP3 VS SOURCES ──────────────────────────────
+function checkAudioDurationVsSources(audioDurSec) {
+  if (!sources || sources.length === 0) return; // pas de sources déclarées
+
+  const totalSourcesDur = sources.reduce((a, s) => a + (s.durationSec || 0), 0);
+  if (totalSourcesDur === 0) return;
+
+  const diff = Math.abs(audioDurSec - totalSourcesDur);
+  const tolerance = 10; // 10 secondes de tolérance
+
+  // Supprime ancien message si existe
+  const oldMsg = document.getElementById('durationCheckMsg');
+  if (oldMsg) oldMsg.remove();
+
+  const msg = document.createElement('div');
+  msg.id = 'durationCheckMsg';
+
+  if (diff <= tolerance) {
+    // OK
+    msg.style.cssText = 'margin-top:10px;padding:8px 14px;background:rgba(75,201,122,0.07);border:1px solid rgba(75,201,122,0.25);border-radius:3px;font-size:11px;color:var(--green);';
+    msg.innerHTML = '✅ Cohérence vérifiée — MP3 : ' + secToMin(audioDurSec) + ' · Sources déclarées : ' + secToMin(totalSourcesDur);
+  } else {
+    const isLonger = audioDurSec > totalSourcesDur;
+    const hint = isLonger
+      ? 'Le MP3 est plus long que les sources — tu as peut-être oublié de déclarer un fichier vidéo.'
+      : 'Le MP3 est plus court que les sources — vérifie que tu as exporté le bon rush audio ou que toutes les sources sont correctes.';
+    msg.style.cssText = 'margin-top:10px;padding:10px 14px;background:rgba(245,200,66,0.07);border:1px solid rgba(245,200,66,0.3);border-radius:3px;font-size:11px;';
+    msg.innerHTML =
+      '<div style="color:#F5C842;font-weight:700;margin-bottom:4px;">⚠ Décalage de durée détecté</div>' +
+      '<div style="color:var(--muted);">MP3 importé : <strong style="color:var(--text)">' + secToMin(audioDurSec) + '</strong> · Sources déclarées : <strong style="color:var(--text)">' + secToMin(totalSourcesDur) + '</strong> · Écart : <strong style="color:#F5C842">' + secToMin(diff) + '</strong></div>' +
+      '<div style="margin-top:5px;color:var(--muted2);font-size:10px;">' + hint + '</div>';
+  }
+
+  // Insère sous la drop zone audio
+  const whisperStatus = document.getElementById('whisperStatus');
+  if (whisperStatus) whisperStatus.parentNode.insertBefore(msg, whisperStatus.nextSibling);
+}
+
+function addSourceWithData(filename, durationSec) {
+  addSource(); // crée la ligne
+
+  const nameEl = document.getElementById('source-name-' + sourceCount);
+  const durEl = document.getElementById('source-dur-' + sourceCount);
+
+  if (nameEl) nameEl.value = filename;
+
+  if (durEl && durationSec) {
+    // Convertit les secondes en HH:MM:SS:FF (25fps par défaut)
+    const fps = sequenceFPS || 25;
+    const totalFrames = Math.floor(durationSec * fps);
+    const frames = totalFrames % fps;
+    const totalSec = Math.floor(durationSec);
+    const hh = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+    const mm = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+    const ss = String(totalSec % 60).padStart(2, '0');
+    const ff = String(frames).padStart(2, '0');
+    durEl.value = hh + ':' + mm + ':' + ss + ':' + ff;
+    formatDurInput(durEl);
+  }
+
+  updateSources();
+  showToast('🎬 ' + filename + (durationSec ? ' · ' + secToMin(durationSec) : ' · durée non lisible'));
 }
 
 function addSource() {
@@ -1395,6 +2562,9 @@ function addSource() {
       <button id="source-mono-${idx}" class="dur-btn" onclick="setAudioCh(${idx},'mono',this)" style="padding:4px 8px;font-size:10px;letter-spacing:0.5px;">Mono</button>
     </div>
     <button class="source-remove" onclick="removeSource(${idx})">×</button>
+    <input class="source-input" type="text" placeholder="/Volumes/Disque/RUSHES/FX30001.mp4 (optionnel)" id="source-path-${idx}"
+      style="grid-column:1/-1;font-size:10px;color:var(--muted);margin-top:-4px;"
+      title="Chemin absolu optionnel — permet à Premiere de lier automatiquement le média sans clic droit">
   `;
   list.appendChild(row);
   updateSources();
@@ -1462,7 +2632,9 @@ function updateSources() {
     if (!name || !durStr) continue;
     const durationSec = parseDurationInput(durStr) || tcToSec(durStr + ',000');
     const audioChannels = getAudioCh(i);
-    sources.push({ name, durationSec, offset: cumulativeSec, audioChannels });
+    const pathEl = document.getElementById(`source-path-${i}`);
+    const path = pathEl ? pathEl.value.trim() : '';
+    sources.push({ name, durationSec, offset: cumulativeSec, audioChannels, path });
     cumulativeSec += durationSec;
   }
 
@@ -1567,12 +2739,1257 @@ function parseSRT(text, filename) {
   ).join('') + `<span style="color:var(--muted2)">... ${parsedSRT.length-5} blocs de plus</span>`;
   preview.classList.add('visible');
 
+  // V5.81 — Affiche le viewer SRT interactif complet
+  renderSRTViewer();
+
   dz.querySelector('.drop-main').textContent = '✓ ' + filename;
   dz.querySelector('.drop-sub').textContent = `${parsedSRT.length} blocs · ${secToMin(totalSec)} · ${words.toLocaleString('fr')} mots`;
 
   markDone('step1');
   setActive('step2');
   setActive('step3');
+
+  // ── Analyse Descript-style dès le chargement ────────────────────────────────
+  analyzeRushQuality();
+}
+
+// Stockage global de l'analyse qualité du rush
+let rushQuality = null;
+
+function analyzeRushQuality() {
+  const fillerWords = /\b(euh|hum|hmm|donc euh|c'est-à-dire|voilà voilà|enfin voilà|bah|ben|alors euh|du coup|genre|en fait|tu vois|comment dire)\b/gi;
+  const repetitionPattern = /\b(\w{3,})\s+\1\b/gi;
+
+  let silences = [];
+  let hesitations = [];
+  let repetitions = [];
+  let corrections = [];
+
+  parsedSRT.forEach((b, i) => {
+    if (i > 0) {
+      const gap = b.startSec - parsedSRT[i-1].endSec;
+      if (gap > 1.5) silences.push({ tc: parsedSRT[i-1].end, duration: gap });
+    }
+    fillerWords.lastIndex = 0;
+    if (fillerWords.test(b.text)) hesitations.push({ tc: b.start, text: b.text });
+    repetitionPattern.lastIndex = 0;
+    if (repetitionPattern.test(b.text)) repetitions.push({ tc: b.start, text: b.text });
+    if (b.text.split(' ').length <= 3 && i < parsedSRT.length - 1) {
+      const nextGap = parsedSRT[i+1].startSec - b.endSec;
+      if (nextGap < 0.5) corrections.push({ tc: b.start, text: b.text });
+    }
+  });
+
+  rushQuality = { silences, hesitations, repetitions, corrections, audioAnalysis: null };
+
+  // Affiche résumé texte
+  const totalIssues = silences.length + hesitations.length + repetitions.length + corrections.length;
+  const preview = document.getElementById('srtPreview');
+  const oldBar = document.getElementById('rushQualityBar');
+  if (oldBar) oldBar.remove();
+
+  const qualityDiv = document.createElement('div');
+  qualityDiv.id = 'rushQualityBar';
+  qualityDiv.style.cssText = 'margin-top:10px;padding:10px 14px;background:rgba(245,200,66,0.07);border:1px solid rgba(245,200,66,0.25);border-radius:3px;font-size:11px;line-height:1.9;';
+  qualityDiv.innerHTML = `
+    <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#F5C842;margin-bottom:6px;">⚡ Analyse qualité rush</div>
+    ${silences.length ? `<span style="color:var(--muted)">🔇 ${silences.length} silence${silences.length>1?'s':''} > 1.5s</span> &nbsp;` : ''}
+    ${hesitations.length ? `<span style="color:var(--muted)">💬 ${hesitations.length} hésitation${hesitations.length>1?'s':''}</span> &nbsp;` : ''}
+    ${repetitions.length ? `<span style="color:var(--muted)">🔁 ${repetitions.length} répétition${repetitions.length>1?'s':''}</span> &nbsp;` : ''}
+    ${corrections.length ? `<span style="color:var(--muted)">✂️ ${corrections.length} correction${corrections.length>1?'s':''} mid-phrase</span>` : ''}
+    <span id="audioQualityBadge" style="color:var(--muted2);font-size:10px;">🎙 Analyse audio en cours...</span>
+    <div style="margin-top:6px;color:rgba(255,255,255,0.5);font-size:10px;">RUSHUP.AI en tiendra compte — les segments propres seront privilégiés.</div>
+  `;
+  if (preview) preview.parentNode.insertBefore(qualityDiv, preview.nextSibling);
+
+  // Lance l'analyse audio réelle si MP3 disponible
+  if (window._audioFile) analyzeAudioQuality(window._audioFile);
+}
+
+// ── V5.81 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
+async function analyzeAudioQuality(file) {
+  const badge = document.getElementById('audioQualityBadge');
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    audioCtx.close();
+
+    const channelData = audioBuffer.getChannelData(0); // canal gauche
+    const sampleRate = audioBuffer.sampleRate;
+    const chunkSize = Math.floor(sampleRate * 0.1); // analyse par chunks de 100ms
+
+    let trueSilences = [];    // silences détectés par décibels
+    let saturations = [];     // saturation (clipping)
+    let noisyZones = [];      // bruit de fond élevé
+
+    const SILENCE_THRESHOLD = 0.015;  // amplitude < 1.5% = silence
+    const SATURATION_THRESHOLD = 0.97; // amplitude > 97% = saturation
+    const NOISE_THRESHOLD = 0.04;      // bruit de fond > 4%
+
+    let silenceStart = null;
+
+    for (let i = 0; i < channelData.length; i += chunkSize) {
+      const chunk = channelData.slice(i, i + chunkSize);
+      const startSec = i / sampleRate;
+
+      // RMS du chunk
+      let sum = 0;
+      let maxAmp = 0;
+      for (let j = 0; j < chunk.length; j++) {
+        sum += chunk[j] * chunk[j];
+        maxAmp = Math.max(maxAmp, Math.abs(chunk[j]));
+      }
+      const rms = Math.sqrt(sum / chunk.length);
+
+      // Détection silences réels
+      if (rms < SILENCE_THRESHOLD) {
+        if (silenceStart === null) silenceStart = startSec;
+      } else {
+        if (silenceStart !== null) {
+          const dur = startSec - silenceStart;
+          if (dur > 0.8) { // silence > 800ms = significatif
+            trueSilences.push({ start: silenceStart, end: startSec, dur });
+          }
+          silenceStart = null;
+        }
+      }
+
+      // Détection saturation
+      if (maxAmp >= SATURATION_THRESHOLD) {
+        saturations.push({ tc: secToSRTTC(startSec), sec: startSec });
+      }
+    }
+
+    // Stocke dans rushQuality
+    if (rushQuality) {
+      rushQuality.audioAnalysis = { trueSilences, saturations };
+    }
+
+    // Tague les blocs SRT avec les problèmes audio
+    if (trueSilences.length > 0) {
+      parsedSRT.forEach(block => {
+        const hasSilenceInBlock = trueSilences.some(s =>
+          s.start >= block.startSec && s.start <= block.endSec
+        );
+        if (hasSilenceInBlock) block._hasTrueSilence = true;
+
+        const hasSaturation = saturations.some(s =>
+          s.sec >= block.startSec && s.sec <= block.endSec
+        );
+        if (hasSaturation) block._hasSaturation = true;
+      });
+    }
+
+    // Met à jour le badge
+    if (badge) {
+      const issues = [];
+      if (trueSilences.length > 0) issues.push(`🔇 ${trueSilences.length} silence${trueSilences.length>1?'s':''} réel${trueSilences.length>1?'s':''}`);
+      if (saturations.length > 0) issues.push(`⚡ ${saturations.length} saturation${saturations.length>1?'s':''}`);
+      badge.style.color = issues.length > 0 ? '#F55252' : '#4BC97A';
+      badge.textContent = issues.length > 0
+        ? '🎙 ' + issues.join(' · ')
+        : '🎙 Audio propre';
+    }
+
+    // Met à jour les couleurs directement sans recréer le DOM
+    document.querySelectorAll('.srt-word[data-block]').forEach(el => {
+      const blockIdx = parseInt(el.dataset.block);
+      const block = parsedSRT[blockIdx];
+      if (!block) return;
+      if (block._hasTrueSilence) el.classList.add('has-silence');
+      if (block._hasSaturation) el.classList.add('has-saturation');
+      if (block._hasTrueSilence) el.title = '🔇 Silence détecté';
+      if (block._hasSaturation) el.title += ' ⚡ Saturation';
+    });
+
+  } catch(e) {
+    console.warn('Analyse audio échouée:', e);
+    if (badge) { badge.style.color = 'var(--muted2)'; badge.textContent = '🎙 Analyse audio indisponible'; }
+  }
+}
+
+// ── V5.81 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
+let _srtSelection = null; // { startIdx, endIdx, startSec, endSec, text }
+
+function renderSRTViewer() {
+  const viewer = document.getElementById('srtViewer');
+  const body = document.getElementById('srtViewerBody');
+  const stats = document.getElementById('srtViewerStats');
+  if (!viewer || !body || !parsedSRT.length) return;
+
+  const fillerRx = /\b(euh|hum|hmm|bah|ben|du coup|genre|en fait|tu vois|voilà voilà|enfin voilà)\b/gi;
+  const repeatRx = /\b(\w{4,})\b/gi;
+
+  // Détecte mots répétés dans tout le transcript
+  const allText = parsedSRT.map(b => b.text).join(' ');
+  const wordCounts = {};
+  let m;
+  repeatRx.lastIndex = 0;
+  while ((m = repeatRx.exec(allText)) !== null) {
+    const w = m[1].toLowerCase();
+    wordCounts[w] = (wordCounts[w] || 0) + 1;
+  }
+  const repeatedWords = new Set(Object.keys(wordCounts).filter(w => wordCounts[w] > 2 && w.length > 4));
+
+  // Construit le HTML mot par mot avec data-idx pour retrouver le bloc SRT
+  let html = '';
+  parsedSRT.forEach((block, blockIdx) => {
+    const words = block.text.split(/(\s+)/);
+    words.forEach((part, partIdx) => {
+      if (/^\s+$/.test(part)) { html += part; return; }
+      const wordLower = part.toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
+      const isFiller = fillerRx.test(part); fillerRx.lastIndex = 0;
+      const isRepeated = repeatedWords.has(wordLower);
+      const blockHasSilence = block._hasTrueSilence;
+      const blockHasSat = block._hasSaturation;
+      let cls = 'srt-word';
+      if (isFiller) cls += ' filler';
+      else if (isRepeated) cls += ' repeated';
+      if (blockHasSilence) cls += ' has-silence';
+      if (blockHasSat) cls += ' has-saturation';
+      html += `<span class="${cls}" data-block="${blockIdx}" data-part="${partIdx}" title="${blockHasSilence ? '🔇 Silence détecté' : ''}${blockHasSat ? ' ⚡ Saturation' : ''}">${part}</span>`;
+    });
+    html += ' ';
+  });
+
+  body.innerHTML = html;
+  viewer.classList.add('visible');
+  stats.textContent = `${parsedSRT.length} blocs · surligne pour sélectionner`;
+}
+
+let _srtSelectionTimer = null;
+function debouncedSRTSelection() {
+  clearTimeout(_srtSelectionTimer);
+  _srtSelectionTimer = setTimeout(onSRTSelection, 150);
+}
+
+function onSRTSelection() {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || !sel.toString().trim()) return;
+
+  const range = sel.getRangeAt(0);
+  const startEl = range.startContainer.parentElement;
+  const endEl = range.endContainer.parentElement;
+  const startBlock = parseInt(startEl.dataset && startEl.dataset.block);
+  const endBlock = parseInt(endEl.dataset && endEl.dataset.block);
+  if (isNaN(startBlock) || isNaN(endBlock)) return;
+
+  const from = Math.min(startBlock, endBlock);
+  const to = Math.max(startBlock, endBlock);
+  const blockCount = to - from + 1;
+
+  document.querySelectorAll('.srt-word.highlighted').forEach(el => el.classList.remove('highlighted'));
+  document.querySelectorAll('.srt-word[data-block]').forEach(el => {
+    const b = parseInt(el.dataset.block);
+    if (b >= from && b <= to) el.classList.add('highlighted');
+  });
+
+  const startSec = parsedSRT[from].startSec;
+  const endSec = parsedSRT[to].endSec;
+  const text = parsedSRT.slice(from, to + 1).map(b => b.text).join(' ');
+  const dur = endSec - startSec;
+
+  // V5.81 — Affine avec word timestamps si disponibles
+  let adjStartSec = startSec;
+  let adjEndSec = endSec;
+  if (window._whisperWords && window._whisperWords.length) {
+    const exactTC = findPassageTimecodes(text, Math.max(0, startSec - 1));
+    if (exactTC) {
+      adjStartSec = exactTC.start;
+      adjEndSec = exactTC.end;
+    }
+  }
+
+  _srtSelection = {
+    startIdx: from, endIdx: to,
+    startTC: secToSRTTC(adjStartSec), endTC: secToSRTTC(adjEndSec),
+    startSec: adjStartSec, endSec: adjEndSec, text, dur: adjEndSec - adjStartSec,
+    adjustedStartSec: adjStartSec, adjustedEndSec: adjEndSec
+  };
+
+  const bar = document.getElementById('srtSelectionBar');
+  const info = document.getElementById('srtSelectionInfo');
+  bar.classList.add('visible');
+  info.innerHTML = `<span style="color:var(--accent);">${secToSRTTC(adjStartSec)} → ${secToSRTTC(adjEndSec)}</span> · ${Math.round(adjEndSec - adjStartSec)}s · "${text.slice(0, 50)}${text.length > 50 ? '…' : ''}"${window._whisperWords && window._whisperWords.length ? ' <span style="color:var(--green);font-size:9px;">● mot par mot</span>' : ''}`;
+
+  // Avertissement multi-blocs
+  const warning = document.getElementById('waveformWarning');
+  if (warning) {
+    if (blockCount > 1) {
+      warning.textContent = `⚠ Ce passage couvre ${blockCount} blocs SRT — ajuste les poignées pour cadrer précisément le passage voulu.`;
+      warning.classList.add('visible');
+    } else {
+      warning.classList.remove('visible');
+    }
+  }
+
+  // Affiche la waveform si MP3 disponible
+  if (window._audioFile) {
+    renderWaveform(startSec, endSec);
+  }
+}
+
+function clearSRTSelection() {
+  _srtSelection = null;
+  window.getSelection && window.getSelection().removeAllRanges();
+  document.querySelectorAll('.srt-word.highlighted').forEach(el => el.classList.remove('highlighted'));
+  const bar = document.getElementById('srtSelectionBar');
+  if (bar) bar.classList.remove('visible');
+  const wrap = document.getElementById('waveformWrap');
+  if (wrap) wrap.classList.remove('visible');
+}
+
+// ── WAVEFORM ──────────────────────────────────────────────────────────────────
+let _waveformData = null;    // Float32Array des samples normalisés
+let _waveformSampleRate = 44100;
+let _waveformCtx = null;     // AudioBuffer context
+let _waveformStartSec = 0;
+let _waveformEndSec = 0;
+let _waveformDragging = null; // 'in' | 'out'
+
+async function renderWaveform(startSec, endSec) {
+  const wrap = document.getElementById('waveformWrap');
+  const canvas = document.getElementById('waveformCanvas');
+  const container = document.getElementById('waveformContainer');
+  if (!wrap || !canvas || !window._audioFile) return;
+
+  wrap.classList.add('visible');
+
+  // Charge l'audio une seule fois
+  if (!_waveformData) {
+    try {
+      const arrayBuffer = await window._audioFile.arrayBuffer();
+      const actx = new (window.AudioContext || window.webkitAudioContext)();
+      const audioBuf = await actx.decodeAudioData(arrayBuffer);
+      actx.close();
+      _waveformData = audioBuf.getChannelData(0);
+      _waveformSampleRate = audioBuf.sampleRate;
+    } catch(e) {
+      console.warn('Waveform load error:', e);
+      return;
+    }
+  }
+
+  _waveformStartSec = startSec;
+  _waveformEndSec = endSec;
+
+  const margin = Math.min(2, startSec);
+  const totalDur = _waveformData.length / _waveformSampleRate;
+  const viewStart = Math.max(0, startSec - margin);
+  const viewEnd = Math.min(totalDur, endSec + margin);
+
+  // Stocke la vue courante pour le pan
+  _waveformView = { viewStart, viewEnd };
+
+  redrawWaveform(viewStart, viewEnd, startSec, endSec);
+  updateWaveformHandles(viewStart, viewEnd, startSec, endSec);
+  updateWaveformTC(startSec, endSec);
+  setupWaveformInteraction(container);
+
+  // Fix resize — observe si le container change de taille
+  if (!container._resizeObserver) {
+    container._resizeObserver = new ResizeObserver(() => {
+      if (_waveformView && _srtSelection) {
+        const s = _srtSelection.adjustedStartSec || _waveformStartSec;
+        const e2 = _srtSelection.adjustedEndSec || _waveformEndSec;
+        redrawWaveform(_waveformView.viewStart, _waveformView.viewEnd, s, e2);
+        updateWaveformHandles(_waveformView.viewStart, _waveformView.viewEnd, s, e2);
+      }
+    });
+    container._resizeObserver.observe(container);
+  }
+}
+
+// Vue courante de la waveform (pour pan)
+let _waveformView = null;
+let _waveformPanStart = null; // { clientX, viewStart, viewEnd }
+
+function redrawWaveform(viewStart, viewEnd, selStart, selEnd) {
+  const canvas = document.getElementById('waveformCanvas');
+  if (!canvas || !_waveformData) return;
+  drawWaveform(canvas, viewStart, viewEnd, selStart, selEnd);
+}
+
+function drawWaveform(canvas, viewStart, viewEnd, selStart, selEnd) {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  if (rect.width === 0) return;
+  canvas.width = Math.floor(rect.width * dpr);
+  canvas.height = 48 * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = '48px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = 48;
+
+  const startSample = Math.floor(viewStart * _waveformSampleRate);
+  const endSample = Math.floor(viewEnd * _waveformSampleRate);
+  const totalSamples = endSample - startSample;
+  const samplesPerPx = totalSamples / W;
+
+  ctx.fillStyle = 'rgba(24,24,38,0.95)';
+  ctx.fillRect(0, 0, W, H);
+
+  const selStartPct = Math.max(0, (selStart - viewStart) / (viewEnd - viewStart));
+  const selEndPct = Math.min(1, (selEnd - viewStart) / (viewEnd - viewStart));
+  ctx.fillStyle = 'rgba(151,71,255,0.12)';
+  ctx.fillRect(selStartPct * W, 0, (selEndPct - selStartPct) * W, H);
+
+  for (let x = 0; x < W; x++) {
+    const sStart = Math.floor(startSample + x * samplesPerPx);
+    const sEnd = Math.min(Math.floor(startSample + (x + 1) * samplesPerPx), _waveformData.length);
+    let min = 0, max = 0;
+    for (let s = sStart; s < sEnd; s++) {
+      if (_waveformData[s] > max) max = _waveformData[s];
+      if (_waveformData[s] < min) min = _waveformData[s];
+    }
+    const sec = viewStart + (x / W) * (viewEnd - viewStart);
+    const inSel = sec >= selStart && sec <= selEnd;
+    ctx.fillStyle = inSel ? 'rgba(75,201,122,0.9)' : 'rgba(144,144,176,0.35)';
+    ctx.fillRect(x, H/2 - max * H/2, 1, Math.max(1, (max - min) * H/2));
+  }
+
+  // Ligne centrale
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillRect(0, H/2, W, 1);
+}
+
+function updateWaveformHandles(viewStart, viewEnd, selStart, selEnd) {
+  const viewDur = viewEnd - viewStart;
+  const inPct = Math.max(0, Math.min(100, ((selStart - viewStart) / viewDur) * 100));
+  const outPct = Math.max(0, Math.min(100, ((selEnd - viewStart) / viewDur) * 100));
+
+  const handleIn = document.getElementById('waveformHandleIn');
+  const handleOut = document.getElementById('waveformHandleOut');
+  const region = document.getElementById('waveformRegion');
+
+  if (handleIn) handleIn.style.left = inPct + '%';
+  if (handleOut) handleOut.style.left = outPct + '%';
+  if (region) {
+    region.style.left = inPct + '%';
+    region.style.width = Math.max(0, outPct - inPct) + '%';
+  }
+}
+
+function updateWaveformTC(startSec, endSec) {
+  const tcIn = document.getElementById('waveformTCIn');
+  const tcOut = document.getElementById('waveformTCOut');
+  if (tcIn) tcIn.textContent = secToSRTTC(startSec).replace(',', '.');
+  if (tcOut) tcOut.textContent = secToSRTTC(endSec).replace(',', '.');
+  if (_srtSelection) {
+    _srtSelection.adjustedStartSec = startSec;
+    _srtSelection.adjustedEndSec = endSec;
+    _srtSelection.startTC = secToSRTTC(startSec);
+    _srtSelection.endTC = secToSRTTC(endSec);
+  }
+}
+
+function setupWaveformInteraction(container) {
+  container.onmousedown = (e) => {
+    const handleIn = document.getElementById('waveformHandleIn');
+    const handleOut = document.getElementById('waveformHandleOut');
+    const inRect = handleIn ? handleIn.getBoundingClientRect() : null;
+    const outRect = handleOut ? handleOut.getBoundingClientRect() : null;
+    const containerRect = container.getBoundingClientRect();
+
+    const nearIn = inRect && Math.abs(e.clientX - (inRect.left + 2)) < 14;
+    const nearOut = outRect && Math.abs(e.clientX - (outRect.left + 2)) < 14;
+
+    if (nearIn) {
+      _waveformDragging = 'in';
+    } else if (nearOut) {
+      _waveformDragging = 'out';
+    } else {
+      // Pan — glisser pour déplacer la vue
+      _waveformDragging = 'pan';
+      _waveformPanStart = {
+        clientX: e.clientX,
+        viewStart: _waveformView.viewStart,
+        viewEnd: _waveformView.viewEnd
+      };
+    }
+
+    const canvas = document.getElementById('waveformCanvas');
+    const totalDur = _waveformData ? _waveformData.length / _waveformSampleRate : 0;
+
+    const onMove = (ev) => {
+      if (!_waveformView) return;
+      const { viewStart, viewEnd } = _waveformView;
+      const viewDur = viewEnd - viewStart;
+      const rect = container.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+      const newSec = viewStart + pct * viewDur;
+
+      const curStart = _srtSelection ? (_srtSelection.adjustedStartSec || _waveformStartSec) : _waveformStartSec;
+      const curEnd = _srtSelection ? (_srtSelection.adjustedEndSec || _waveformEndSec) : _waveformEndSec;
+
+      if (_waveformDragging === 'in') {
+        const newStart = Math.max(viewStart, Math.min(newSec, curEnd - 0.2));
+        updateWaveformHandles(viewStart, viewEnd, newStart, curEnd);
+        updateWaveformTC(newStart, curEnd);
+        drawWaveform(canvas, viewStart, viewEnd, newStart, curEnd);
+
+      } else if (_waveformDragging === 'out') {
+        const newEnd = Math.min(viewEnd, Math.max(newSec, curStart + 0.2));
+        updateWaveformHandles(viewStart, viewEnd, curStart, newEnd);
+        updateWaveformTC(curStart, newEnd);
+        drawWaveform(canvas, viewStart, viewEnd, curStart, newEnd);
+
+      } else if (_waveformDragging === 'pan' && _waveformPanStart) {
+        const dx = ev.clientX - _waveformPanStart.clientX;
+        const secPerPx = (_waveformPanStart.viewEnd - _waveformPanStart.viewStart) / rect.width;
+        const shift = -dx * secPerPx;
+        let newViewStart = Math.max(0, _waveformPanStart.viewStart + shift);
+        let newViewEnd = Math.min(totalDur, _waveformPanStart.viewEnd + shift);
+        // Garde la même largeur
+        const dur = _waveformPanStart.viewEnd - _waveformPanStart.viewStart;
+        if (newViewStart < 0) { newViewStart = 0; newViewEnd = dur; }
+        if (newViewEnd > totalDur) { newViewEnd = totalDur; newViewStart = Math.max(0, totalDur - dur); }
+        _waveformView = { viewStart: newViewStart, viewEnd: newViewEnd };
+        drawWaveform(canvas, newViewStart, newViewEnd, curStart, curEnd);
+        updateWaveformHandles(newViewStart, newViewEnd, curStart, curEnd);
+        const tcIn = document.getElementById('waveformTCIn');
+        const tcOut = document.getElementById('waveformTCOut');
+        if (tcIn) tcIn.textContent = secToSRTTC(newViewStart).replace(',', '.');
+        if (tcOut) tcOut.textContent = secToSRTTC(newViewEnd).replace(',', '.');
+      }
+    };
+
+    const onUp = (ev) => {
+      // Clic simple sans drag → lecture depuis ce point
+      if (_waveformDragging === 'pan' && _waveformPanStart && Math.abs(ev.clientX - _waveformPanStart.clientX) < 5) {
+        const rect = container.getBoundingClientRect();
+        const pct = (ev.clientX - rect.left) / rect.width;
+        const { viewStart, viewEnd } = _waveformView;
+        const clickSec = viewStart + pct * (viewEnd - viewStart);
+        const curEnd = _srtSelection ? (_srtSelection.adjustedEndSec || _waveformEndSec) : _waveformEndSec;
+        playAudioRange(clickSec, curEnd, '');
+      }
+      _waveformDragging = null;
+      _waveformPanStart = null;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    e.preventDefault();
+  };
+}
+
+// ── FINDER — RECHERCHE DANS LE TRANSCRIPT ────────────────────────────────────
+let _srtMatches = [];
+let _srtMatchIdx = -1;
+
+function onSRTFind(query) {
+  // Reset
+  document.querySelectorAll('.srt-word.search-match, .srt-word.search-current').forEach(el => {
+    el.classList.remove('search-match', 'search-current');
+  });
+  _srtMatches = [];
+  _srtMatchIdx = -1;
+
+  const count = document.getElementById('srtFinderCount');
+  if (!query || query.length < 2) { if (count) count.textContent = ''; return; }
+
+  const q = query.toLowerCase();
+  const words = document.querySelectorAll('.srt-word[data-block]');
+  let currentMatchWords = [];
+  let inMatch = false;
+
+  // Recherche approximative sur les mots
+  words.forEach((el, i) => {
+    const text = el.textContent.toLowerCase();
+    if (text.includes(q)) {
+      el.classList.add('search-match');
+      _srtMatches.push(el);
+    }
+  });
+
+  if (count) count.textContent = _srtMatches.length > 0 ? `${_srtMatches.length} résultat${_srtMatches.length > 1 ? 's' : ''}` : 'Aucun résultat';
+  if (_srtMatches.length > 0) { _srtMatchIdx = 0; highlightCurrentMatch(); }
+}
+
+function highlightCurrentMatch() {
+  document.querySelectorAll('.srt-word.search-current').forEach(el => el.classList.remove('search-current'));
+  if (_srtMatches.length === 0) return;
+  const el = _srtMatches[_srtMatchIdx];
+  if (el) {
+    el.classList.add('search-current');
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const count = document.getElementById('srtFinderCount');
+    if (count) count.textContent = `${_srtMatchIdx + 1}/${_srtMatches.length}`;
+  }
+}
+
+function nextSRTMatch() {
+  if (!_srtMatches.length) return;
+  _srtMatchIdx = (_srtMatchIdx + 1) % _srtMatches.length;
+  highlightCurrentMatch();
+}
+
+function prevSRTMatch() {
+  if (!_srtMatches.length) return;
+  _srtMatchIdx = (_srtMatchIdx - 1 + _srtMatches.length) % _srtMatches.length;
+  highlightCurrentMatch();
+}
+
+// ── CUT DESCRIPT + SÉLECTION INTELLIGENTE ────────────────────────────────────
+async function smartCutSegment(ch, idx) {
+  const seg = window._lastChannelResults && window._lastChannelResults[ch] && window._lastChannelResults[ch].segments[idx];
+  if (!seg) return;
+
+  const btn = document.getElementById('smart-cut-btn-' + ch + '-' + idx);
+  if (btn) { btn.textContent = '⏳ Analyse...'; btn.disabled = true; }
+
+  try {
+    // Analyse énergie vocale sur chaque occurrence répétée
+    const startSec = tcToSec((seg.start || '').replace(',', '.'));
+    const endSec = tcToSec((seg.end || '').replace(',', '.'));
+    let audioEnergy = null;
+
+    if (_waveformData && _waveformSampleRate) {
+      audioEnergy = measureSegmentEnergy(startSec, endSec);
+    }
+
+    // Récupère les word timestamps du segment pour enrichir le contexte
+    const segWords = window._whisperWords
+      ? window._whisperWords.filter(w => w.start >= startSec - 0.2 && w.end <= endSec + 0.2)
+      : [];
+    const wordTimestampsContext = segWords.length > 0
+      ? `\nWORD TIMESTAMPS (timecodes précis de chaque mot) :\n${segWords.map(w => `${w.word} [${w.start.toFixed(2)}s-${w.end.toFixed(2)}s]`).join(', ')}`
+      : '';
+
+    // Appel Claude pour sélection intelligente
+    const contextBefore = parsedSRT.filter(b => b.endSec <= startSec).slice(-3).map(b => b.text).join(' ');
+    const contextAfter = parsedSRT.filter(b => b.startSec >= endSec).slice(0, 3).map(b => b.text).join(' ');
+
+    const prompt = `Tu es un monteur-journaliste expert. Voici un segment avec des répétitions à nettoyer.
+
+TEXTE DU SEGMENT :
+"${seg.text}"
+
+CONTEXTE AVANT CE SEGMENT :
+"${contextBefore}"
+
+CONTEXTE APRÈS CE SEGMENT :
+"${contextAfter}"
+
+${audioEnergy ? `ÉNERGIE VOCALE MESURÉE : ${audioEnergy.toFixed(3)} (amplitude RMS — plus élevé = plus d'énergie/enthousiasme)` : ''}${wordTimestampsContext}
+
+MISSION :
+1. Identifie les répétitions dans ce segment
+2. Garde LA VERSION EXACTE qui existe dans le texte original — ne reformule pas, ne résume pas
+3. Si plusieurs occurrences, privilégie celle avec le plus d'énergie vocale (timecodes les plus tardifs = souvent plus posée)
+4. Supprime les hésitations, corrections mid-phrase, répétitions inutiles
+5. Le cleanText doit être une SOUS-CHAÎNE EXACTE du texte original
+
+Réponds UNIQUEMENT en JSON :
+{
+  "cleanText": "texte nettoyé — doit être une portion exacte du texte original",
+  "removed": "ce qui a été supprimé",
+  "reason": "pourquoi cette version"
+}`;
+
+    // Récupère la clé Claude
+    if (!window._apiKey) {
+      const keyRes = await fetch('/.netlify/functions/claude?action=getkey');
+      const keyData = await keyRes.json();
+      window._apiKey = keyData.key;
+    }
+
+    // Appel Claude avec retry automatique
+    let res, retries = 0;
+    while (retries < 3) {
+      try {
+        res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': window._apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-allow-browser': 'true'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 500,
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+        break;
+      } catch(fetchErr) {
+        retries++;
+        if (retries >= 3) throw fetchErr;
+        if (btn) btn.textContent = '⏳ Retry ' + retries + '/3...';
+        await new Promise(r => setTimeout(r, 1500 * retries));
+      }
+    }
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const raw = data.content.map(c => c.text || '').join('').replace(/```json|```/g, '').trim();
+    const result = JSON.parse(raw);
+
+    if (result.cleanText) {
+      // Stocke l'original pour restauration
+      if (!seg._original) seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
+
+      // V5.81 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
+      let newStartSec = startSec;
+      let newEndSec = endSec;
+      let tcSource = 'proportionnel';
+
+      if (window._whisperWords && window._whisperWords.length) {
+        // Essaie avec le texte exact d'abord
+        let exactTC = findPassageTimecodes(result.cleanText, Math.max(0, startSec - 2));
+        // Si pas trouvé, essaie avec les premiers mots seulement
+        if (!exactTC) {
+          const firstWords = result.cleanText.split(' ').slice(0, 5).join(' ');
+          exactTC = findPassageTimecodes(firstWords, Math.max(0, startSec - 2));
+        }
+        if (exactTC && exactTC.start >= Math.max(0, startSec - 3) && exactTC.end <= endSec + 3) {
+          newStartSec = exactTC.start;
+          newEndSec = exactTC.end;
+          tcSource = 'mot par mot ✓';
+        }
+      }
+
+      // Fallback proportionnel si word timestamps pas disponibles ou pas trouvés
+      if (tcSource === 'proportionnel') {
+        const originalWords = seg.text.split(' ').length;
+        const cleanWords = result.cleanText.split(' ').length;
+        const ratio = cleanWords / Math.max(1, originalWords);
+        newEndSec = startSec + (seg.duration_sec || (endSec - startSec)) * ratio;
+      }
+
+      const newDur = Math.max(0.1, newEndSec - newStartSec);
+
+      seg.start = secToSRTTC(newStartSec);
+      seg.end = secToSRTTC(newEndSec);
+      seg.text = result.cleanText;
+      seg.duration_sec = newDur;
+      seg._trimmed = true;
+      seg._smartCut = true;
+      seg.reason = (seg.reason || '') + ' [Nettoyé — ' + result.reason + ']';
+
+      // Met à jour la durée totale
+      const chData = window._lastChannelResults[ch];
+      chData.total_duration_sec = (chData.segments || []).reduce((a, s) => a + (s.duration_sec || 0), 0);
+
+      const panel = document.getElementById('result-' + ch);
+      if (panel) {
+        panel.innerHTML = buildChannelResultHTML(ch, chData, CHANNEL_CONFIG[ch]);
+        setTimeout(() => updateQualityBar(ch), 50);
+      }
+
+      showToast('✂️ Nettoyé — timecodes ' + tcSource + ' · ' + secToSRTTC(newStartSec) + ' → ' + secToSRTTC(newEndSec));
+    } else {
+      showToast('ℹ️ Aucune répétition détectée dans ce segment');
+      if (btn) { btn.textContent = '✂'; btn.disabled = false; }
+    }
+
+  } catch(e) {
+    console.warn('Smart cut error:', e);
+    showToast('❌ Erreur Nettoyer : ' + e.message);
+    if (btn) { btn.textContent = '✂'; btn.disabled = false; }
+  }
+}
+
+function measureSegmentEnergy(startSec, endSec) {
+  if (!_waveformData || !_waveformSampleRate) return null;
+  const startSample = Math.floor(startSec * _waveformSampleRate);
+  const endSample = Math.min(Math.floor(endSec * _waveformSampleRate), _waveformData.length);
+  let sum = 0;
+  for (let i = startSample; i < endSample; i++) sum += _waveformData[i] * _waveformData[i];
+  return Math.sqrt(sum / (endSample - startSample));
+}
+
+function showToast(msg) {
+  let toast = document.getElementById('rushupToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'rushupToast';
+    toast.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:var(--surface3);border:1px solid var(--border2);border-radius:4px;padding:10px 20px;font-size:12px;color:var(--text);z-index:2000;transition:opacity 0.3s;pointer-events:none;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+}
+
+// ── DRAG & DROP SEGMENTS ─────────────────────────────────────────────────────
+let _dragSrcIdx = null;
+let _dragSrcCh = null;
+
+function onSegDragStart(e, el) {
+  _dragSrcIdx = parseInt(el.dataset.idx);
+  _dragSrcCh = el.dataset.ch;
+  el.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function onSegDragOver(e, el) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const targetIdx = parseInt(el.dataset.idx);
+  if (targetIdx === _dragSrcIdx) return;
+  el.classList.remove('drag-over-top', 'drag-over-bottom');
+  const rect = el.getBoundingClientRect();
+  const mid = rect.top + rect.height / 2;
+  el.classList.add(e.clientY < mid ? 'drag-over-top' : 'drag-over-bottom');
+}
+
+function onSegDragLeave(e, el) {
+  el.classList.remove('drag-over-top', 'drag-over-bottom');
+}
+
+function onSegDrop(e, el, ch) {
+  e.preventDefault();
+  el.classList.remove('drag-over-top', 'drag-over-bottom');
+  if (!window._lastChannelResults || !window._lastChannelResults[ch]) return;
+  const targetIdx = parseInt(el.dataset.idx);
+  if (targetIdx === _dragSrcIdx || _dragSrcCh !== ch) return;
+  const segs = window._lastChannelResults[ch].segments;
+  const rect = el.getBoundingClientRect();
+  const insertAfter = e.clientY >= rect.top + rect.height / 2;
+  const [moved] = segs.splice(_dragSrcIdx, 1);
+  let insertAt = targetIdx > _dragSrcIdx ? targetIdx - 1 : targetIdx;
+  if (insertAfter) insertAt++;
+  insertAt = Math.max(0, Math.min(insertAt, segs.length));
+  segs.splice(insertAt, 0, moved);
+  segs.forEach((s, i) => { if (!s.isAccroche) s.order = i + 1; });
+  const panel = document.getElementById('result-' + ch);
+  if (panel) {
+    panel.innerHTML = buildChannelResultHTML(ch, window._lastChannelResults[ch], CHANNEL_CONFIG[ch]);
+    setTimeout(() => updateQualityBar(ch), 50);
+  }
+}
+
+function onSegDragEnd(e) {
+  document.querySelectorAll('.segment').forEach(el => {
+    el.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom');
+  });
+  _dragSrcIdx = null; _dragSrcCh = null;
+}
+
+// ── TRIM SELECTION DANS UN SEGMENT ───────────────────────────────────────────
+let _segTrimData = {};
+
+function onSegTextSelection(e, ch, idx) {
+  const textarea = e.target;
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  if (start === end) { clearSegTrim(ch, idx); return; }
+  const seg = window._lastChannelResults && window._lastChannelResults[ch] && window._lastChannelResults[ch].segments[idx];
+  if (!seg) return;
+  const fullText = seg.text || '';
+  const selectedText = fullText.slice(start, end).trim();
+  if (!selectedText || selectedText === fullText) { clearSegTrim(ch, idx); return; }
+
+  const segStartSec = tcToSec((seg.start || '').replace(',', '.'));
+  const segEndSec = tcToSec((seg.end || '').replace(',', '.'));
+  const totalDur = segEndSec - segStartSec;
+
+  // V5.81 — Cherche d'abord dans les word timestamps précis
+  let newStartSec = segStartSec + (start / Math.max(1, fullText.length)) * totalDur;
+  let newEndSec = segStartSec + (end / Math.max(1, fullText.length)) * totalDur;
+
+  if (window._whisperWords && window._whisperWords.length) {
+    const exactTC = findPassageTimecodes(selectedText, segStartSec - 0.5);
+    if (exactTC) {
+      newStartSec = exactTC.start;
+      newEndSec = exactTC.end;
+    }
+  } else {
+    // Fallback blocs SRT
+    const segBlocks = parsedSRT.filter(b => b.startSec >= segStartSec - 0.3 && b.endSec <= segEndSec + 0.3);
+    if (segBlocks.length > 0) {
+      const selStart = selectedText.slice(0, 12).toLowerCase().replace(/[^a-zà-ÿ]/g, '');
+      const selEnd = selectedText.slice(-12).toLowerCase().replace(/[^a-zà-ÿ]/g, '');
+      let foundStart = false, foundEnd = false;
+      for (const block of segBlocks) {
+        const bt = block.text.toLowerCase().replace(/[^a-zà-ÿ\s]/g, '');
+        if (!foundStart && selStart.length > 4 && bt.includes(selStart.slice(0,8))) {
+          newStartSec = block.startSec; foundStart = true;
+        }
+        if (selEnd.length > 4 && bt.includes(selEnd.slice(-8))) {
+          newEndSec = block.endSec; foundEnd = true;
+        }
+      }
+    }
+  }
+
+  const newDur = Math.max(0.5, newEndSec - newStartSec);
+  const newStartTC = secToSRTTC(newStartSec);
+  const newEndTC = secToSRTTC(newStartSec + newDur);
+
+  _segTrimData[ch + '-' + idx] = { newStartTC, newEndTC, newText: selectedText, newDur };
+  const bar = document.getElementById('seg-trim-bar-' + ch + '-' + idx);
+  const info = document.getElementById('seg-trim-info-' + ch + '-' + idx);
+  if (bar && info) {
+    bar.classList.add('visible');
+    info.innerHTML = newStartTC + ' → ' + newEndTC + ' · ' + Math.round(newDur) + 's · "<em>' + selectedText.slice(0,50) + (selectedText.length>50?'…':'') + '</em>"';
+  }
+}
+
+function applySegTrim(ch, idx) {
+  const key = ch + '-' + idx;
+  const trim = _segTrimData[key];
+  if (!trim || !window._lastChannelResults || !window._lastChannelResults[ch]) return;
+  const seg = window._lastChannelResults[ch].segments[idx];
+  if (!seg) return;
+
+  // Sauvegarde l'original pour restauration
+  if (!seg._original) {
+    seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
+  }
+
+  seg.start = trim.newStartTC;
+  seg.end = trim.newEndTC;
+  seg.text = trim.newText;
+  seg.duration_sec = trim.newDur;
+  seg._trimmed = true;
+
+  const chData = window._lastChannelResults[ch];
+  chData.total_duration_sec = (chData.segments || []).reduce((a, s) => a + (s.duration_sec || 0), 0);
+  delete _segTrimData[key];
+  const panel = document.getElementById('result-' + ch);
+  if (panel) {
+    panel.innerHTML = buildChannelResultHTML(ch, chData, CHANNEL_CONFIG[ch]);
+    setTimeout(() => updateQualityBar(ch), 50);
+  }
+}
+
+function restoreSegment(ch, idx) {
+  const seg = window._lastChannelResults && window._lastChannelResults[ch] && window._lastChannelResults[ch].segments[idx];
+  if (!seg || !seg._original) return;
+  seg.start = seg._original.start;
+  seg.end = seg._original.end;
+  seg.text = seg._original.text;
+  seg.duration_sec = seg._original.duration_sec;
+  seg._trimmed = false;
+  delete seg._original;
+  const chData = window._lastChannelResults[ch];
+  chData.total_duration_sec = (chData.segments || []).reduce((a, s) => a + (s.duration_sec || 0), 0);
+  const panel = document.getElementById('result-' + ch);
+  if (panel) {
+    panel.innerHTML = buildChannelResultHTML(ch, chData, CHANNEL_CONFIG[ch]);
+    setTimeout(() => updateQualityBar(ch), 50);
+  }
+}
+
+// ── WAVEFORM INLINE SUR SEGMENT ───────────────────────────────────────────────
+let _segWaveformState = {}; // { 'ch-idx': { viewStart, viewEnd, selStart, selEnd } }
+
+async function toggleSegWaveform(ch, idx) {
+  const wfDiv = document.getElementById('seg-waveform-' + ch + '-' + idx);
+  if (!wfDiv) return;
+
+  if (wfDiv.style.display !== 'none') {
+    wfDiv.style.display = 'none';
+    return;
+  }
+
+  if (!window._audioFile) {
+    showToast('⚠ Charge un MP3 d\'abord pour affiner avec la waveform.');
+    return;
+  }
+
+  wfDiv.style.display = 'block';
+
+  const seg = window._lastChannelResults && window._lastChannelResults[ch] && window._lastChannelResults[ch].segments[idx];
+  if (!seg) return;
+
+  const startSec = tcToSec((seg.start || '').replace(',', '.'));
+  const endSec = tcToSec((seg.end || '').replace(',', '.'));
+
+  // Charge waveform data si pas encore fait
+  if (!_waveformData) {
+    try {
+      const arrayBuffer = await window._audioFile.arrayBuffer();
+      const actx = new (window.AudioContext || window.webkitAudioContext)();
+      const audioBuf = await actx.decodeAudioData(arrayBuffer);
+      actx.close();
+      _waveformData = audioBuf.getChannelData(0);
+      _waveformSampleRate = audioBuf.sampleRate;
+    } catch(e) { return; }
+  }
+
+  const margin = Math.min(1.5, startSec);
+  const totalDur = _waveformData.length / _waveformSampleRate;
+  const viewStart = Math.max(0, startSec - margin);
+  const viewEnd = Math.min(totalDur, endSec + margin);
+
+  _segWaveformState[ch + '-' + idx] = {
+    viewStart, viewEnd, selStart: startSec, selEnd: endSec
+  };
+
+  drawSegWaveform(ch, idx);
+  setupSegWaveformDrag(ch, idx);
+
+  // Timecodes
+  document.getElementById('seg-wf-tcin-' + ch + '-' + idx).textContent = secToSRTTC(startSec).replace(',', '.');
+  document.getElementById('seg-wf-tcout-' + ch + '-' + idx).textContent = secToSRTTC(endSec).replace(',', '.');
+}
+
+function drawSegWaveform(ch, idx) {
+  const state = _segWaveformState[ch + '-' + idx];
+  if (!state || !_waveformData) return;
+  const canvas = document.getElementById('seg-wf-canvas-' + ch + '-' + idx);
+  if (!canvas) return;
+
+  const { viewStart, viewEnd, selStart, selEnd } = state;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  if (rect.width === 0) return;
+  canvas.width = Math.floor(rect.width * dpr);
+  canvas.height = 80 * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = '80px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = 80;
+
+  const startSample = Math.floor(viewStart * _waveformSampleRate);
+  const endSample = Math.min(Math.floor(viewEnd * _waveformSampleRate), _waveformData.length);
+  const samplesPerPx = (endSample - startSample) / W;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(14,14,22,0.96)';
+  ctx.fillRect(0, 0, W, H);
+
+  const selStartPct = Math.max(0, (selStart - viewStart) / (viewEnd - viewStart));
+  const selEndPct = Math.min(1, (selEnd - viewStart) / (viewEnd - viewStart));
+  ctx.fillStyle = 'rgba(151,71,255,0.08)';
+  ctx.fillRect(selStartPct * W, 0, (selEndPct - selStartPct) * W, H);
+
+  for (let x = 0; x < W; x++) {
+    const sStart = Math.floor(startSample + x * samplesPerPx);
+    const sEnd = Math.min(Math.floor(startSample + (x + 1) * samplesPerPx), _waveformData.length);
+    let min = 0, max = 0;
+    for (let s = sStart; s < sEnd; s++) {
+      if (_waveformData[s] > max) max = _waveformData[s];
+      if (_waveformData[s] < min) min = _waveformData[s];
+    }
+    const amplitude = max - min;
+    const sec = viewStart + (x / W) * (viewEnd - viewStart);
+    const inSel = sec >= selStart && sec <= selEnd;
+    const barH = Math.max(2, amplitude * H * 0.92);
+    const barY = (H - barH) / 2;
+    ctx.fillStyle = inSel
+      ? 'rgba(75,201,122,' + (0.5 + amplitude * 0.5) + ')'
+      : 'rgba(144,144,176,' + (0.15 + amplitude * 0.45) + ')';
+    ctx.fillRect(x, barY, 1.5, barH);
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.fillRect(0, H/2, W, 1);
+
+  // Handles
+  const inEl = document.getElementById('seg-wf-in-' + ch + '-' + idx);
+  const outEl = document.getElementById('seg-wf-out-' + ch + '-' + idx);
+  const regionEl = document.getElementById('seg-wf-region-' + ch + '-' + idx);
+  const inPct = selStartPct * 100;
+  const outPct = selEndPct * 100;
+  if (inEl) inEl.style.left = inPct + '%';
+  if (outEl) outEl.style.left = outPct + '%';
+  if (regionEl) { regionEl.style.left = inPct + '%'; regionEl.style.width = (outPct - inPct) + '%'; }
+}
+
+function setupSegWaveformDrag(ch, idx) {
+  const container = document.getElementById('seg-wf-container-' + ch + '-' + idx);
+  if (!container || container._segWfSetup) return;
+  container._segWfSetup = true;
+  let dragging = null;
+  let panStart = null;
+
+  container.onmousedown = (e) => {
+    const state = _segWaveformState[ch + '-' + idx];
+    if (!state) return;
+    const inEl = document.getElementById('seg-wf-in-' + ch + '-' + idx);
+    const outEl = document.getElementById('seg-wf-out-' + ch + '-' + idx);
+    const inRect = inEl ? inEl.getBoundingClientRect() : null;
+    const outRect = outEl ? outEl.getBoundingClientRect() : null;
+
+    if (inRect && Math.abs(e.clientX - inRect.left) < 12) dragging = 'in';
+    else if (outRect && Math.abs(e.clientX - outRect.left) < 12) dragging = 'out';
+    else { dragging = 'pan'; panStart = { clientX: e.clientX, ...state }; }
+
+    const onMove = (ev) => {
+      const st = _segWaveformState[ch + '-' + idx];
+      if (!st) return;
+      const rect = container.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+      const sec = st.viewStart + pct * (st.viewEnd - st.viewStart);
+      const totalDur = _waveformData ? _waveformData.length / _waveformSampleRate : 999;
+
+      if (dragging === 'in') {
+        st.selStart = Math.max(st.viewStart, Math.min(sec, st.selEnd - 0.1));
+      } else if (dragging === 'out') {
+        st.selEnd = Math.min(st.viewEnd, Math.max(sec, st.selStart + 0.1));
+      } else if (dragging === 'pan' && panStart) {
+        const secPerPx = (panStart.viewEnd - panStart.viewStart) / rect.width;
+        const shift = -(ev.clientX - panStart.clientX) * secPerPx;
+        const dur = panStart.viewEnd - panStart.viewStart;
+        let vs = Math.max(0, panStart.viewStart + shift);
+        let ve = Math.min(totalDur, panStart.viewEnd + shift);
+        if (ve > totalDur) { ve = totalDur; vs = Math.max(0, totalDur - dur); }
+        st.viewStart = vs; st.viewEnd = ve;
+      }
+
+      drawSegWaveform(ch, idx);
+      document.getElementById('seg-wf-tcin-' + ch + '-' + idx).textContent = secToSRTTC(st.selStart).replace(',', '.');
+      document.getElementById('seg-wf-tcout-' + ch + '-' + idx).textContent = secToSRTTC(st.selEnd).replace(',', '.');
+    };
+
+    const onUp = (ev) => {
+      if (dragging === 'pan' && panStart && Math.abs(ev.clientX - panStart.clientX) < 5) {
+        const st = _segWaveformState[ch + '-' + idx];
+        if (st) {
+          const rect = container.getBoundingClientRect();
+          const pct = (ev.clientX - rect.left) / rect.width;
+          const clickSec = st.viewStart + pct * (st.viewEnd - st.viewStart);
+          playAudioRange(clickSec, st.selEnd, '');
+        }
+      }
+      dragging = null; panStart = null;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    e.preventDefault();
+  };
+}
+
+function applySegWaveformTrim(ch, idx) {
+  const state = _segWaveformState[ch + '-' + idx];
+  if (!state) return;
+  const seg = window._lastChannelResults && window._lastChannelResults[ch] && window._lastChannelResults[ch].segments[idx];
+  if (!seg) return;
+
+  if (!seg._original) seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
+
+  seg.start = secToSRTTC(state.selStart);
+  seg.end = secToSRTTC(state.selEnd);
+  seg.duration_sec = state.selEnd - state.selStart;
+  seg._trimmed = true;
+
+  const chData = window._lastChannelResults[ch];
+  chData.total_duration_sec = (chData.segments || []).reduce((a, s) => a + (s.duration_sec || 0), 0);
+
+  const panel = document.getElementById('result-' + ch);
+  if (panel) {
+    panel.innerHTML = buildChannelResultHTML(ch, chData, CHANNEL_CONFIG[ch]);
+    setTimeout(() => updateQualityBar(ch), 50);
+  }
+  showToast('✅ Timecodes ajustés — ' + secToSRTTC(state.selStart) + ' → ' + secToSRTTC(state.selEnd));
+}
+
+function clearSegTrim(ch, idx) {
+  delete _segTrimData[ch + '-' + idx];
+  const bar = document.getElementById('seg-trim-bar-' + ch + '-' + idx);
+  if (bar) bar.classList.remove('visible');
+}
+
+function addSegmentFromSelection() {
+  if (!_srtSelection) return;
+  // Utilise les timecodes ajustés par la waveform si disponibles
+  const startSec = _srtSelection.adjustedStartSec || _srtSelection.startSec;
+  const endSec = _srtSelection.adjustedEndSec || _srtSelection.endSec;
+  const startTC = secToSRTTC(startSec);
+  const endTC = secToSRTTC(endSec);
+  const text = _srtSelection.text;
+  const dur = endSec - startSec;
+
+  // Ajoute dans tous les canaux sélectionnés
+  const channels = selectedChannels.length ? selectedChannels : Object.keys(window._lastChannelResults || {});
+  if (!channels.length) {
+    alert("Analyse d'abord le rush pour ajouter un segment manuel.");
+    clearSRTSelection();
+    return;
+  }
+
+  for (const ch of channels) {
+    if (!window._lastChannelResults || !window._lastChannelResults[ch]) continue;
+    const chData = window._lastChannelResults[ch];
+
+    const newSeg = {
+      order: (chData.segments.length + 1),
+      arc_part: 'manuel',
+      start: startTC,
+      end: endTC,
+      text,
+      reason: 'Ajouté manuellement par surlignage',
+      score_force: 3,
+      duration_sec: dur,
+      isManual: true
+    };
+
+    chData.segments.push(newSeg);
+    chData.total_duration_sec = (chData.total_duration_sec || 0) + dur;
+
+    // Re-render
+    const panel = document.getElementById(`result-${ch}`);
+    if (panel) {
+      panel.innerHTML = buildChannelResultHTML(ch, chData, CHANNEL_CONFIG[ch]);
+      setTimeout(() => updateQualityBar(ch), 50);
+    }
+  }
+
+  clearSRTSelection();
+
+  // Scroll vers résultats
+  const step6 = document.getElementById('step6');
+  if (step6) step6.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── SCORE QUALITÉ PROGRESSIF ─────────────────────────────────────────────────
+function calcSelectionQuality(segments) {
+  if (!segments || !segments.length) return { score: 100, hesitations: 0, repetitions: 0, total: segments ? segments.length : 0 };
+  const fillerWords = /\b(euh|hum|hmm|bah|ben|du coup|genre|en fait|tu vois|voilà voilà|enfin voilà)\b/gi;
+  const repeatPattern = /\b(\w{4,})\b(?:\s+\w+){0,4}\s+\b\1\b/gi;
+  let hesitations = 0, repetitions = 0;
+  for (const seg of segments) {
+    const text = seg.text || '';
+    fillerWords.lastIndex = 0;
+    if (fillerWords.test(text)) hesitations++;
+    repeatPattern.lastIndex = 0;
+    if (repeatPattern.test(text)) repetitions++;
+  }
+  const dirty = hesitations + repetitions;
+  const score = Math.max(0, Math.round(100 - (dirty / segments.length) * 100));
+  return { score, hesitations, repetitions, total: segments.length, dirty };
+}
+
+function updateQualityBar(ch) {
+  const chData = window._lastChannelResults && window._lastChannelResults[ch];
+  if (!chData) return;
+  const segs = chData.segments || [];
+  const q = calcSelectionQuality(segs);
+
+  const bar = document.getElementById(`quality-bar-${ch}`);
+  if (!bar) return;
+
+  const color = q.score >= 80 ? '#4BC97A' : q.score >= 50 ? '#F5C842' : '#F55252';
+  const emoji = q.score >= 80 ? '✅' : q.score >= 50 ? '⚡' : '⚠️';
+
+  bar.style.borderColor = `rgba(${q.score >= 80 ? '75,201,122' : q.score >= 50 ? '245,200,66' : '245,82,82'},0.3)`;
+  bar.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <span style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${color};">${emoji} Qualité sélection</span>
+      <span style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:800;color:${color};">${q.score}/100</span>
+      ${q.hesitations > 0 ? `<span style="color:var(--muted);font-size:11px;">💬 ${q.hesitations} hésitation${q.hesitations>1?'s':''}</span>` : ''}
+      ${q.repetitions > 0 ? `<span style="color:var(--muted);font-size:11px;">🔁 ${q.repetitions} répétition${q.repetitions>1?'s':''}</span>` : ''}
+      ${q.dirty === 0 ? `<span style="color:#4BC97A;font-size:11px;">Sélection parfaite 🎯</span>` : ''}
+    </div>
+    <div style="margin-top:8px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+      <div style="height:100%;width:${q.score}%;background:${color};border-radius:2px;transition:width 0.5s ease;"></div>
+    </div>
+  `;
 }
 
 // ── CHANNELS ─────────────────────────────────────────────────────────────────
@@ -1799,6 +4216,154 @@ function calcPerfScore(channelKey, segments, accroches, totalSec) {
   };
 }
 
+// ── V5.81 — REVALIDATION CLAUDE ───────────────────────────────────────────────
+// Détecte les répétitions dans un texte (mots > 3 lettres répétés)
+function detectRepetitionsInText(text) {
+  const repetitions = [];
+  const fillerWords = /\b(euh|hum|hmm|bah|ben|donc|voilà|enfin|du coup|genre|en fait|tu vois)\b/gi;
+  const repeatPattern = /\b(\w{4,})\b(?:\s+\w+){0,5}\s+\b\1\b/gi;
+  if (fillerWords.test(text)) repetitions.push('hésitations');
+  fillerWords.lastIndex = 0;
+  if (repeatPattern.test(text)) repetitions.push('répétitions de mots');
+  return repetitions;
+}
+
+async function revalidateResult(key, result) {
+  const targetSec = globalDurationSec || 180;
+  const minSec = targetSec * 0.85; // ±15% strict
+  const maxSec = targetSec * 1.15;
+  const channels = selectedChannels;
+  const transcript = buildTranscript();
+
+  const validationChecks = [];
+  let needsFix = false;
+
+  for (const ch of channels) {
+    const chData = result.channels && result.channels[ch];
+    if (!chData) continue;
+
+    const segs = chData.segments || [];
+    const totalSec = segs.reduce((a, s) => a + (s.duration_sec || 0), 0);
+
+    // Arc narratif
+    const arcParts = new Set(segs.map(s => (s.arc_part || '').toLowerCase()));
+    const arcOk = arcParts.has('intro') && arcParts.has('conclusion') &&
+      (arcParts.has('tension') || arcParts.has('développement') || arcParts.has('developpement') || arcParts.has('develop'));
+
+    // Accroche durée
+    const accroche = (result.accroches || [])[0];
+    const accDur = accroche ? (accroche.duration_sec || 0) : 0;
+    const accOk = accDur <= 15;
+
+    // Doublons timecodes
+    const tcSet = new Set();
+    let hasDuplicates = false;
+    for (const s of segs) {
+      const tcKey = `${s.start}-${s.end}`;
+      if (tcSet.has(tcKey)) { hasDuplicates = true; break; }
+      tcSet.add(tcKey);
+    }
+
+    // Détection segments avec répétitions/hésitations
+    const dirtySegs = segs.filter(s => detectRepetitionsInText(s.text || '').length > 0);
+
+    // Durée stricte ±15%
+    const durOk = totalSec >= minSec && totalSec <= maxSec;
+
+    if (!durOk || !accOk || !arcOk || hasDuplicates || dirtySegs.length > 0) needsFix = true;
+
+    validationChecks.push({
+      ch, durOk, totalSec, targetSec, minSec, maxSec,
+      accOk, accDur, arcOk,
+      dupOk: !hasDuplicates,
+      dirtyCount: dirtySegs.length,
+      dirtySegs: dirtySegs.map(s => `${s.start} → ${s.end}`)
+    });
+  }
+
+  // Affiche rapport
+  showRevalidationReport(validationChecks);
+  if (!needsFix) return result;
+
+  // Construit le prompt de correction
+  const issues = validationChecks.map(c => {
+    const problems = [];
+    if (!c.durOk) problems.push(`DURÉE INCORRECTE : ${Math.round(c.totalSec)}s sélectionnés, cible STRICTE ${Math.round(c.targetSec)}s (entre ${Math.round(c.minSec)}s et ${Math.round(c.maxSec)}s). ${c.totalSec > c.maxSec ? 'SUPPRIME des segments.' : 'AJOUTE des segments depuis le transcript.'}`);
+    if (!c.accOk) problems.push(`Accroche trop longue : ${Math.round(c.accDur)}s > 15s max`);
+    if (!c.arcOk) problems.push(`Arc narratif incomplet — il faut obligatoirement : intro + tension + développement + conclusion`);
+    if (!c.dupOk) problems.push(`Timecodes en doublon — chaque passage doit être unique`);
+    if (c.dirtyCount > 0) problems.push(`${c.dirtyCount} segment(s) avec hésitations/répétitions à remplacer par des passages plus propres du transcript : ${c.dirtySegs.join(', ')}`);
+    return problems.length ? `Canal ${c.ch} :\n${problems.map(p => '  - ' + p).join('\n')}` : null;
+  }).filter(Boolean).join('\n\n');
+
+  const fixPrompt = `Tu es un monteur-journaliste expert. Corrige cette sélection JSON.
+
+TRANSCRIPT COMPLET (pour trouver des segments de remplacement) :
+${transcript}
+
+PROBLÈMES À CORRIGER OBLIGATOIREMENT :
+${issues}
+
+RÈGLES ABSOLUES :
+1. Durée finale ENTRE ${Math.round(minSec)}s ET ${Math.round(maxSec)}s — c'est non négociable
+2. Accroche ≤ 15 secondes
+3. Arc complet : intro + tension + développement + conclusion
+4. Zéro doublon de timecodes
+5. Remplace les segments avec répétitions/hésitations par des passages plus propres du transcript
+
+SÉLECTION À CORRIGER :
+${JSON.stringify(result, null, 2)}
+
+Retourne UNIQUEMENT le JSON corrigé, même structure, sans markdown, sans explication.`;
+
+  try {
+    const fixed = await callAPI(key, fixPrompt);
+    // Met à jour le rapport après correction
+    const finalChecks = validationChecks.map(c => {
+      const chData = fixed.channels && fixed.channels[c.ch];
+      if (!chData) return c;
+      const newTotal = (chData.segments || []).reduce((a, s) => a + (s.duration_sec || 0), 0);
+      return { ...c, totalSec: newTotal, durOk: newTotal >= minSec && newTotal <= maxSec, dirtyCount: 0 };
+    });
+    showRevalidationReport(finalChecks);
+    return fixed;
+  } catch(e) {
+    console.warn('Revalidation échouée', e);
+    return result;
+  }
+}
+
+function showRevalidationReport(checks) {
+  const old = document.getElementById('revalidationReport');
+  if (old) old.remove();
+
+  const report = document.createElement('div');
+  report.id = 'revalidationReport';
+
+  const allOk = checks.every(c => c.durOk && c.accOk && c.arcOk && c.dupOk && c.dirtyCount === 0);
+  const color = allOk ? '#4BC97A' : '#F5C842';
+  report.style.cssText = `margin:12px 0;padding:12px 16px;background:rgba(${allOk ? '75,201,122' : '245,200,66'},0.06);border:1px solid rgba(${allOk ? '75,201,122' : '245,200,66'},0.2);border-radius:3px;font-size:11px;line-height:2;`;
+
+  report.innerHTML = `
+    <div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:${color};margin-bottom:8px;">
+      ${allOk ? '✅ Revalidation OK — tout est conforme' : '⚙️ Corrections appliquées automatiquement'}
+    </div>
+    ${checks.map(c => `
+      <div style="margin-bottom:4px;">
+        <span style="color:var(--muted);font-size:10px;">${c.ch}</span> &nbsp;
+        <span title="Cible : ${Math.round(c.targetSec)}s">${c.durOk ? '✅' : '⚠️'} Durée ${Math.round(c.totalSec)}s / cible ${Math.round(c.targetSec)}s</span> &nbsp;
+        <span>${c.arcOk ? '✅' : '⚠️'} Arc narratif</span> &nbsp;
+        <span>${c.accOk ? '✅' : '⚠️'} Accroche ≤15s</span> &nbsp;
+        <span>${c.dupOk ? '✅' : '⚠️'} Doublons</span> &nbsp;
+        ${c.dirtyCount > 0 ? `<span style="color:#F5C842">⚠️ ${c.dirtyCount} segment(s) avec hésitations remplacés</span>` : '<span>✅ Segments propres</span>'}
+      </div>
+    `).join('')}
+  `;
+
+  const resultsEl = document.getElementById('resultsBlock') || document.getElementById('step5');
+  if (resultsEl) resultsEl.prepend(report);
+}
+
 // ── STEP 3 RUN ────────────────────────────────────────────────────────────────
 async function runStep3() {
   const key = getKey(); if (!key) return;
@@ -1820,6 +4385,13 @@ async function runStep3() {
     } else if (currentMode === 'C') {
       await runModeC(key);
     }
+
+    // ── V5.81 — Revalidation Claude ──────────────────────────────────────────
+    if (rawResult) {
+      btn.querySelector('.btn-text').textContent = '⚙️ Revalidation…';
+      rawResult = await revalidateResult(key, rawResult);
+    }
+
     markDone('step3');
   } catch(err) {
     showError("Erreur API : " + err.message);
@@ -1844,11 +4416,24 @@ async function runModeA(key, angle) {
   Type d'accroche recommandé : "${HOOK_TYPES[cfg.hookType]}"`;
   }).join('\n\n');
 
+  const audioData = rushQuality && rushQuality.audioAnalysis;
+  const qualityContext = rushQuality ? `
+ANALYSE QUALITÉ DU RUSH (détectée automatiquement) :
+- ${rushQuality.silences.length} silence(s) SRT > 1.5s détecté(s)
+- ${rushQuality.hesitations.length} hésitation(s) détectée(s) (euh, hm, du coup...)
+- ${rushQuality.repetitions.length} répétition(s) de mots détectée(s)
+- ${rushQuality.corrections.length} correction(s) mid-phrase détectée(s)
+${audioData ? `ANALYSE AUDIO RÉELLE (Web Audio API) :
+- ${audioData.trueSilences.length} silence(s) réel(s) détecté(s) par niveau sonore
+- ${audioData.saturations.length} saturation(s) audio détectée(s)` : ''}
+Pour chaque segment sélectionné, PRIVILÉGIE les passages sans ces défauts. Évite les passages avec saturations ou silences audio réels. Si un passage problématique est le seul disponible sur un sujet clé, sélectionne-le et indique-le dans les warnings.
+` : '';
+
   const prompt = `Tu es un monteur-journaliste expert qui travaille pour plusieurs plateformes simultanément.
 
 TRANSCRIPTION :
 ${transcript}
-
+${qualityContext}
 ANGLE ÉDITORIAL : ${angle}
 ${questions ? `QUESTIONS POSÉES : ${questions}` : ''}
 
@@ -1890,6 +4475,7 @@ ACCROCHES (communes à tous les canaux) :
 - MAXIMUM 15 secondes chacune — 1 à 2 phrases uniquement
 - Les 3 accroches doivent être des passages DIFFÉRENTS, non-redondants, classés du plus fort au moins fort
 - Classe chaque accroche selon son mécanisme psychologique : curiosity_gap, pattern_interrupt, shock_statement, authority_fact, self_identification, cliffhanger, pain_point, contrarian
+${window._reanalyzing ? `\nRE-ANALYSE — VERSION ${_accrocheVersions.length + 1} : Tu dois proposer des accroches DIFFÉRENTES de la version précédente. Explore d'autres passages du transcript, d'autres mécanismes psychologiques, d'autres angles d'ouverture. Ne reprends PAS les mêmes passages qu'avant.` : ''}
 
 Pour CHAQUE canal sélectionné, génère une sélection adaptée avec :
 - Durée OBLIGATOIREMENT proche de la durée cible définie par le journaliste (±20% maximum)
@@ -2340,25 +4926,66 @@ async function reanalyzeAccroches() {
 }
 
 // ── RENDER ACCROCHES ──────────────────────────────────────────────────────────
+let _accrocheVersions = [];
+let _currentAccrocheVersion = 0;
+
 function renderAccroches(accroches) {
+  // Stocke la nouvelle version
+  _accrocheVersions.push(accroches);
+  _currentAccrocheVersion = _accrocheVersions.length - 1;
+
+  renderAccrocheVersion(_currentAccrocheVersion);
+
+  const s5 = document.getElementById('step5');
+  s5.style.display = 'block';
+  s5.style.opacity = '1';
+  s5.style.pointerEvents = 'all';
+  s5.classList.add('active');
+  s5.scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('confirmAccroche').disabled = true;
+}
+
+function renderAccrocheVersion(vIdx) {
+  const accroches = _accrocheVersions[vIdx];
+  if (!accroches) return;
+
+  _currentAccrocheVersion = vIdx;
+  accrocheMode = null; pickedAccroche = null;
+
   const container = document.getElementById('accrocheCards');
   container.innerHTML = '';
-  accrocheMode = null; pickedAccroche = null;
+
+  // Barre de versions si plusieurs
+  let versionsBar = document.getElementById('accrocheVersionsBar');
+  if (!versionsBar) {
+    versionsBar = document.createElement('div');
+    versionsBar.id = 'accrocheVersionsBar';
+    versionsBar.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:12px;flex-wrap:wrap;';
+    container.parentNode.insertBefore(versionsBar, container);
+  }
+
+  if (_accrocheVersions.length > 1) {
+    versionsBar.style.display = 'flex';
+    versionsBar.innerHTML = _accrocheVersions.map((_, i) =>
+      '<button onclick="renderAccrocheVersion(' + i + ')" style="background:' + (i === vIdx ? 'rgba(151,71,255,0.15)' : 'var(--surface2)') + ';border:1px solid ' + (i === vIdx ? 'var(--accent)' : 'var(--border)') + ';border-radius:3px;padding:4px 12px;color:' + (i === vIdx ? 'var(--accent)' : 'var(--muted)') + ';font-family:\'DM Mono\',monospace;font-size:10px;cursor:pointer;">Analyse ' + (i + 1) + '</button>'
+    ).join('') + '<span style="font-size:10px;color:var(--muted2);margin-left:4px;">' + _accrocheVersions.length + ' version' + (_accrocheVersions.length > 1 ? 's' : '') + '</span>';
+  } else {
+    versionsBar.style.display = 'none';
+  }
 
   (accroches || []).forEach((a, i) => {
     const card = document.createElement('div');
     card.className = 'accroche-card';
     const hookLabel = HOOK_TYPES[a.hook_type] || a.hook_type || '';
-    card.innerHTML = `
-      <div class="accroche-rank">#${a.rank||i+1}</div>
-      <div>
-        ${hookLabel ? `<div class="accroche-type">${hookLabel}</div>` : ''}
-        <div class="accroche-text">${a.text}</div>
-        <div class="accroche-tc">${a.start} → ${a.end}</div>
-        <div class="accroche-why">${a.why||''}</div>
-      </div>
-      <div class="accroche-dur">${secToMin(a.duration_sec||0)}</div>
-    `;
+    card.innerHTML =
+      '<div class="accroche-rank">#' + (a.rank||i+1) + '</div>' +
+      '<div>' +
+      (hookLabel ? '<div class="accroche-type">' + hookLabel + '</div>' : '') +
+      '<div class="accroche-text">' + a.text + '</div>' +
+      '<div class="accroche-tc">' + a.start + ' → ' + a.end + '</div>' +
+      '<div class="accroche-why">' + (a.why||'') + '</div>' +
+      '</div>' +
+      '<div class="accroche-dur">' + secToMin(a.duration_sec||0) + '</div>';
     card.addEventListener('click', () => {
       if (accrocheMode !== 'pick') return;
       document.querySelectorAll('.accroche-card').forEach(c => c.classList.remove('selected'));
@@ -2369,12 +4996,6 @@ function renderAccroches(accroches) {
     container.appendChild(card);
   });
 
-  const s5 = document.getElementById('step5');
-  s5.style.display = 'block';
-  s5.style.opacity = '1';
-  s5.style.pointerEvents = 'all';
-  s5.classList.add('active');
-  s5.scrollIntoView({ behavior: 'smooth' });
   document.getElementById('confirmAccroche').disabled = true;
 }
 
@@ -2449,6 +5070,40 @@ function finalizeResults() {
       return false;
     });
     const allSegs = [...accrocheSegs, ...bodySegs];
+
+    // V5.81 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
+    if (window._whisperWords && window._whisperWords.length) {
+      allSegs.forEach(seg => {
+        if (seg._trimmed || seg.isManual) return;
+
+        const segStartSec = tcToSec((seg.start || '').replace(',', '.'));
+        const segEndSec = tcToSec((seg.end || '').replace(',', '.'));
+
+        // Récupère les mots Whisper réels dans la plage du segment
+        const realWords = window._whisperWords.filter(w =>
+          w.start >= segStartSec - 0.3 && w.end <= segEndSec + 0.3
+        );
+
+        if (realWords.length > 0) {
+          const realText = realWords.map(w => (w.word || '').trim()).join(' ').trim();
+          const realStart = realWords[0].start;
+          const realEnd = realWords[realWords.length - 1].end;
+
+          // Stocke texte/timecodes Claude pour référence
+          seg._claudeText = seg.text;
+          seg._claudeStart = seg.start;
+          seg._claudeEnd = seg.end;
+
+          // Remplace par le vrai texte audio + timecodes précis
+          seg.text = realText;
+          seg.start = secToSRTTC(realStart);
+          seg.end = secToSRTTC(realEnd);
+          seg.duration_sec = realEnd - realStart;
+          seg._wordAligned = true;
+        }
+      });
+    }
+
     const perf = calcPerfScore(ch, bodySegs, accrocheSegs, chData.total_duration_sec || 0);
     channelResults[ch] = {
       segments: allSegs,
@@ -2562,6 +5217,11 @@ function renderResults(channelResults) {
     resultsContainer.appendChild(panel);
   });
 
+  // Initialise les barres qualité après rendu DOM
+  setTimeout(() => {
+    channels.forEach(ch => updateQualityBar(ch));
+  }, 100);
+
   const s6 = document.getElementById('step6');
   s6.style.display = 'block';
   setActive('step6');
@@ -2649,25 +5309,58 @@ function buildChannelResultHTML(ch, data, cfg) {
     // ── Source file tag ──────────────────────────────────────────────────────
     const segStartSec = tcToSec((seg.start || '').replace(',','.'));
     const segSource = sources.length ? getSourceForTC(segStartSec) : null;
+    // Fallback : si aucune source déclarée, n'affiche rien (pas le nom MP3)
     const sourceTag = segSource
       ? `<span style="font-size:10px;color:var(--muted);background:var(--surface3);border:1px solid var(--border);border-radius:2px;padding:1px 6px;margin-left:8px;letter-spacing:0.3px;">📁 ${segSource.name}</span>`
-      : '';
+      : (sources.length === 0 ? '' : '');
 
-    segsHTML += `<div class="segment${isAccroche?' is-accroche':''}${(hasWarn||seg._editedText)?' has-warning':''}">
-      <div class="seg-idx">${label}</div>
+    segsHTML += `<div class="segment${isAccroche?' is-accroche':''}${(hasWarn||seg._editedText)?' has-warning':''}" 
+      draggable="true"
+      data-ch="${ch}" data-idx="${i}"
+      ondragstart="onSegDragStart(event,this)"
+      ondragover="onSegDragOver(event,this)"
+      ondragleave="onSegDragLeave(event,this)"
+      ondrop="onSegDrop(event,this,'${ch}')"
+      ondragend="onSegDragEnd(event)">
+      <div class="seg-idx" style="cursor:grab;user-select:none;" title="Glisse pour réordonner">≡<br>${label}</div>
       <div class="seg-body">
         <div class="seg-tc">${seg.start} → ${seg.end}${sourceTag}</div>
         ${tags.join('')}
         <textarea class="seg-text-edit" rows="2"
+          onmouseup="onSegTextSelection(event,'${ch}',${i})"
+          ontouchend="onSegTextSelection(event,'${ch}',${i})"
           oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';updateSegText('${ch}',${i},this.value)"
           onfocus="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
         >${seg.text}</textarea>
-        <div id="edit-hint-${ch}-${i}" style="font-size:9px;color:var(--muted2);letter-spacing:0.5px;margin-bottom:4px;">✎ Clique pour éditer le texte</div>
+        <div id="edit-hint-${ch}-${i}" style="font-size:9px;color:var(--muted2);letter-spacing:0.5px;margin-bottom:4px;">✎ Clique pour éditer · Surligne pour réduire le timecode</div>
+        <div id="seg-trim-bar-${ch}-${i}" class="seg-trim-bar">
+          <span id="seg-trim-info-${ch}-${i}" style="color:var(--accent);flex:1;"></span>
+          <button class="seg-trim-btn" onclick="applySegTrim('${ch}',${i})">✂️ Réduire au passage sélectionné</button>
+          <button onclick="clearSegTrim('${ch}',${i})" style="background:transparent;border:1px solid var(--border);border-radius:2px;padding:3px 8px;color:var(--muted);font-size:10px;cursor:pointer;">✕</button>
+        </div>
+        <!-- Waveform inline du segment -->
+        <div id="seg-waveform-${ch}-${i}" style="display:none;margin-top:8px;">
+          <div style="position:relative;height:80px;background:var(--surface3);border-radius:3px;overflow:hidden;cursor:pointer;" id="seg-wf-container-${ch}-${i}">
+            <canvas id="seg-wf-canvas-${ch}-${i}" style="width:100%;height:80px;display:block;"></canvas>
+            <div id="seg-wf-region-${ch}-${i}" style="position:absolute;top:0;bottom:0;background:rgba(151,71,255,0.15);pointer-events:none;"></div>
+            <div id="seg-wf-in-${ch}-${i}" style="position:absolute;top:0;bottom:0;width:4px;background:rgba(151,71,255,0.8);cursor:ew-resize;z-index:10;"></div>
+            <div id="seg-wf-out-${ch}-${i}" style="position:absolute;top:0;bottom:0;width:4px;background:rgba(151,71,255,0.8);cursor:ew-resize;z-index:10;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+            <span id="seg-wf-tcin-${ch}-${i}" style="font-size:9px;color:var(--muted2);"></span>
+            <button onclick="applySegWaveformTrim('${ch}',${i})" style="background:var(--accent);color:#fff;border:none;border-radius:2px;padding:3px 12px;font-size:10px;cursor:pointer;">Appliquer l'ajustement</button>
+            <span id="seg-wf-tcout-${ch}-${i}" style="font-size:9px;color:var(--muted2);"></span>
+          </div>
+        </div>
+        ${seg._trimmed ? `<div style="margin-top:4px;"><button onclick="restoreSegment('${ch}',${i})" style="background:transparent;border:1px solid var(--border2);border-radius:2px;padding:3px 10px;color:var(--muted);font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">↩ Restaurer l'original</button></div>` : ''}
         <div class="seg-reason">${seg.reason||''}</div>
         ${hasWarn ? `<div class="seg-warning-detail">⚠ ${seg.warnings.join(' · ')}</div>` : ''}
       </div>
       <div class="seg-meta">
+        <button class="seg-play-btn" onclick="playSegment('${ch}',${i})" title="Écouter ce passage">▶</button>
+        <button onclick="toggleSegWaveform('${ch}',${i})" title="Affiner avec la waveform" style="background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--muted);font-size:11px;width:28px;height:28px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">◈</button>
         <button class="seg-delete" onclick="deleteSegment('${ch}', ${i})" title="Supprimer ce segment">✕</button>
+        <button id="smart-cut-btn-${ch}-${i}" onclick="smartCutSegment('${ch}',${i})" title="Nettoyer les répétitions intelligemment" style="background:transparent;border:1px solid var(--border);border-radius:3px;color:var(--muted);font-size:10px;padding:3px 7px;cursor:pointer;transition:all 0.15s;width:28px;height:28px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.borderColor='var(--yellow)';this.style.color='var(--yellow)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">✂</button>
         <div class="seg-dur">${secToMin(dur)}</div>
         <div class="seg-score-dots">${dots}</div>
       </div>
@@ -2689,6 +5382,7 @@ function buildChannelResultHTML(ch, data, cfg) {
         <button class="export-btn primary" onclick="exportXML('${ch}')" title="${sources.length ? 'Exporter la séquence Premiere Pro' : 'Déclare les sources en étape 00 pour activer'}">↓ XML Premiere${sources.length ? '' : ' ⚠'}</button>
       </div>
     </div>
+    <div id="quality-bar-${ch}" style="margin-bottom:12px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;font-size:11px;"></div>
     <div class="editorial-note">${editorial_note}</div>
     ${arcBarHTML}
     ${perfHTML}
@@ -2701,8 +5395,46 @@ function buildChannelResultHTML(ch, data, cfg) {
       <strong>→ Workflow Premiere Pro</strong><br>
       Importe chaque SRT via <em>Fichier → Importer</em>. Les sous-titres marquent visuellement les passages sur ta timeline.<br>
       <span style="color:var(--warn)">⚠ À nettoyer</span> — Ces segments contiennent des hésitations ou silences à corriger avant l'export final.
+      ${segments.filter(s => s.warnings && s.warnings.length > 0).length > 0 ? `
+      <div style="margin-top:10px;">
+        <button onclick="bulkDeleteWarnings('${ch}')" style="background:transparent;border:1px solid rgba(245,200,66,0.4);border-radius:3px;padding:6px 14px;color:#F5C842;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.background='rgba(245,200,66,0.1)'" onmouseout="this.style.background='transparent'">
+          ✂️ Supprimer les ${segments.filter(s => s.warnings && s.warnings.length > 0).length} segment(s) à nettoyer
+        </button>
+        <span style="font-size:10px;color:var(--muted2);margin-left:8px;">Raccourci Descript-style</span>
+      </div>` : ''}
     </div>
   `;
+}
+
+// ── BULK CLEAN — Descript-style ───────────────────────────────────────────────
+function bulkDeleteWarnings(ch) {
+  if (!window._lastChannelResults || !window._lastChannelResults[ch]) return;
+  const chData = window._lastChannelResults[ch];
+  const before = chData.segments.length;
+  // Garde uniquement les segments sans warnings
+  chData.segments = chData.segments.filter(s => !s.warnings || s.warnings.length === 0);
+  const removed = before - chData.segments.length;
+
+  // Recalcule durée + score
+  const newTotal = chData.segments.reduce((a, s) => {
+    return a + (s.duration_sec || Math.max(0, tcToSec((s.end||'').replace(',','.')) - tcToSec((s.start||'').replace(',','.'))));
+  }, 0);
+  chData.total_duration_sec = newTotal;
+  const accroches = chData.segments.filter(s => s.isAccroche);
+  const bodySegs = chData.segments.filter(s => !s.isAccroche);
+  chData.perf = calcPerfScore(ch, bodySegs, accroches, newTotal);
+
+  // Re-render
+  const panel = document.getElementById(`result-${ch}`);
+  if (panel) panel.innerHTML = buildChannelResultHTML(ch, chData, CHANNEL_CONFIG[ch]);
+  setTimeout(() => updateQualityBar(ch), 50);
+  const tab = document.querySelector(`.channel-tab[data-ch="${ch}"] .tab-score`);
+  if (tab) {
+    tab.textContent = chData.perf.total + '/100';
+    tab.className = 'tab-score ' + (chData.perf.total >= 75 ? 'score-high' : chData.perf.total >= 50 ? 'score-mid' : 'score-low');
+  }
+
+  if (removed > 0) alert(`✅ ${removed} segment(s) supprimé(s). La sélection est maintenant propre.`);
 }
 
 // ── EXPORTS ──────────────────────────────────────────────────────────────────
@@ -2753,6 +5485,7 @@ function loadResultVersion(idx) {
     panel.innerHTML = buildChannelResultHTML(ch, channelResults[ch], cfg);
     resultsContainer.appendChild(panel);
   });
+  setTimeout(() => channels.forEach(ch => updateQualityBar(ch)), 100);
 }
 
 function updateSegText(ch, idx, newText) {
@@ -2797,6 +5530,8 @@ function updateSegText(ch, idx, newText) {
       if (seg && (!seg.warnings || !seg.warnings.length)) segEl.classList.remove('has-warning');
     }
   }
+  // Mise à jour score qualité en temps réel
+  updateQualityBar(ch);
 }
 
 function deleteSegment(ch, idx) {
@@ -2830,6 +5565,7 @@ function deleteSegment(ch, idx) {
   if (panel) {
     const cfg = CHANNEL_CONFIG[ch];
     panel.innerHTML = buildChannelResultHTML(ch, window._lastChannelResults[ch], cfg);
+    setTimeout(() => updateQualityBar(ch), 50);
   }
 
   // Update tab score
@@ -2849,7 +5585,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V4.33 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.81 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
@@ -2912,63 +5648,89 @@ function exportSegmentSRTs(ch) {
   });
 }
 
-function exportSequenceSRT(ch) {
+function exportSequenceSRT(ch, silent) {
   if (!window._lastChannelResults || !window._lastChannelResults[ch]) return;
-  // Use current segments (may have been edited/deleted by user)
   const chData = window._lastChannelResults[ch];
   const segs = (chData && chData.segments) ? chData.segments : [];
   if (!segs.length) {
-    alert("Aucun segment dans cette sélection. Relance une analyse.");
+    if (!silent) alert("Aucun segment dans cette sélection. Relance une analyse.");
     return;
   }
 
   let srt = '';
   let idx = 1;
-  let timelineOffset = 0; // running position in the new sequence (seconds)
+  let timelineOffset = 0;
 
   segs.forEach(function(seg) {
     const segStartSec = tcToSec((seg.start || '').replace(',','.'));
     const segEndSec = tcToSec((seg.end || '').replace(',','.'));
-    const segDur = Math.max(0, segEndSec - segStartSec);
+    const segDur = Math.max(0.1, segEndSec - segStartSec);
 
-    // If text was edited, use single block with edited text
-    if (seg._editedText) {
-      const editedBlocks = splitTextToSRTBlocks(seg._editedText, 0, segDur);
-      editedBlocks.forEach(function(b) {
-        srt += idx + "\n";
-        srt += secToSRTTC(timelineOffset + b.start) + " --> " + secToSRTTC(timelineOffset + b.end) + "\n";
-        srt += b.text + "\n\n";
+    // Stratégie 1 — Word timestamps disponibles → découpe mot par mot précise
+    if (window._whisperWords && window._whisperWords.length && !seg._editedText) {
+      const segWords = window._whisperWords.filter(function(w) {
+        return w.start >= segStartSec - 0.1 && w.end <= segEndSec + 0.1;
+      });
+
+      if (segWords.length > 0) {
+        // Groupe les mots en blocs de 25 caractères avec leurs vrais timecodes
+        const blocks = [];
+        let chunk = '';
+        let chunkStart = null;
+        let chunkEnd = null;
+
+        segWords.forEach(function(w, wi) {
+          const word = (w.word || '').trim();
+          if (!word) return;
+          const test = chunk ? chunk + ' ' + word : word;
+          if (chunkStart === null) chunkStart = w.start;
+
+          if (test.length <= 25) {
+            chunk = test;
+            chunkEnd = w.end;
+          } else {
+            if (chunk) {
+              blocks.push({ text: chunk, start: chunkStart, end: chunkEnd });
+            }
+            chunk = word;
+            chunkStart = w.start;
+            chunkEnd = w.end;
+          }
+        });
+        if (chunk) blocks.push({ text: chunk, start: chunkStart, end: chunkEnd });
+
+        if (blocks.length > 0) {
+          const firstStart = blocks[0].start;
+          blocks.forEach(function(b) {
+            const localStart = b.start - firstStart;
+            const localEnd = b.end - firstStart;
+            srt += idx + '\n';
+            srt += secToSRTTC(timelineOffset + localStart) + ' --> ' + secToSRTTC(timelineOffset + localEnd) + '\n';
+            srt += b.text + '\n\n';
+            idx++;
+          });
+          timelineOffset += segDur;
+          return;
+        }
+      }
+    }
+
+    // Stratégie 2 — Texte édité ou pas de word timestamps → distribue uniformément
+    const textToUse = seg._editedText || seg.text || '';
+    if (textToUse) {
+      const blocks2 = splitTextToSRTBlocks(textToUse, 0, segDur);
+      blocks2.forEach(function(b) {
+        srt += idx + '\n';
+        srt += secToSRTTC(timelineOffset + b.start) + ' --> ' + secToSRTTC(timelineOffset + b.end) + '\n';
+        srt += b.text + '\n\n';
         idx++;
       });
-      timelineOffset += segDur;
-      return;
     }
-
-    // Otherwise remap original SRT blocks
-    const blocks = parsedSRT.filter(function(b) {
-      return b.startSec >= segStartSec - 0.1 && b.endSec <= segEndSec + 0.1;
-    });
-
-    if (blocks.length === 0) {
-      timelineOffset += segDur;
-      return;
-    }
-
-    blocks.forEach(function(b) {
-      const localStart = b.startSec - segStartSec;
-      const localEnd = b.endSec - segStartSec;
-      const newStart = timelineOffset + localStart;
-      const newEnd = timelineOffset + localEnd;
-      srt += idx + "\n";
-      srt += secToSRTTC(newStart) + " --> " + secToSRTTC(newEnd) + "\n";
-      srt += b.text + "\n\n";
-      idx++;
-    });
-
     timelineOffset += segDur;
   });
 
-  download('sequence_' + ch + '_subtitles.srt', srt, 'text/plain');
+  const dateStr = new Date().toISOString().slice(0,10);
+  download('sequence_' + ch + '_subtitles_' + dateStr + '.srt', srt, 'text/plain');
 }
 
 function secToSRTTC(sec) {
@@ -3076,7 +5838,7 @@ function exportXML(ch) {
     return;
   }
   const cfg = CHANNEL_CONFIG[ch];
-  const fps = 25;
+  const fps = sequenceFPS || 25;
   const rushName = (currentFilename || 'rush').replace(/\.srt$/i, '').replace(/\.txt$/i, '');
   const seqName = rushName + " — " + cfg.name + " — " + new Date().toLocaleDateString('fr');
 
@@ -3125,7 +5887,7 @@ function exportXML(ch) {
       ? '            <file id="' + fileId + '"/>'
       : '            <file id="' + fileId + '">\n' +
         '              <n>' + clipName + '</n>\n' +
-        '              <pathurl>file://localhost/' + clipName + '</pathurl>\n' +
+        '              <pathurl>' + (source && source.path ? 'file://localhost' + source.path : 'file://localhost/' + clipName) + '</pathurl>\n' +
         '              <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
         '              <duration>' + srcDurFrames + '</duration>\n' +
         '              <timecode>\n' +
@@ -3262,7 +6024,32 @@ function exportXML(ch) {
     alert(`⚠ ${missingSources.length} segment(s) ignoré(s) — source introuvable :\n${missingSources.join('\n')}\n\nVérifie que les fichiers source sont déclarés dans l'étape 00 avec les bonnes durées.`);
   }
 
-  download("sequence_" + ch + "_" + new Date().toISOString().slice(0,10) + ".xml", xml, "text/xml");
+  const dateStr = new Date().toISOString().slice(0,10);
+
+  // Nom de projet + canal + version auto-incrémentée
+  const projectRaw = (document.getElementById('projectNameInput') ? document.getElementById('projectNameInput').value.trim() : '') || 'RUSHUP';
+  const projectName = projectRaw.toUpperCase().replace(/[^A-Z0-9_]/g, '_') || 'RUSHUP';
+  const chName = (cfg.name || ch).toUpperCase().replace(/[^A-Z0-9]/g, '_');
+
+  // Détecte la version — incrémente si déjà exporté aujourd'hui
+  const exportKey = 'rushup_export_' + projectName + '_' + chName + '_' + dateStr;
+  let versionNum = 1;
+  try {
+    const savedV = parseInt(localStorage.getItem(exportKey) || '0');
+    versionNum = savedV + 1;
+    localStorage.setItem(exportKey, String(versionNum));
+  } catch(e) {}
+
+  const versionStr = 'v' + versionNum;
+  const baseName = 'RUSHUP_' + projectName + '_' + chName + '_' + versionStr + '_' + dateStr;
+
+  download(baseName + '.xml', xml, 'text/xml');
+
+  // SRT avec même nom
+  setTimeout(() => exportSequenceSRTNamed(ch, baseName), 300);
+
+  // Popup à chaque export
+  setTimeout(() => showV6Waitlist(baseName), 1500);
 }
 
 // ── HISTORY ───────────────────────────────────────────────────────────────────
@@ -3459,5 +6246,199 @@ function markDone(id) { const el = document.getElementById(id); el.classList.add
 })();
 
 </script>
+</div><!-- end mainApp -->
+
+<script>
+function exportSequenceSRTNamed(ch, baseName) {
+  // Même logique que exportSequenceSRT mais avec nom personnalisé
+  if (!window._lastChannelResults || !window._lastChannelResults[ch]) return;
+  const chData = window._lastChannelResults[ch];
+  const segs = (chData && chData.segments) ? chData.segments : [];
+  if (!segs.length) return;
+
+  let srt = '';
+  let idx = 1;
+  let timelineOffset = 0;
+
+  segs.forEach(function(seg) {
+    const segStartSec = tcToSec((seg.start || '').replace(',','.'));
+    const segEndSec = tcToSec((seg.end || '').replace(',','.'));
+    const segDur = Math.max(0.1, segEndSec - segStartSec);
+
+    if (window._whisperWords && window._whisperWords.length && !seg._editedText) {
+      const segWords = window._whisperWords.filter(function(w) {
+        return w.start >= segStartSec - 0.1 && w.end <= segEndSec + 0.1;
+      });
+      if (segWords.length > 0) {
+        const blocks = [];
+        let chunk = '', chunkStart = null, chunkEnd = null;
+        segWords.forEach(function(w) {
+          const word = (w.word || '').trim();
+          if (!word) return;
+          const test = chunk ? chunk + ' ' + word : word;
+          if (chunkStart === null) chunkStart = w.start;
+          if (test.length <= 25) { chunk = test; chunkEnd = w.end; }
+          else {
+            if (chunk) blocks.push({ text: chunk, start: chunkStart, end: chunkEnd });
+            chunk = word; chunkStart = w.start; chunkEnd = w.end;
+          }
+        });
+        if (chunk) blocks.push({ text: chunk, start: chunkStart, end: chunkEnd });
+        if (blocks.length > 0) {
+          const firstStart = blocks[0].start;
+          blocks.forEach(function(b) {
+            srt += idx + '\n' + secToSRTTC(timelineOffset + b.start - firstStart) + ' --> ' + secToSRTTC(timelineOffset + b.end - firstStart) + '\n' + b.text + '\n\n';
+            idx++;
+          });
+          timelineOffset += segDur;
+          return;
+        }
+      }
+    }
+    const textToUse = seg._editedText || seg.text || '';
+    if (textToUse) {
+      splitTextToSRTBlocks(textToUse, 0, segDur).forEach(function(b) {
+        srt += idx + '\n' + secToSRTTC(timelineOffset + b.start) + ' --> ' + secToSRTTC(timelineOffset + b.end) + '\n' + b.text + '\n\n';
+        idx++;
+      });
+    }
+    timelineOffset += segDur;
+  });
+
+  download((baseName || 'sequence_' + ch) + '.srt', srt, 'text/plain');
+}
+
+function showV6Waitlist(exportedFileName) {
+  try { if (localStorage.getItem('rushup_v6_waitlist')) {
+    // Déjà inscrit — juste affiche le nom du fichier
+    if (exportedFileName) showToast('📦 ' + exportedFileName + '.xml + .srt téléchargés');
+    return;
+  }} catch(e) {}
+
+  const modal = document.createElement('div');
+  modal.id = 'v6WaitlistModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+
+  const fileName = exportedFileName || 'ta séquence';
+  modal.innerHTML =
+    '<div style="background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:36px;max-width:420px;width:100%;text-align:center;">' +
+    '<div style="font-size:32px;margin-bottom:12px;">📦</div>' +
+    '<div style="font-size:11px;font-family:\'DM Mono\',monospace;color:var(--green);margin-bottom:16px;word-break:break-all;">' + fileName + '</div>' +
+    '<h2 style="font-family:Outfit,sans-serif;font-size:20px;font-weight:800;margin-bottom:10px;">XML + SRT téléchargés !</h2>' +
+    '<p style="color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:24px;">La V6 de RUSHUP.AI arrive — projets cloud, collaboration équipe, historique complet.<br><strong style="color:var(--text);">Tu veux être le premier à y accéder ?</strong></p>' +
+    '<button onclick="joinV6Waitlist()" style="background:var(--accent);color:#fff;border:none;border-radius:4px;padding:13px 32px;font-family:Outfit,sans-serif;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-bottom:10px;">Oui, accès prioritaire V6 →</button>' +
+    '<button onclick="closeV6Waitlist()" style="background:transparent;border:none;color:var(--muted2);font-size:11px;cursor:pointer;font-family:\'DM Mono\',monospace;">Fermer</button>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+}
+
+function joinV6Waitlist() {
+  try { localStorage.setItem('rushup_v6_waitlist', '1'); } catch(e) {}
+  // Renvoie l'email déjà stocké vers le sheet avec flag V6
+  try {
+    const saved = JSON.parse(localStorage.getItem('rushup_user') || '{}');
+    if (saved.email) {
+      fetch(GOOGLE_SHEET_URL + '?firstname=' + encodeURIComponent(saved.firstname || '') + '&email=' + encodeURIComponent(saved.email) + '&v6=1&date=' + encodeURIComponent(new Date().toISOString()), { method: 'GET', mode: 'no-cors' });
+    }
+  } catch(e) {}
+  const modal = document.getElementById('v6WaitlistModal');
+  if (modal) {
+    modal.querySelector('div').innerHTML =
+      '<div style="font-size:40px;margin-bottom:16px;">✅</div>' +
+      '<h2 style="font-family:Outfit,sans-serif;font-size:20px;font-weight:800;margin-bottom:10px;">Tu es sur la liste !</h2>' +
+      '<p style="color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:24px;">On te contacte en priorité dès que la V6 est disponible.</p>' +
+      '<button onclick="closeV6Waitlist()" style="background:var(--surface3);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:10px 24px;font-size:13px;cursor:pointer;">Fermer</button>';
+  }
+}
+
+function closeV6Waitlist() {
+  const modal = document.getElementById('v6WaitlistModal');
+  if (modal) modal.remove();
+}
+
+// ── LANDING + EMAIL GATE ──────────────────────────────────────────────────────
+// URL de ton Google Apps Script (à remplacer après création)
+const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxenFgXboyEwRmAqde0msJnru6pXfdNYLvioh5d8VddYiOKy0yNasUQhelKn7DnlI1s/exec';
+
+function showLanding() {
+  document.getElementById('landingPage').style.display = 'flex';
+  document.getElementById('emailGate').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'none';
+}
+
+function showEmailGate() {
+  document.getElementById('landingPage').style.display = 'none';
+  document.getElementById('emailGate').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
+  setTimeout(() => document.getElementById('gateFirstname').focus(), 100);
+}
+
+function showApp(firstname) {
+  document.getElementById('landingPage').style.display = 'none';
+  document.getElementById('emailGate').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+
+  if (firstname) {
+    const greeting = document.getElementById('userGreeting');
+    if (greeting) greeting.textContent = 'Bonjour ' + firstname + ' 👋';
+  }
+
+  // Bouton reset visible uniquement pour david@rushup.io
+  try {
+    const saved = JSON.parse(localStorage.getItem('rushup_user') || '{}');
+    if (saved.email === 'david@rushup.io') {
+      const btn = document.getElementById('adminResetBtn');
+      if (btn) btn.style.display = 'inline-block';
+    }
+  } catch(e) {}
+}
+
+function adminReset() {
+  if (!confirm('Reset complet — retour à la landing page ?')) return;
+  try { localStorage.removeItem('rushup_user'); } catch(e) {}
+  location.reload();
+}
+
+async function submitEmailGate() {
+  const firstname = (document.getElementById('gateFirstname').value || '').trim();
+  const email = (document.getElementById('gateEmail').value || '').trim();
+  const job = (document.getElementById('gateJob').value || '').trim();
+  const errEl = document.getElementById('gateError');
+  const btn = document.getElementById('gateSubmitBtn');
+
+  errEl.style.display = 'none';
+
+  if (!firstname) { errEl.textContent = 'Entre ton prénom.'; errEl.style.display = 'block'; return; }
+  if (!email || !email.includes('@')) { errEl.textContent = 'Entre un email valide.'; errEl.style.display = 'block'; return; }
+  if (!job) { errEl.textContent = 'Dis-nous ce que tu fais.'; errEl.style.display = 'block'; return; }
+
+  btn.textContent = 'Accès en cours...'; btn.disabled = true;
+
+  // Stocke localement
+  try { localStorage.setItem('rushup_user', JSON.stringify({ firstname, email, job, date: new Date().toISOString() })); } catch(e) {}
+
+  // Envoie vers Google Sheet
+  try {
+    fetch(GOOGLE_SHEET_URL + '?firstname=' + encodeURIComponent(firstname) + '&email=' + encodeURIComponent(email) + '&job=' + encodeURIComponent(job) + '&date=' + encodeURIComponent(new Date().toISOString()), { method: 'GET', mode: 'no-cors' });
+  } catch(e) {}
+
+  showApp(firstname);
+}
+
+// Au chargement — vérifie si déjà inscrit
+window.addEventListener('DOMContentLoaded', function() {
+  try {
+    const saved = localStorage.getItem('rushup_user');
+    if (saved) {
+      const user = JSON.parse(saved);
+      showApp(user.firstname);
+      return;
+    }
+  } catch(e) {}
+  showLanding();
+});
+</script>
+
 </body>
 </html>
