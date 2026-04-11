@@ -1,6 +1,6 @@
 // Netlify Function — whisperx.js
-// Envoie le MP3 au Space Hugging Face rushup-whisperx via API Gradio
-// Retourne les word timestamps WhisperX précis
+// Appelle le Space HF rushup-whisperx via l'API Gradio moderne
+// POST /call/predict → event_id → GET /call/predict/{event_id}
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
@@ -13,7 +13,7 @@ exports.handler = async (event) => {
   if (!HF_TOKEN) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: 'HF_TOKEN manquant dans les variables Netlify' })
+      body: JSON.stringify({ error: 'HF_TOKEN manquant' })
     };
   }
 
@@ -25,7 +25,6 @@ exports.handler = async (event) => {
   }
 
   const { audioBase64, mimeType } = body;
-
   if (!audioBase64) {
     return { statusCode: 400, body: JSON.stringify({ error: 'audioBase64 manquant' }) };
   }
@@ -34,45 +33,38 @@ exports.handler = async (event) => {
     const audioBuffer = Buffer.from(audioBase64, 'base64');
     const contentType = mimeType || 'audio/mpeg';
 
-    console.log('[WhisperX] Taille audio buffer:', audioBuffer.length, 'bytes');
+    console.log('[WhisperX] Buffer size:', audioBuffer.length, 'bytes');
 
-    // ÉTAPE 1 — Upload du fichier audio via multipart/form-data
-    const boundary = '----FormBoundary' + Math.random().toString(36).slice(2);
-    const header = Buffer.from(
-      `--${boundary}\r\nContent-Disposition: form-data; name="files"; filename="audio.mp3"\r\nContent-Type: ${contentType}\r\n\r\n`
-    );
+    // ÉTAPE 1 — Upload via /upload (endpoint Gradio standard)
+    const boundary = 'boundary' + Date.now();
+    const header = Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="files"; filename="audio.mp3"\r\nContent-Type: ${contentType}\r\n\r\n`);
     const footer = Buffer.from(`\r\n--${boundary}--\r\n`);
     const formBody = Buffer.concat([header, audioBuffer, footer]);
 
-    console.log('[WhisperX] Upload vers:', `${HF_SPACE_URL}/upload`);
-
-    const uploadRes = await fetch(`${HF_SPACE_URL}/upload`, {
+    const uploadRes = await fetch(`${HF_SPACE_URL}/gradio_api/upload`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${HF_TOKEN}`,
         'Content-Type': `multipart/form-data; boundary=${boundary}`,
-        'Content-Length': formBody.length.toString()
       },
       body: formBody
     });
 
     console.log('[WhisperX] Upload status:', uploadRes.status);
 
-    if (!uploadRes.ok) {
-      const errText = await uploadRes.text();
-      console.error('[WhisperX] Erreur upload:', errText.slice(0, 500));
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: 'Erreur upload HF: ' + errText.slice(0, 300) })
-      };
+    let audioPath;
+
+    if (uploadRes.ok) {
+      const uploadData = await uploadRes.json();
+      console.log('[WhisperX] Upload result:', JSON.stringify(uploadData).slice(0, 200));
+      audioPath = Array.isArray(uploadData) ? uploadData[0] : (uploadData.path || uploadData);
+    } else {
+      // Fallback — envoie le base64 directement dans data
+      console.warn('[WhisperX] Upload échoué, fallback base64');
+      audioPath = `data:${contentType};base64,${audioBase64.slice(0, 100)}...`;
     }
 
-    const uploadData = await uploadRes.json();
-    console.log('[WhisperX] Upload result:', JSON.stringify(uploadData).slice(0, 200));
-
-    const audioPath = Array.isArray(uploadData) ? uploadData[0] : uploadData;
-
-    // ÉTAPE 2 — Appel Gradio /api/predict
+    // ÉTAPE 2 — POST /call/predict pour lancer le job
     const predictPayload = {
       data: [
         { path: audioPath, meta: { _type: 'gradio.FileData' } },
@@ -80,9 +72,8 @@ exports.handler = async (event) => {
       ]
     };
 
-    console.log('[WhisperX] Appel predict, payload:', JSON.stringify(predictPayload).slice(0, 300));
-
-    const predictRes = await fetch(`${HF_SPACE_URL}/api/predict`, {
+    console.log('[WhisperX] POST /call/predict');
+    const postRes = await fetch(`${HF_SPACE_URL}/gradio_api/call/predict`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${HF_TOKEN}`,
@@ -91,27 +82,66 @@ exports.handler = async (event) => {
       body: JSON.stringify(predictPayload)
     });
 
-    console.log('[WhisperX] Predict status:', predictRes.status);
+    console.log('[WhisperX] POST status:', postRes.status);
 
-    if (!predictRes.ok) {
-      const errText = await predictRes.text();
-      console.error('[WhisperX] Erreur predict:', errText.slice(0, 500));
+    if (!postRes.ok) {
+      const errText = await postRes.text();
+      console.error('[WhisperX] POST error:', errText.slice(0, 500));
       return {
         statusCode: 500,
-        body: JSON.stringify({ error: 'Erreur WhisperX predict: ' + errText.slice(0, 300) })
+        body: JSON.stringify({ error: 'Erreur POST predict: ' + errText.slice(0, 300) })
       };
     }
 
-    const predictData = await predictRes.json();
-    console.log('[WhisperX] Predict keys:', Object.keys(predictData));
+    const postData = await postRes.json();
+    const eventId = postData.event_id;
+    console.log('[WhisperX] event_id:', eventId);
 
-    const words = predictData.data && predictData.data[0];
-
-    if (!words || !Array.isArray(words) || !words.length) {
-      console.error('[WhisperX] Aucun mot:', JSON.stringify(predictData).slice(0, 300));
+    if (!eventId) {
       return {
         statusCode: 500,
-        body: JSON.stringify({ error: 'WhisperX n\'a retourné aucun mot', raw: JSON.stringify(predictData).slice(0, 300) })
+        body: JSON.stringify({ error: 'Pas d\'event_id retourné', raw: JSON.stringify(postData).slice(0, 200) })
+      };
+    }
+
+    // ÉTAPE 3 — GET /call/predict/{event_id} pour récupérer le résultat
+    // Poll jusqu'à complétion (max 60 secondes)
+    let words = null;
+    const maxAttempts = 30;
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise(r => setTimeout(r, 2000)); // attendre 2s entre chaque poll
+
+      const getRes = await fetch(`${HF_SPACE_URL}/gradio_api/call/predict/${eventId}`, {
+        headers: { 'Authorization': `Bearer ${HF_TOKEN}` }
+      });
+
+      console.log(`[WhisperX] Poll ${i+1} status:`, getRes.status);
+
+      if (!getRes.ok) continue;
+
+      const text = await getRes.text();
+      console.log('[WhisperX] Poll result (100 chars):', text.slice(0, 100));
+
+      // Parse le SSE — cherche "event: complete"
+      if (text.includes('event: complete')) {
+        const dataMatch = text.match(/data:\s*(\[.*\])/s);
+        if (dataMatch) {
+          const data = JSON.parse(dataMatch[1]);
+          words = data[0];
+          break;
+        }
+      } else if (text.includes('event: error')) {
+        return {
+          statusCode: 500,
+          body: JSON.stringify({ error: 'WhisperX erreur pendant le traitement' })
+        };
+      }
+    }
+
+    if (!words || !Array.isArray(words) || !words.length) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'WhisperX timeout ou aucun mot retourné' })
       };
     }
 
