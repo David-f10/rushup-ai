@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.87</title>
+<title>RUSHUP.AI V5.88</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -249,7 +249,7 @@ header {
 .srt-preview.visible { display: block; }
 .srt-preview .tc { color: #9F58F5; }
 
-/* ── V5.87 SRT VIEWER INTERACTIF ── */
+/* ── V5.88 SRT VIEWER INTERACTIF ── */
 .srt-viewer {
   margin-top: 12px;
   border: 1px solid var(--border);
@@ -1404,7 +1404,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <div id="mainApp" style="display:none;">
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.87</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.88</span></div>
   <div class="header-right">
     <span id="userGreeting" style="font-size:11px;color:var(--muted);margin-right:12px;"></span>
     <button id="adminResetBtn" onclick="adminReset()" style="display:none;background:transparent;border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--muted2);font-size:10px;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;margin-right:8px;" title="Reset expérience (admin)">↺ Reset</button>
@@ -1574,7 +1574,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         <div class="stat"><div class="stat-val" id="stTakes">—</div><div class="stat-lbl">Prises est.</div></div>
       </div>
       <div class="srt-preview" id="srtPreview"></div>
-      <!-- V5.87 — SRT Viewer interactif -->
+      <!-- V5.88 — SRT Viewer interactif -->
       <div class="srt-viewer" id="srtViewer">
         <div class="srt-viewer-header">
           <span>📄 Transcript complet — surligne pour créer un segment</span>
@@ -2000,7 +2000,7 @@ async function transcribeWithWhisper(file) {
     const formData = new FormData();
     formData.append('file', file, file.name);
     formData.append('model', 'whisper-1');
-    formData.append('response_format', 'verbose_json'); // V5.87 — word timestamps mot par mot
+    formData.append('response_format', 'verbose_json'); // V5.88 — word timestamps mot par mot
     formData.append('timestamp_granularities[]', 'word');
     formData.append('language', 'fr');
     formData.append('temperature', '0');
@@ -2027,7 +2027,7 @@ async function transcribeWithWhisper(file) {
 
     const jsonData = await response.json();
 
-    // V5.87 — Construit parsedSRT mot par mot depuis word timestamps
+    // V5.88 — Construit parsedSRT mot par mot depuis word timestamps
     statusText.textContent = '⚙️ Traitement des timecodes mot par mot...';
 
     // Stocke les données brutes
@@ -2048,7 +2048,7 @@ async function transcribeWithWhisper(file) {
     try { localStorage.setItem('rushai_whisper_srt', wordSRT); } catch(e) {}
     parseSRT(wordSRT, file.name);
 
-    // V5.87 — Vérification cohérence durée MP3 vs sources déclarées
+    // V5.88 — Vérification cohérence durée MP3 vs sources déclarées
     const audioDur = jsonData.duration || (window._whisperWords.length > 0
       ? window._whisperWords[window._whisperWords.length - 1].end
       : 0);
@@ -2069,7 +2069,7 @@ function fileToBase64(file) {
   });
 }
 
-// ── V5.87 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
+// ── V5.88 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
 function buildWordTimestampSRT(jsonData, maxChars) {
   maxChars = maxChars || 25;
   const words = jsonData.words || [];
@@ -2782,7 +2782,7 @@ function parseSRT(text, filename) {
   ).join('') + `<span style="color:var(--muted2)">... ${parsedSRT.length-5} blocs de plus</span>`;
   preview.classList.add('visible');
 
-  // V5.87 — Affiche le viewer SRT interactif complet
+  // V5.88 — Affiche le viewer SRT interactif complet
   renderSRTViewer();
 
   dz.querySelector('.drop-main').textContent = '✓ ' + filename;
@@ -2849,7 +2849,7 @@ function analyzeRushQuality() {
   if (window._audioFile) analyzeAudioQuality(window._audioFile);
 }
 
-// ── V5.87 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
+// ── V5.88 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
 async function analyzeAudioQuality(file) {
   const badge = document.getElementById('audioQualityBadge');
   try {
@@ -2952,7 +2952,7 @@ async function analyzeAudioQuality(file) {
   }
 }
 
-// ── V5.87 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
+// ── V5.88 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
 let _srtSelection = null; // { startIdx, endIdx, startSec, endSec, text }
 
 function renderSRTViewer() {
@@ -3033,7 +3033,7 @@ function onSRTSelection() {
   const text = parsedSRT.slice(from, to + 1).map(b => b.text).join(' ');
   const dur = endSec - startSec;
 
-  // V5.87 — Affine avec word timestamps si disponibles
+  // V5.88 — Affine avec word timestamps si disponibles
   let adjStartSec = startSec;
   let adjEndSec = endSec;
   if (window._whisperWords && window._whisperWords.length) {
@@ -3479,7 +3479,7 @@ Réponds UNIQUEMENT en JSON :
       // Stocke l'original pour restauration
       if (!seg._original) seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
 
-      // V5.87 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
+      // V5.88 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
       let newStartSec = startSec;
       let newEndSec = endSec;
       let tcSource = 'proportionnel';
@@ -3695,7 +3695,7 @@ function onSegTextSelection(e, ch, idx) {
   const segEndSec = tcToSec((seg.end || '').replace(',', '.'));
   const totalDur = segEndSec - segStartSec;
 
-  // V5.87 — Cherche d'abord dans les word timestamps précis
+  // V5.88 — Cherche d'abord dans les word timestamps précis
   let newStartSec = segStartSec + (start / Math.max(1, fullText.length)) * totalDur;
   let newEndSec = segStartSec + (end / Math.max(1, fullText.length)) * totalDur;
 
@@ -4318,7 +4318,7 @@ function calcPerfScore(channelKey, segments, accroches, totalSec) {
   };
 }
 
-// ── V5.87 — REVALIDATION CLAUDE ───────────────────────────────────────────────
+// ── V5.88 — REVALIDATION CLAUDE ───────────────────────────────────────────────
 // Détecte les répétitions dans un texte (mots > 3 lettres répétés)
 function detectRepetitionsInText(text) {
   const repetitions = [];
@@ -4488,7 +4488,7 @@ async function runStep3() {
       await runModeC(key);
     }
 
-    // ── V5.87 — Revalidation Claude ──────────────────────────────────────────
+    // ── V5.88 — Revalidation Claude ──────────────────────────────────────────
     if (rawResult) {
       btn.querySelector('.btn-text').textContent = '⚙️ Revalidation…';
       rawResult = await revalidateResult(key, rawResult);
@@ -4691,7 +4691,7 @@ async function runModeC(key) {
       // Pas trouvé — segment vide pour signaler le manque
       allSegments.push({
         order: blocIdx + 1,
-        arc_part: 'bloc_' + (blocIdx + 1),
+        arc_part: detectBlocType(bloc, blocIdx, scriptBlocs.length),
         script_bloc: blocIdx + 1,
         start: '00:00:00,000',
         end: '00:00:00,000',
@@ -4707,7 +4707,7 @@ async function runModeC(key) {
 
     const seg = {
       order: blocIdx + 1,
-      arc_part: 'bloc_' + (blocIdx + 1),
+      arc_part: bloc.split(' ').slice(0, 4).join('_').toLowerCase().replace(/[^a-z_]/g, ''),
       script_bloc: blocIdx + 1,
       start: secToSRTTC(bestOcc.start),
       end: secToSRTTC(bestOcc.end),
@@ -4761,60 +4761,107 @@ async function runModeC(key) {
   finalizeResults();
 }
 
-// Cherche toutes les occurrences d'un texte dans _whisperWords
+// Détecte automatiquement le type éditorial d'un bloc de script
+function detectBlocType(text, idx, total) {
+  const t = text.toLowerCase();
+
+  // Mots clés par type
+  if (idx === 0) return 'accroche';
+  if (idx === total - 1) return 'appel_final';
+
+  if (/imagine|cap ou pas|t'es chaud|t es chaud|t es cap|streamer|million/.test(t)) return 'accroche';
+  if (/je m.appelle|je suis|chanteuse|je suis atteinte|mon cas|j.ai décidé/.test(t)) return 'presentation';
+  if (/foutue cause|traitement|réponse|endométriose|pilule|maladie|recherche|avancer/.test(t)) return 'cause';
+  if (/femme sur dix|marcher|handicap|dégénère|copine|soeur|maman/.test(t)) return 'ampleur';
+  if (/contacté|fondation|endofrance|convention|trimestre|revenus|on a appelé/.test(t)) return 'action_concrète';
+  if (/streams|rémunéré|union|force|argent|artistes|association/.test(t)) return 'réalisme';
+  if (/s.appelle ando|sortie|écoutée|2600|mieux|vous et moi|quelques jours/.test(t)) return 'appel_final';
+  if (/quitte à|autant que|intimité|dévoiler|servir|veux que/.test(t)) return 'décision_personnelle';
+
+  // Fallback par position
+  const pos = idx / total;
+  if (pos < 0.2) return 'introduction';
+  if (pos < 0.4) return 'développement';
+  if (pos < 0.7) return 'tension';
+  return 'conclusion';
+}
+
+
 function findAllPassageOccurrences(text) {
   if (!window._whisperWords || !window._whisperWords.length) return [];
 
-  // Mots clés du bloc (filtre les mots courts)
+  // Prend les mots significatifs du bloc (longueur > 3, pas de mots vides)
+  const stopWords = new Set(['dans', 'avec', 'pour', 'mais', 'plus', 'cette', 'tout', 'bien', 'très', 'aussi', 'comme', 'même', 'dont', 'leur', 'sont', 'avoir', 'être', 'faire', 'peut', 'quoi', 'donc']);
+
   const keywords = text.toLowerCase()
-    .replace(/[^a-zàâéèêëîïôùûü\s]/g, '')
+    .replace(/[^a-zàâéèêëîïôùûü\s]/g, ' ')
     .split(/\s+/)
-    .filter(w => w.length > 3);
+    .filter(w => w.length > 3 && !stopWords.has(w));
 
   if (!keywords.length) return [];
 
-  const firstKeyword = keywords[0];
-  const lastKeyword = keywords[keywords.length - 1];
+  // Utilise les 2 premiers mots significatifs et les 2 derniers pour ancrer la recherche
+  const anchorStart = keywords.slice(0, 2);
+  const anchorEnd = keywords.slice(-2);
+  const allWords = window._whisperWords;
+  const totalWords = allWords.length;
   const occurrences = [];
 
-  // Cherche toutes les positions où le premier mot clé apparaît
-  window._whisperWords.forEach((w, idx) => {
-    const wt = (w.word || '').toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
-    if (!wt.includes(firstKeyword) && !firstKeyword.includes(wt)) return;
+  // Durée estimée du bloc en secondes (nb de mots × 0.35s par mot)
+  const wordCount = text.split(/\s+/).length;
+  const estimatedDurSec = wordCount * 0.35;
+  const maxWindowSec = estimatedDurSec * 3; // fenêtre max = 3× la durée estimée
 
-    // Cherche le dernier mot clé dans les mots suivants (fenêtre de 50 mots)
-    let endIdx = idx;
-    for (let j = idx; j < Math.min(idx + 50, window._whisperWords.length); j++) {
-      const wt2 = (window._whisperWords[j].word || '').toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
-      if (wt2.includes(lastKeyword) || lastKeyword.includes(wt2)) {
-        endIdx = j;
-      }
+  // Cherche toutes les positions où les ancres de début apparaissent
+  for (let idx = 0; idx < totalWords; idx++) {
+    const wt = (allWords[idx].word || '').toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
+
+    // Vérifie si ce mot matche le premier anchor
+    const matchesFirst = anchorStart.some(a => wt.includes(a) || a.includes(wt));
+    if (!matchesFirst) continue;
+
+    const startSec = allWords[idx].start;
+
+    // Cherche les ancres de fin dans une fenêtre temporelle après le début
+    let bestEndIdx = -1;
+    for (let j = idx + 1; j < totalWords; j++) {
+      const wSec = allWords[j].start - startSec;
+      if (wSec > maxWindowSec) break; // Fenêtre temporelle dépassée
+
+      const wt2 = (allWords[j].word || '').toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
+      const matchesEnd = anchorEnd.some(a => wt2.includes(a) || a.includes(wt2));
+      if (matchesEnd) bestEndIdx = j;
     }
 
-    const startSec = w.start;
-    const endSec = window._whisperWords[endIdx].end;
+    if (bestEndIdx === -1) continue;
 
-    if (endSec > startSec + 0.3) {
-      // Reconstruit le texte réel de cette occurrence
-      const realText = window._whisperWords
-        .slice(idx, endIdx + 1)
-        .map(ww => (ww.word || '').trim())
-        .join(' ');
+    const endSec = allWords[bestEndIdx].end;
+    const dur = endSec - startSec;
 
-      occurrences.push({
-        start: startSec,
-        end: endSec,
-        text: realText,
-        wordStart: idx,
-        wordEnd: endIdx
-      });
-    }
-  });
+    // Filtre les résultats aberrants (trop courts ou trop longs)
+    if (dur < 0.5 || dur > estimatedDurSec * 4) continue;
 
-  // Déduplique les occurrences trop proches (< 2s d'écart)
+    // Reconstruit le texte réel de cette occurrence
+    const realText = allWords
+      .slice(idx, bestEndIdx + 1)
+      .map(ww => (ww.word || '').trim())
+      .join(' ');
+
+    occurrences.push({
+      start: startSec,
+      end: endSec,
+      text: realText,
+      wordStart: idx,
+      wordEnd: bestEndIdx,
+      dur
+    });
+  }
+
+  // Déduplique — garde la meilleure occurrence par fenêtre de 3s
   const deduped = [];
+  occurrences.sort((a, b) => a.start - b.start);
   occurrences.forEach(occ => {
-    const tooClose = deduped.some(d => Math.abs(d.start - occ.start) < 2);
+    const tooClose = deduped.some(d => Math.abs(d.start - occ.start) < 3);
     if (!tooClose) deduped.push(occ);
   });
 
@@ -5268,7 +5315,7 @@ function finalizeResults() {
     });
     const allSegs = [...accrocheSegs, ...bodySegs];
 
-    // V5.87 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
+    // V5.88 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
     if (window._whisperWords && window._whisperWords.length) {
       allSegs.forEach(seg => {
         if (seg._trimmed || seg.isManual) return;
@@ -5807,7 +5854,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.87 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.88 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
