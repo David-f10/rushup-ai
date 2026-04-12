@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.99</title>
+<title>RUSHUP.AI V5.100</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -249,7 +249,7 @@ header {
 .srt-preview.visible { display: block; }
 .srt-preview .tc { color: #9F58F5; }
 
-/* ── V5.99 SRT VIEWER INTERACTIF ── */
+/* ── V5.100 SRT VIEWER INTERACTIF ── */
 .srt-viewer {
   margin-top: 12px;
   border: 1px solid var(--border);
@@ -1404,7 +1404,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <div id="mainApp" style="display:none;">
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.99</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.100</span></div>
   <div class="header-right">
     <span id="userGreeting" style="font-size:11px;color:var(--muted);margin-right:12px;"></span>
     <button id="adminResetBtn" onclick="adminReset()" style="display:none;background:transparent;border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--muted2);font-size:10px;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;margin-right:8px;" title="Reset expérience (admin)">↺ Reset</button>
@@ -1574,7 +1574,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         <div class="stat"><div class="stat-val" id="stTakes">—</div><div class="stat-lbl">Prises est.</div></div>
       </div>
       <div class="srt-preview" id="srtPreview"></div>
-      <!-- V5.99 — SRT Viewer interactif -->
+      <!-- V5.100 — SRT Viewer interactif -->
       <div class="srt-viewer" id="srtViewer">
         <div class="srt-viewer-header">
           <span>📄 Transcript complet — surligne pour créer un segment</span>
@@ -2000,7 +2000,7 @@ async function transcribeWithWhisper(file) {
     const formData = new FormData();
     formData.append('file', file, file.name);
     formData.append('model', 'whisper-1');
-    formData.append('response_format', 'verbose_json'); // V5.99 — word timestamps mot par mot
+    formData.append('response_format', 'verbose_json'); // V5.100 — word timestamps mot par mot
     formData.append('timestamp_granularities[]', 'word');
     formData.append('language', 'fr');
     formData.append('temperature', '0');
@@ -2027,7 +2027,7 @@ async function transcribeWithWhisper(file) {
 
     const jsonData = await response.json();
 
-    // V5.99 — Construit parsedSRT mot par mot depuis word timestamps
+    // V5.100 — Construit parsedSRT mot par mot depuis word timestamps
     statusText.textContent = '⚙️ Traitement des timecodes mot par mot...';
 
     // Stocke les données brutes
@@ -2048,7 +2048,7 @@ async function transcribeWithWhisper(file) {
     try { localStorage.setItem('rushai_whisper_srt', wordSRT); } catch(e) {}
     parseSRT(wordSRT, file.name);
 
-    // V5.99 — Vérification cohérence durée MP3 vs sources déclarées
+    // V5.100 — Vérification cohérence durée MP3 vs sources déclarées
     const audioDur = jsonData.duration || (window._whisperWords.length > 0
       ? window._whisperWords[window._whisperWords.length - 1].end
       : 0);
@@ -2069,7 +2069,7 @@ function fileToBase64(file) {
   });
 }
 
-// ── V5.99 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
+// ── V5.100 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
 function buildWordTimestampSRT(jsonData, maxChars) {
   maxChars = maxChars || 25;
   const words = jsonData.words || [];
@@ -2782,7 +2782,7 @@ function parseSRT(text, filename) {
   ).join('') + `<span style="color:var(--muted2)">... ${parsedSRT.length-5} blocs de plus</span>`;
   preview.classList.add('visible');
 
-  // V5.99 — Affiche le viewer SRT interactif complet
+  // V5.100 — Affiche le viewer SRT interactif complet
   renderSRTViewer();
 
   dz.querySelector('.drop-main').textContent = '✓ ' + filename;
@@ -2849,7 +2849,7 @@ function analyzeRushQuality() {
   if (window._audioFile) analyzeAudioQuality(window._audioFile);
 }
 
-// ── V5.99 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
+// ── V5.100 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
 async function analyzeAudioQuality(file) {
   const badge = document.getElementById('audioQualityBadge');
   try {
@@ -2952,7 +2952,7 @@ async function analyzeAudioQuality(file) {
   }
 }
 
-// ── V5.99 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
+// ── V5.100 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
 let _srtSelection = null; // { startIdx, endIdx, startSec, endSec, text }
 
 function renderSRTViewer() {
@@ -3033,7 +3033,7 @@ function onSRTSelection() {
   const text = parsedSRT.slice(from, to + 1).map(b => b.text).join(' ');
   const dur = endSec - startSec;
 
-  // V5.99 — Affine avec word timestamps si disponibles
+  // V5.100 — Affine avec word timestamps si disponibles
   let adjStartSec = startSec;
   let adjEndSec = endSec;
   if (window._whisperWords && window._whisperWords.length) {
@@ -3479,7 +3479,7 @@ Réponds UNIQUEMENT en JSON :
       // Stocke l'original pour restauration
       if (!seg._original) seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
 
-      // V5.99 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
+      // V5.100 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
       let newStartSec = startSec;
       let newEndSec = endSec;
       let tcSource = 'proportionnel';
@@ -3695,7 +3695,7 @@ function onSegTextSelection(e, ch, idx) {
   const segEndSec = tcToSec((seg.end || '').replace(',', '.'));
   const totalDur = segEndSec - segStartSec;
 
-  // V5.99 — Cherche d'abord dans les word timestamps précis
+  // V5.100 — Cherche d'abord dans les word timestamps précis
   let newStartSec = segStartSec + (start / Math.max(1, fullText.length)) * totalDur;
   let newEndSec = segStartSec + (end / Math.max(1, fullText.length)) * totalDur;
 
@@ -4318,7 +4318,7 @@ function calcPerfScore(channelKey, segments, accroches, totalSec) {
   };
 }
 
-// ── V5.99 — REVALIDATION CLAUDE ───────────────────────────────────────────────
+// ── V5.100 — REVALIDATION CLAUDE ───────────────────────────────────────────────
 // Détecte les répétitions dans un texte (mots > 3 lettres répétés)
 function detectRepetitionsInText(text) {
   const repetitions = [];
@@ -4488,7 +4488,7 @@ async function runStep3() {
       await runModeC(key);
     }
 
-    // ── V5.99 — Revalidation Claude ──────────────────────────────────────────
+    // ── V5.100 — Revalidation Claude ──────────────────────────────────────────
     if (rawResult) {
       btn.querySelector('.btn-text').textContent = '⚙️ Revalidation…';
       rawResult = await revalidateResult(key, rawResult);
@@ -4793,10 +4793,10 @@ async function runModeC(key) {
 
   // ÉTAPE 2 — Claude : jugement éditorial + identification du meilleur texte par bloc
   const prompt = [
-    'Tu es un expert en montage documentaire.',
-    'Ta mission : pour chaque bloc du script, identifier le TEXTE EXACT de la meilleure prise dans le rush.',
+    'Tu es un expert en montage documentaire. Tu fais du script sync — comme Avid ScriptSync.',
+    'Ta mission : pour chaque bloc du script, trouver dans la transcription la phrase qui correspond, et retourner son DÉBUT EXACT.',
     '',
-    'TRANSCRIPTION DES RUSHS :',
+    'TRANSCRIPTION DES RUSHS (avec timecodes) :',
     transcript,
     '',
     'SCRIPT EN BLOCS :',
@@ -4805,31 +4805,35 @@ async function runModeC(key) {
     'CANAUX :',
     channelsDesc,
     '',
-    'POUR CHAQUE BLOC :',
-    '1. Cherche dans la transcription les passages qui correspondent au bloc',
-    '2. Sélectionne la prise la plus fluide et claire (sans hésitation)',
-    '3. Retourne le TEXTE EXACT tel qu\'il apparaît dans la transcription (pas paraphrasé)',
-    '4. Labellise le bloc : accroche / presentation / cause / ampleur / action / realisme / appel_final',
-    '5. L\'ordre des segments = l\'ordre des blocs du script',
+    'POUR CHAQUE BLOC DU SCRIPT :',
+    '1. Trouve dans la transcription le passage qui correspond sémantiquement à ce bloc',
+    '2. Retourne les PREMIERS MOTS EXACTS de ce passage tel qu\'il apparaît dans la transcription',
+    '   IMPORTANT : commence toujours par le premier mot de la phrase, jamais par un mot du milieu',
+    '   IMPORTANT : le texte retourné doit être une phrase complète depuis son début',
+    '3. Sélectionne la prise la plus fluide (sans hésitation, sans bégaiement)',
+    '4. Si plusieurs prises existent, prends celle qui est la plus complète et naturelle',
+    '5. Labellise : accroche / presentation / cause / ampleur / action / realisme / appel_final',
+    '6. L\'ordre des segments = l\'ordre du script — PAS l\'ordre chronologique des rushs',
     '',
-    'RÈGLES :',
-    '- PAS d\'accroche séparée',
-    '- Texte exact de la transcription uniquement',
-    '- Un segment par bloc',
+    'RÈGLES ABSOLUES :',
+    '- Le texte doit commencer par le premier mot de la phrase dans le rush',
+    '- Jamais de texte tronqué ou qui commence au milieu d\'une idée',
+    '- Un segment par bloc du script',
+    '- Texte exact de la transcription (sans apostrophes si la transcription n\'en a pas)',
     '',
     'Réponds UNIQUEMENT en JSON :',
     '{',
     '  "accroches": [],',
     '  "channels": {',
     '    "CHANNEL_KEY": {',
-    '      "editorial_note": "résumé",',
+    '      "editorial_note": "résumé des choix",',
     '      "segments": [',
     '        {',
     '          "order": 1,',
     '          "arc_part": "accroche",',
     '          "script_bloc": 1,',
-    '          "text": "texte exact de la meilleure prise dans la transcription",',
-    '          "reason": "pourquoi cette prise",',
+    '          "text": "premiers mots exacts de la phrase dans la transcription",',
+    '          "reason": "pourquoi cette prise est la meilleure",',
     '          "score_force": 5,',
     '          "duration_sec": 0,',
     '          "start": "00:00:00,000",',
@@ -5447,7 +5451,7 @@ function finalizeResults() {
     });
     const allSegs = [...accrocheSegs, ...bodySegs];
 
-    // V5.99 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
+    // V5.100 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
     if (window._whisperWords && window._whisperWords.length) {
       allSegs.forEach(seg => {
         if (seg._trimmed || seg.isManual) return;
@@ -5986,7 +5990,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.99 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.100 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
