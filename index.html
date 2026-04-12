@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.97</title>
+<title>RUSHUP.AI V5.98</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -249,7 +249,7 @@ header {
 .srt-preview.visible { display: block; }
 .srt-preview .tc { color: #9F58F5; }
 
-/* ── V5.97 SRT VIEWER INTERACTIF ── */
+/* ── V5.98 SRT VIEWER INTERACTIF ── */
 .srt-viewer {
   margin-top: 12px;
   border: 1px solid var(--border);
@@ -1404,7 +1404,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <div id="mainApp" style="display:none;">
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.97</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.98</span></div>
   <div class="header-right">
     <span id="userGreeting" style="font-size:11px;color:var(--muted);margin-right:12px;"></span>
     <button id="adminResetBtn" onclick="adminReset()" style="display:none;background:transparent;border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--muted2);font-size:10px;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;margin-right:8px;" title="Reset expérience (admin)">↺ Reset</button>
@@ -1574,7 +1574,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         <div class="stat"><div class="stat-val" id="stTakes">—</div><div class="stat-lbl">Prises est.</div></div>
       </div>
       <div class="srt-preview" id="srtPreview"></div>
-      <!-- V5.97 — SRT Viewer interactif -->
+      <!-- V5.98 — SRT Viewer interactif -->
       <div class="srt-viewer" id="srtViewer">
         <div class="srt-viewer-header">
           <span>📄 Transcript complet — surligne pour créer un segment</span>
@@ -2000,7 +2000,7 @@ async function transcribeWithWhisper(file) {
     const formData = new FormData();
     formData.append('file', file, file.name);
     formData.append('model', 'whisper-1');
-    formData.append('response_format', 'verbose_json'); // V5.97 — word timestamps mot par mot
+    formData.append('response_format', 'verbose_json'); // V5.98 — word timestamps mot par mot
     formData.append('timestamp_granularities[]', 'word');
     formData.append('language', 'fr');
     formData.append('temperature', '0');
@@ -2027,7 +2027,7 @@ async function transcribeWithWhisper(file) {
 
     const jsonData = await response.json();
 
-    // V5.97 — Construit parsedSRT mot par mot depuis word timestamps
+    // V5.98 — Construit parsedSRT mot par mot depuis word timestamps
     statusText.textContent = '⚙️ Traitement des timecodes mot par mot...';
 
     // Stocke les données brutes
@@ -2048,7 +2048,7 @@ async function transcribeWithWhisper(file) {
     try { localStorage.setItem('rushai_whisper_srt', wordSRT); } catch(e) {}
     parseSRT(wordSRT, file.name);
 
-    // V5.97 — Vérification cohérence durée MP3 vs sources déclarées
+    // V5.98 — Vérification cohérence durée MP3 vs sources déclarées
     const audioDur = jsonData.duration || (window._whisperWords.length > 0
       ? window._whisperWords[window._whisperWords.length - 1].end
       : 0);
@@ -2069,7 +2069,7 @@ function fileToBase64(file) {
   });
 }
 
-// ── V5.97 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
+// ── V5.98 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
 function buildWordTimestampSRT(jsonData, maxChars) {
   maxChars = maxChars || 25;
   const words = jsonData.words || [];
@@ -2782,7 +2782,7 @@ function parseSRT(text, filename) {
   ).join('') + `<span style="color:var(--muted2)">... ${parsedSRT.length-5} blocs de plus</span>`;
   preview.classList.add('visible');
 
-  // V5.97 — Affiche le viewer SRT interactif complet
+  // V5.98 — Affiche le viewer SRT interactif complet
   renderSRTViewer();
 
   dz.querySelector('.drop-main').textContent = '✓ ' + filename;
@@ -2849,7 +2849,7 @@ function analyzeRushQuality() {
   if (window._audioFile) analyzeAudioQuality(window._audioFile);
 }
 
-// ── V5.97 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
+// ── V5.98 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
 async function analyzeAudioQuality(file) {
   const badge = document.getElementById('audioQualityBadge');
   try {
@@ -2952,7 +2952,7 @@ async function analyzeAudioQuality(file) {
   }
 }
 
-// ── V5.97 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
+// ── V5.98 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
 let _srtSelection = null; // { startIdx, endIdx, startSec, endSec, text }
 
 function renderSRTViewer() {
@@ -3033,7 +3033,7 @@ function onSRTSelection() {
   const text = parsedSRT.slice(from, to + 1).map(b => b.text).join(' ');
   const dur = endSec - startSec;
 
-  // V5.97 — Affine avec word timestamps si disponibles
+  // V5.98 — Affine avec word timestamps si disponibles
   let adjStartSec = startSec;
   let adjEndSec = endSec;
   if (window._whisperWords && window._whisperWords.length) {
@@ -3479,7 +3479,7 @@ Réponds UNIQUEMENT en JSON :
       // Stocke l'original pour restauration
       if (!seg._original) seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
 
-      // V5.97 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
+      // V5.98 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
       let newStartSec = startSec;
       let newEndSec = endSec;
       let tcSource = 'proportionnel';
@@ -3695,7 +3695,7 @@ function onSegTextSelection(e, ch, idx) {
   const segEndSec = tcToSec((seg.end || '').replace(',', '.'));
   const totalDur = segEndSec - segStartSec;
 
-  // V5.97 — Cherche d'abord dans les word timestamps précis
+  // V5.98 — Cherche d'abord dans les word timestamps précis
   let newStartSec = segStartSec + (start / Math.max(1, fullText.length)) * totalDur;
   let newEndSec = segStartSec + (end / Math.max(1, fullText.length)) * totalDur;
 
@@ -4318,7 +4318,7 @@ function calcPerfScore(channelKey, segments, accroches, totalSec) {
   };
 }
 
-// ── V5.97 — REVALIDATION CLAUDE ───────────────────────────────────────────────
+// ── V5.98 — REVALIDATION CLAUDE ───────────────────────────────────────────────
 // Détecte les répétitions dans un texte (mots > 3 lettres répétés)
 function detectRepetitionsInText(text) {
   const repetitions = [];
@@ -4488,7 +4488,7 @@ async function runStep3() {
       await runModeC(key);
     }
 
-    // ── V5.97 — Revalidation Claude ──────────────────────────────────────────
+    // ── V5.98 — Revalidation Claude ──────────────────────────────────────────
     if (rawResult) {
       btn.querySelector('.btn-text').textContent = '⚙️ Revalidation…';
       rawResult = await revalidateResult(key, rawResult);
@@ -4928,48 +4928,60 @@ function findAllPassageOccurrences(text, wordsSource) {
   const words = wordsSource || window._whisperWords;
   if (!words || !words.length || !text) return [];
 
-  const keywords = text.toLowerCase()
-    .replace(/[^a-zàâéèêëîïôùûü\s]/g, '')
+  // Normalise le texte du script en liste de mots
+  const normalize = s => s.toLowerCase()
+    .replace(/['']/g, "'")
+    .replace(/[^a-zàâéèêëîïôùûü\s]/g, ' ')
     .split(/\s+/)
-    .filter(w => w.length > 3);
+    .filter(w => w.length > 0);
 
-  if (!keywords.length) return [];
+  const scriptWords = normalize(text);
+  if (!scriptWords.length) return [];
 
-  const firstKeyword = keywords[0];
-  const lastKeyword = keywords[keywords.length - 1];
+  const windowSize = scriptWords.length;
   const occurrences = [];
 
-  words.forEach((w, idx) => {
-    const wt = (w.word || '').toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
-    if (!wt.includes(firstKeyword) && !firstKeyword.includes(wt)) return;
+  // Fenêtre glissante sur les words WhisperX
+  for (let i = 0; i <= words.length - Math.max(1, Math.floor(windowSize * 0.5)); i++) {
+    // Calcule un score de similarité entre la fenêtre et le texte du script
+    let matchCount = 0;
+    const windowEnd = Math.min(i + windowSize + 5, words.length);
+    const windowWords = words.slice(i, windowEnd).map(w =>
+      (w.word || '').toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '')
+    );
 
-    let endIdx = idx;
-    for (let j = idx; j < Math.min(idx + 60, words.length); j++) {
-      const wt2 = (words[j].word || '').toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
-      if (wt2.includes(lastKeyword) || lastKeyword.includes(wt2)) {
-        endIdx = j;
+    for (const sw of scriptWords) {
+      if (windowWords.some(ww => ww === sw || (sw.length > 3 && ww.includes(sw)) || (ww.length > 3 && sw.includes(ww)))) {
+        matchCount++;
       }
     }
 
-    const startSec = w.start;
-    const endSec = words[endIdx].end;
+    const score = matchCount / scriptWords.length;
 
-    if (endSec > startSec + 0.3) {
-      const realText = words
-        .slice(idx, endIdx + 1)
-        .map(ww => (ww.word || '').trim())
-        .join(' ');
+    // Seuil de 60% de correspondance minimum
+    if (score >= 0.6) {
+      const startSec = words[i].start;
+      const endSec = words[Math.min(i + windowSize + 2, words.length - 1)].end;
 
-      occurrences.push({ start: startSec, end: endSec, text: realText });
+      if (endSec > startSec + 0.5) {
+        const realText = words.slice(i, Math.min(i + windowSize + 3, words.length))
+          .map(ww => (ww.word || '').trim()).join(' ');
+
+        occurrences.push({ start: startSec, end: endSec, text: realText, score });
+      }
     }
-  });
+  }
 
-  // Déduplique les occurrences trop proches (< 2s)
+  // Trie par score décroissant
+  occurrences.sort((a, b) => b.score - a.score);
+
+  // Déduplique les occurrences trop proches (< 3s)
   const deduped = [];
-  occurrences.forEach(occ => {
-    const tooClose = deduped.some(d => Math.abs(d.start - occ.start) < 2);
+  for (const occ of occurrences) {
+    const tooClose = deduped.some(d => Math.abs(d.start - occ.start) < 3);
     if (!tooClose) deduped.push(occ);
-  });
+    if (deduped.length >= 3) break;
+  }
 
   return deduped;
 }
@@ -5421,7 +5433,7 @@ function finalizeResults() {
     });
     const allSegs = [...accrocheSegs, ...bodySegs];
 
-    // V5.97 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
+    // V5.98 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
     if (window._whisperWords && window._whisperWords.length) {
       allSegs.forEach(seg => {
         if (seg._trimmed || seg.isManual) return;
@@ -5960,7 +5972,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.97 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.98 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
