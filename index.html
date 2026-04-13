@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.105</title>
+<title>RUSHUP.AI V5.115</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -249,7 +249,7 @@ header {
 .srt-preview.visible { display: block; }
 .srt-preview .tc { color: #9F58F5; }
 
-/* ── V5.105 SRT VIEWER INTERACTIF ── */
+/* ── V5.115 SRT VIEWER INTERACTIF ── */
 .srt-viewer {
   margin-top: 12px;
   border: 1px solid var(--border);
@@ -1116,12 +1116,67 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
 @media (max-width: 768px) {
-  .container { padding: 20px; }
-  header { padding: 0 20px; }
+  /* Layout général */
+  .container { padding: 16px; }
+  header { padding: 0 16px; }
+
+  /* Modes */
   .mode-grid { grid-template-columns: 1fr; }
-  .channels-grid { grid-template-columns: repeat(3, 1fr); }
+  .channels-grid { grid-template-columns: repeat(2, 1fr); }
   .arc-bar { grid-template-columns: repeat(2, 1fr); }
   .apikey-input { width: 130px; }
+
+  /* Steps */
+  .step { border-radius: 4px; }
+  .step-header { padding: 14px 16px; }
+  .step-body { padding: 16px; }
+
+  /* Champs texte */
+  textarea, input[type="text"], input[type="password"] {
+    font-size: 16px !important; /* évite le zoom iOS */
+  }
+
+  /* Bouton analyser */
+  .run-btn { font-size: 14px; padding: 14px; }
+
+  /* Segments */
+  .segment { padding: 12px; }
+  .seg-header { flex-wrap: wrap; gap: 6px; }
+  .seg-tc { font-size: 10px; }
+  .seg-text { font-size: 13px; line-height: 1.5; }
+  .seg-meta { flex-wrap: wrap; gap: 6px; }
+  .seg-meta button { width: 36px !important; height: 36px !important; } /* touch targets */
+  .seg-play-btn { width: 36px !important; height: 36px !important; }
+  .seg-dur { font-size: 11px; }
+
+  /* Export row */
+  .export-row { flex-direction: column; gap: 8px; }
+  .export-btn { padding: 10px 14px; font-size: 12px; text-align: center; }
+
+  /* Results header */
+  .results-header { flex-direction: column; gap: 10px; align-items: flex-start; }
+  .results-title { font-size: 13px; }
+
+  /* Tabs canaux */
+  .channel-tabs { gap: 6px; }
+  .channel-tab { padding: 8px 10px; font-size: 11px; }
+
+  /* Waveform — plus petite sur mobile */
+  #waveformCanvas { height: 60px !important; }
+
+  /* Bouton flottant résultats */
+  #float-results-btn { top: 10px; right: 10px; padding: 10px 14px; font-size: 13px; }
+
+  /* Audio player bar */
+  .audio-player-bar { padding: 10px 16px; gap: 8px; }
+  .audio-player-title { font-size: 11px; }
+
+  /* Quality bar */
+  #quality-bar { font-size: 11px; }
+
+  /* Nouveau script buttons */
+  #new-script-btn-wrapper button { padding: 12px 20px; font-size: 13px; width: 100%; }
+  #new-script-btn-wrapper > div:last-child { flex-direction: column; }
 }
 
 /* ── GLOBAL DURATION BUTTONS ── */
@@ -1404,7 +1459,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <div id="mainApp" style="display:none;">
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.105</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.115</span></div>
   <div class="header-right">
     <span id="userGreeting" style="font-size:11px;color:var(--muted);margin-right:12px;"></span>
     <button id="adminResetBtn" onclick="adminReset()" style="display:none;background:transparent;border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--muted2);font-size:10px;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;margin-right:8px;" title="Reset expérience (admin)">↺ Reset</button>
@@ -1574,7 +1629,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         <div class="stat"><div class="stat-val" id="stTakes">—</div><div class="stat-lbl">Prises est.</div></div>
       </div>
       <div class="srt-preview" id="srtPreview"></div>
-      <!-- V5.105 — SRT Viewer interactif -->
+      <!-- V5.115 — SRT Viewer interactif -->
       <div class="srt-viewer" id="srtViewer">
         <div class="srt-viewer-header">
           <span>📄 Transcript complet — surligne pour créer un segment</span>
@@ -1769,6 +1824,10 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
           <textarea id="scriptC" rows="5" placeholder="Colle ici le texte du script final validé si tu l'as.&#10;&#10;Ex: Imagine 1 million de personnes streamer une chanson. Et tout l'argent de ce stream va aider une femme sur dix...&#10;&#10;Si tu ne l'as pas, laisse vide — l'IA détectera automatiquement la structure du message."></textarea>
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:-8px;">Sans script : l'IA détecte automatiquement le message et nettoie les prises. Avec script : elle aligne chaque ligne du script avec la meilleure prise du rush.</div>
+        <div id="whisperx-cache-info" style="display:none;margin-top:8px;padding:6px 10px;background:rgba(151,71,255,0.06);border:1px solid rgba(151,71,255,0.2);border-radius:3px;font-size:10px;color:var(--accent);display:flex;align-items:center;gap:8px;">
+          <span>⚡ WhisperX en cache — prochain script instantané</span>
+          <button onclick="window._whisperXWordsCache=null;document.getElementById('whisperx-cache-info').style.display='none';showToast('Cache WhisperX effacé');" style="background:transparent;border:1px solid var(--muted);border-radius:2px;padding:2px 8px;color:var(--muted);font-size:10px;cursor:pointer;">↺ Effacer</button>
+        </div>
       </div>
 
       <div class="error-block" id="errorBlock"></div>
@@ -2000,7 +2059,7 @@ async function transcribeWithWhisper(file) {
     const formData = new FormData();
     formData.append('file', file, file.name);
     formData.append('model', 'whisper-1');
-    formData.append('response_format', 'verbose_json'); // V5.105 — word timestamps mot par mot
+    formData.append('response_format', 'verbose_json'); // V5.115 — word timestamps mot par mot
     formData.append('timestamp_granularities[]', 'word');
     formData.append('language', 'fr');
     formData.append('temperature', '0');
@@ -2027,7 +2086,7 @@ async function transcribeWithWhisper(file) {
 
     const jsonData = await response.json();
 
-    // V5.105 — Construit parsedSRT mot par mot depuis word timestamps
+    // V5.115 — Construit parsedSRT mot par mot depuis word timestamps
     statusText.textContent = '⚙️ Traitement des timecodes mot par mot...';
 
     // Stocke les données brutes
@@ -2048,7 +2107,7 @@ async function transcribeWithWhisper(file) {
     try { localStorage.setItem('rushai_whisper_srt', wordSRT); } catch(e) {}
     parseSRT(wordSRT, file.name);
 
-    // V5.105 — Vérification cohérence durée MP3 vs sources déclarées
+    // V5.115 — Vérification cohérence durée MP3 vs sources déclarées
     const audioDur = jsonData.duration || (window._whisperWords.length > 0
       ? window._whisperWords[window._whisperWords.length - 1].end
       : 0);
@@ -2069,7 +2128,7 @@ function fileToBase64(file) {
   });
 }
 
-// ── V5.105 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
+// ── V5.115 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
 function buildWordTimestampSRT(jsonData, maxChars) {
   maxChars = maxChars || 25;
   const words = jsonData.words || [];
@@ -2183,8 +2242,9 @@ function findWordTimecode(wordText, afterSec) {
 }
 
 // Trouve les timecodes exacts d'un passage textuel dans _whisperWords
-function findPassageTimecodes(text, afterSec) {
-  if (!window._whisperWords || !window._whisperWords.length) return null;
+function findPassageTimecodes(text, afterSec, wordsSource) {
+  const words = wordsSource || window._whisperXWordsCache || window._whisperWords;
+  if (!words || !words.length) return null;
   afterSec = afterSec || 0;
 
   const passageWords = text.toLowerCase()
@@ -2194,21 +2254,19 @@ function findPassageTimecodes(text, afterSec) {
 
   if (!passageWords.length) return null;
 
-  // Cherche la première occurrence du premier mot après afterSec
   const firstWord = passageWords[0];
   const lastWord = passageWords[passageWords.length - 1];
 
   let startTime = null, endTime = null;
 
-  for (let i = 0; i < window._whisperWords.length; i++) {
-    const w = window._whisperWords[i];
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
     if (w.start < afterSec) continue;
     const wt = (w.word || '').toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
     if (wt.includes(firstWord) || firstWord.includes(wt)) {
       startTime = w.start;
-      // Cherche le dernier mot dans les X mots suivants
-      for (let j = i; j < Math.min(i + passageWords.length + 5, window._whisperWords.length); j++) {
-        const w2 = window._whisperWords[j];
+      for (let j = i; j < Math.min(i + passageWords.length + 5, words.length); j++) {
+        const w2 = words[j];
         const wt2 = (w2.word || '').toLowerCase().replace(/[^a-zàâéèêëîïôùûü]/g, '');
         if (wt2.includes(lastWord) || lastWord.includes(wt2)) {
           endTime = w2.end;
@@ -2782,7 +2840,7 @@ function parseSRT(text, filename) {
   ).join('') + `<span style="color:var(--muted2)">... ${parsedSRT.length-5} blocs de plus</span>`;
   preview.classList.add('visible');
 
-  // V5.105 — Affiche le viewer SRT interactif complet
+  // V5.115 — Affiche le viewer SRT interactif complet
   renderSRTViewer();
 
   dz.querySelector('.drop-main').textContent = '✓ ' + filename;
@@ -2849,7 +2907,7 @@ function analyzeRushQuality() {
   if (window._audioFile) analyzeAudioQuality(window._audioFile);
 }
 
-// ── V5.105 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
+// ── V5.115 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
 async function analyzeAudioQuality(file) {
   const badge = document.getElementById('audioQualityBadge');
   try {
@@ -2952,7 +3010,7 @@ async function analyzeAudioQuality(file) {
   }
 }
 
-// ── V5.105 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
+// ── V5.115 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
 let _srtSelection = null; // { startIdx, endIdx, startSec, endSec, text }
 
 function renderSRTViewer() {
@@ -3033,7 +3091,7 @@ function onSRTSelection() {
   const text = parsedSRT.slice(from, to + 1).map(b => b.text).join(' ');
   const dur = endSec - startSec;
 
-  // V5.105 — Affine avec word timestamps si disponibles
+  // V5.115 — Affine avec word timestamps si disponibles
   let adjStartSec = startSec;
   let adjEndSec = endSec;
   if (window._whisperWords && window._whisperWords.length) {
@@ -3479,18 +3537,19 @@ Réponds UNIQUEMENT en JSON :
       // Stocke l'original pour restauration
       if (!seg._original) seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
 
-      // V5.105 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
+      // V5.115 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
       let newStartSec = startSec;
       let newEndSec = endSec;
       let tcSource = 'proportionnel';
 
-      if (window._whisperWords && window._whisperWords.length) {
+      if (window._whisperXWordsCache && window._whisperXWordsCache.length || window._whisperWords && window._whisperWords.length) {
+        const wordsSource = window._whisperXWordsCache || window._whisperWords;
         // Essaie avec le texte exact d'abord
-        let exactTC = findPassageTimecodes(result.cleanText, Math.max(0, startSec - 2));
+        let exactTC = findPassageTimecodes(result.cleanText, Math.max(0, startSec - 2), wordsSource);
         // Si pas trouvé, essaie avec les premiers mots seulement
         if (!exactTC) {
           const firstWords = result.cleanText.split(' ').slice(0, 5).join(' ');
-          exactTC = findPassageTimecodes(firstWords, Math.max(0, startSec - 2));
+          exactTC = findPassageTimecodes(firstWords, Math.max(0, startSec - 2), wordsSource);
         }
         if (exactTC && exactTC.start >= Math.max(0, startSec - 3) && exactTC.end <= endSec + 3) {
           newStartSec = exactTC.start;
@@ -3695,7 +3754,7 @@ function onSegTextSelection(e, ch, idx) {
   const segEndSec = tcToSec((seg.end || '').replace(',', '.'));
   const totalDur = segEndSec - segStartSec;
 
-  // V5.105 — Cherche d'abord dans les word timestamps précis
+  // V5.115 — Cherche d'abord dans les word timestamps précis
   let newStartSec = segStartSec + (start / Math.max(1, fullText.length)) * totalDur;
   let newEndSec = segStartSec + (end / Math.max(1, fullText.length)) * totalDur;
 
@@ -4318,7 +4377,7 @@ function calcPerfScore(channelKey, segments, accroches, totalSec) {
   };
 }
 
-// ── V5.105 — REVALIDATION CLAUDE ───────────────────────────────────────────────
+// ── V5.115 — REVALIDATION CLAUDE ───────────────────────────────────────────────
 // Détecte les répétitions dans un texte (mots > 3 lettres répétés)
 function detectRepetitionsInText(text) {
   const repetitions = [];
@@ -4488,7 +4547,7 @@ async function runStep3() {
       await runModeC(key);
     }
 
-    // ── V5.105 — Revalidation Claude ──────────────────────────────────────────
+    // ── V5.115 — Revalidation Claude ──────────────────────────────────────────
     if (rawResult) {
       btn.querySelector('.btn-text').textContent = '⚙️ Revalidation…';
       rawResult = await revalidateResult(key, rawResult);
@@ -4712,9 +4771,15 @@ Réponds UNIQUEMENT en JSON valide :
   }).join('\n');
 
   // ÉTAPE 1 — WhisperX : appel direct HF depuis le navigateur (pas de timeout Netlify)
-  let _whisperXWords = null;
+  // Utilise _whisperXWords en cache si déjà disponible — évite de re-analyser pour le même rush
+  let _whisperXWords = window._whisperXWordsCache || null;
 
   const whisperXPromise = (async () => {
+    // Cache disponible — skip WhisperX pour ce script
+    if (window._whisperXWordsCache && window._whisperXWordsCache.length) {
+      showToast('⚡ WhisperX cache — ' + window._whisperXWordsCache.length + ' mots réutilisés');
+      return window._whisperXWordsCache;
+    }
     if (!window._audioFile) return null;
     try {
       // Récupère le HF_TOKEN depuis Netlify (comme claude.js)
@@ -4880,7 +4945,10 @@ Réponds UNIQUEMENT en JSON valide :
   const whisperXResult = await whisperXPromise;
   if (whisperXResult && whisperXResult.length) {
     _whisperXWords = whisperXResult;
+    window._whisperXWordsCache = whisperXResult;
     showToast('✅ WhisperX — ' + _whisperXWords.length + ' mots alignés');
+    const cacheInfo = document.getElementById('whisperx-cache-info');
+    if (cacheInfo) cacheInfo.style.display = 'flex';
   } else {
     console.warn('[WhisperX] Fallback sur _whisperWords');
   }
@@ -5012,7 +5080,14 @@ function findAllPassageOccurrences(text, wordsSource) {
     }
 
     if (score >= 0.40) {
-      const endIdx = Math.min(i + N - 1, words.length - 1);
+      // Fin = i + N mots, puis on étend jusqu'au prochain silence naturel (gap > 0.3s)
+      let endIdx = Math.min(i + N - 1, words.length - 1);
+      // Extension max 5 mots supplémentaires pour ne pas couper une phrase
+      for (let ext = endIdx + 1; ext < Math.min(endIdx + 6, words.length - 1); ext++) {
+        const gap = words[ext].start - words[ext - 1].end;
+        if (gap > 0.3) break; // silence détecté — on s'arrête ici
+        endIdx = ext; // continue jusqu'au silence
+      }
       const startSec = words[i].start;
       const endSec = words[endIdx].end;
 
@@ -5485,7 +5560,7 @@ function finalizeResults() {
     });
     const allSegs = [...accrocheSegs, ...bodySegs];
 
-    // V5.105 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
+    // V5.115 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
     if (window._whisperWords && window._whisperWords.length) {
       allSegs.forEach(seg => {
         if (seg._trimmed || seg.isManual) return;
@@ -5642,9 +5717,245 @@ function renderResults(channelResults) {
   document.getElementById('s6status').textContent = `${channels.length} canal${channels.length>1?'x':''} · Prêt`;
   s6.scrollIntoView({ behavior: 'smooth' });
   markDone('step5');
+
+  // Bouton "Nouveau script" — apparaît après les résultats
+  const existingNewScript = document.getElementById('new-script-btn-wrapper');
+  if (existingNewScript) existingNewScript.remove();
+  const newScriptWrapper = document.createElement('div');
+  newScriptWrapper.id = 'new-script-btn-wrapper';
+  newScriptWrapper.style.cssText = 'text-align:center;margin:24px 0 48px;';
+  const cacheStatus = window._whisperXWordsCache ? '⚡ WhisperX en cache — instantané' : '🎙 WhisperX sera re-lancé';
+  newScriptWrapper.innerHTML = `
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">${cacheStatus}</div>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      ${currentMode === 'C' ? `<button onclick="startNewScript()" style="background:transparent;border:1px solid var(--accent);border-radius:4px;padding:10px 24px;color:var(--accent);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(151,71,255,0.1)'" onmouseout="this.style.background='transparent'">
+        ➕ Nouveau script, même rush
+      </button>` : ''}
+      <button onclick="resetFullAnalysis()" style="background:transparent;border:1px solid var(--muted);border-radius:4px;padding:10px 24px;color:var(--muted);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--text)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--muted)';this.style.color='var(--muted)'">
+        🔄 Nouvelle analyse complète
+      </button>
+    </div>
+  `;
+  s6.appendChild(newScriptWrapper);
+
+  // Bouton flottant "⬆ Résultats" visible en haut pendant le scroll
+  const existingFloat = document.getElementById('float-results-btn');
+  if (existingFloat) existingFloat.remove();
+  const floatBtn = document.createElement('button');
+  floatBtn.id = 'float-results-btn';
+  floatBtn.textContent = '⬇ Résultats';
+  floatBtn.style.cssText = 'position:fixed;top:16px;right:16px;z-index:9999;background:var(--accent);color:#fff;border:none;border-radius:4px;padding:8px 16px;font-family:"Plus Jakarta Sans",sans-serif;font-size:12px;cursor:pointer;box-shadow:0 2px 12px rgba(151,71,255,0.4);transition:opacity 0.2s;';
+  floatBtn.onclick = () => s6.scrollIntoView({ behavior: 'smooth' });
+  document.body.appendChild(floatBtn);
+  // Cache le bouton flottant quand les résultats sont visibles
+  const observer = new IntersectionObserver(([entry]) => {
+    floatBtn.style.opacity = entry.isIntersecting ? '0' : '1';
+    floatBtn.style.pointerEvents = entry.isIntersecting ? 'none' : 'auto';
+  }, { threshold: 0.1 });
+  observer.observe(s6);
+
+  // Vérification cohérence narrative — appel Claude léger après affichage
+  setTimeout(() => checkNarrativeCoherence(channels, channelResults), 600);
 }
 
-function buildChannelResultHTML(ch, data, cfg) {
+// ── LECTEUR SÉQUENCE COMPLÈTE ─────────────────────────────────────────────────
+let _sequencePlayback = null; // { ch, segIdx, timer }
+
+function playSequence(ch) {
+  const btn = document.getElementById('play-seq-btn-' + ch);
+
+  // Si déjà en lecture → stop
+  if (_sequencePlayback && _sequencePlayback.ch === ch) {
+    stopSequence();
+    return;
+  }
+
+  stopSequence();
+
+  const data = window._lastChannelResults && window._lastChannelResults[ch];
+  if (!data || !data.segments || !data.segments.length) return;
+
+  const audio = getAudioElement();
+  if (!audio) { alert('Charge un fichier MP3 d\'abord.'); return; }
+
+  if (btn) { btn.textContent = '■ Stop séquence'; btn.style.borderColor = 'var(--warn)'; btn.style.color = 'var(--warn)'; }
+
+  _sequencePlayback = { ch, segIdx: 0 };
+  playSequenceSegment(ch, 0);
+}
+
+function playSequenceSegment(ch, idx) {
+  if (!_sequencePlayback || _sequencePlayback.ch !== ch) return;
+
+  const data = window._lastChannelResults && window._lastChannelResults[ch];
+  if (!data || !data.segments) return;
+
+  const segments = data.segments;
+  if (idx >= segments.length) {
+    stopSequence();
+    return;
+  }
+
+  const seg = segments[idx];
+  const startSec = tcToSec((seg.start || '').replace(',', '.'));
+  const endSec = tcToSec((seg.end || '').replace(',', '.'));
+  const dur = endSec - startSec;
+  if (dur <= 0) { playSequenceSegment(ch, idx + 1); return; }
+
+  _sequencePlayback.segIdx = idx;
+
+  // Met en évidence le segment en cours
+  document.querySelectorAll('.segment').forEach(el => el.style.outline = 'none');
+  const segEl = document.querySelector('.segment[data-ch="' + ch + '"][data-idx="' + idx + '"]');
+  if (segEl) {
+    segEl.style.outline = '2px solid var(--green, #4ade80)';
+    segEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // Joue le segment
+  const label = (idx + 1) + '/' + segments.length + ' — ' + (seg.text || '').slice(0, 50);
+  playAudioRange(startSec, endSec, label);
+
+  // Enchaîne automatiquement au prochain segment
+  _sequencePlayback.timer = setTimeout(() => {
+    playSequenceSegment(ch, idx + 1);
+  }, dur * 1000 + 150); // 150ms de marge
+}
+
+function stopSequence() {
+  if (_sequencePlayback) {
+    clearTimeout(_sequencePlayback.timer);
+    const btn = document.getElementById('play-seq-btn-' + _sequencePlayback.ch);
+    if (btn) { btn.textContent = '▶ Écouter'; btn.style.borderColor = 'var(--green, #4ade80)'; btn.style.color = 'var(--green, #4ade80)'; }
+    _sequencePlayback = null;
+  }
+  document.querySelectorAll('.segment').forEach(el => el.style.outline = 'none');
+  stopAudioPlayer(true);
+}
+
+function toggleExtraExports(ch) {
+  const panel = document.getElementById('extra-exports-' + ch);
+  const btn = document.getElementById('extra-exports-toggle-' + ch);
+  if (!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'flex';
+  if (btn) btn.textContent = isOpen ? '+ autres exports' : '− autres exports';
+}
+async function checkNarrativeCoherence(channels, channelResults) {
+  try {
+    const keyRes = await fetch('/.netlify/functions/claude?action=getkey');
+    if (!keyRes.ok) return;
+    const { key } = await keyRes.json();
+    if (!key) return;
+
+    for (const ch of channels) {
+      const data = channelResults[ch];
+      if (!data || !data.segments || data.segments.length < 2) continue;
+
+      const textes = data.segments.map((s, i) =>
+        `${i+1}. [${s.arc_part || ''}] "${s.text || ''}"`
+      ).join('\n');
+
+      const prompt = `Tu es un monteur-rédacteur expert. Voici les segments sélectionnés dans l'ordre final :
+
+${textes}
+
+Analyse ce montage en 3 points :
+1. FLUIDITÉ — les phrases s'enchaînent-elles naturellement ? (oui/non + explication courte)
+2. COHÉRENCE — y a-t-il des contradictions ou répétitions inutiles ? (oui/non + explication courte)
+3. SCORE — note globale /10
+
+Réponds UNIQUEMENT en JSON :
+{"fluidite": "oui/non — explication", "coherence": "oui/non — explication", "score": 8, "suggestion": "amélioration principale si nécessaire"}`;
+
+      const result = await callAPI(key, prompt);
+      if (!result || !result.score) continue;
+
+      // Affiche le résultat sous la quality bar
+      const qualityBar = document.getElementById(`quality-bar-${ch}`);
+      if (!qualityBar) continue;
+
+      const scoreColor = result.score >= 8 ? 'var(--green)' : result.score >= 6 ? 'var(--yellow)' : 'var(--warn)';
+      const coherenceHTML = document.createElement('div');
+      coherenceHTML.style.cssText = 'margin-top:8px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;font-size:11px;';
+      const suggestionHTML = result.suggestion ? '<div style="color:var(--accent);margin-top:6px;">💡 ' + result.suggestion + '</div>' : '';
+      coherenceHTML.innerHTML = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;"><span style="font-weight:600;color:var(--text);">🧠 Cohérence narrative</span><span style="font-weight:700;color:' + scoreColor + ';font-size:14px;">' + result.score + '/10</span></div><div style="color:var(--muted);margin-bottom:3px;">💬 Fluidité : ' + (result.fluidite || '—') + '</div><div style="color:var(--muted);margin-bottom:3px;">🔄 Cohérence : ' + (result.coherence || '—') + '</div>' + suggestionHTML;
+      qualityBar.appendChild(coherenceHTML);
+    }
+  } catch(e) {
+    console.warn('[Cohérence] Erreur:', e.message);
+  }
+}
+function resetFullAnalysis() {
+  // Efface tout le cache et les données
+  window._whisperXWordsCache = null;
+  window._whisperWords = null;
+  window._audioFile = null;
+  window._scriptPrises = null;
+  rawResult = null;
+  parsedSRT = [];
+  selectedChannels = [];
+  _waveformData = null;
+
+  // Cache les résultats
+  const s6 = document.getElementById('step6');
+  if (s6) s6.style.display = 'none';
+
+  // Retire bouton flottant
+  const floatBtn = document.getElementById('float-results-btn');
+  if (floatBtn) floatBtn.remove();
+
+  // Cache le bandeau WhisperX cache
+  const cacheInfo = document.getElementById('whisperx-cache-info');
+  if (cacheInfo) cacheInfo.style.display = 'none';
+
+  // Reset les champs
+  const scriptField = document.getElementById('scriptC');
+  if (scriptField) scriptField.value = '';
+
+  // Reset les étapes visuelles
+  ['step1','step2','step3','step4','step5','step6'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && id !== 'step1') el.style.display = 'none';
+  });
+
+  // Scroll vers le haut — étape 0
+  const step0 = document.getElementById('step0') || document.querySelector('.step');
+  if (step0) step0.scrollIntoView({ behavior: 'smooth' });
+  else window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  showToast('🔄 Nouvelle analyse — uploade tes nouveaux rushs');
+}
+
+// ── NOUVEAU SCRIPT — même rush ────────────────────────────────────────────────
+function startNewScript() {
+  // Efface le script et les résultats
+  const scriptField = document.getElementById('scriptC');
+  if (scriptField) scriptField.value = '';
+
+  // Cache les résultats
+  const s6 = document.getElementById('step6');
+  if (s6) s6.style.display = 'none';
+
+  // Retire le bouton flottant
+  const floatBtn = document.getElementById('float-results-btn');
+  if (floatBtn) floatBtn.remove();
+
+  // Reset rawResult
+  rawResult = null;
+
+  // Scroll vers le champ script
+  if (scriptField) {
+    scriptField.scrollIntoView({ behavior: 'smooth' });
+    scriptField.focus();
+  }
+
+  // Toast info
+  const cacheMsg = window._whisperXWordsCache
+    ? '⚡ WhisperX en cache — colle ton nouveau script et relance !'
+    : '🎙 Colle ton nouveau script et relance';
+  showToast(cacheMsg);
+}
   const { segments, editorial_note, total_duration_sec, perf } = data;
 
   // Arc bar
@@ -5813,12 +6124,18 @@ function buildChannelResultHTML(ch, data, cfg) {
   return `
     <div class="results-header">
       <div class="results-title"><div class="dot"></div>${cfg.name} — Sélection</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button onclick="playSequence('${ch}')" id="play-seq-btn-${ch}" style="background:transparent;border:1px solid var(--green, #4ade80);border-radius:3px;padding:5px 12px;color:var(--green, #4ade80);font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;cursor:pointer;transition:all 0.15s;white-space:nowrap;" onmouseover="this.style.background='rgba(74,222,128,0.1)'" onmouseout="this.style.background='transparent'">▶ Écouter</button>
+      </div>
       <div class="export-row">
-        <button class="export-btn" onclick="exportBrief('${ch}')">↓ Brief</button>
-        <button class="export-btn" onclick="exportGlobalSRT('${ch}')">↓ SRT rush</button>
-        <button class="export-btn primary" onclick="exportSequenceSRT('${ch}')" title="SRT recalculé pour la nouvelle séquence montée">↓ SRT séquence</button>
-        <button class="export-btn" onclick="exportSegmentSRTs('${ch}')">↓ SRT segments</button>
         <button class="export-btn primary" onclick="exportXML('${ch}')" title="${sources.length ? 'Exporter la séquence Premiere Pro' : 'Déclare les sources en étape 00 pour activer'}">↓ XML Premiere${sources.length ? '' : ' ⚠'}</button>
+        <button onclick="toggleExtraExports('${ch}')" id="extra-exports-toggle-${ch}" style="background:transparent;border:1px solid var(--border);border-radius:3px;padding:6px 10px;color:var(--muted);font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--text)';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">+ autres exports</button>
+        <div id="extra-exports-${ch}" style="display:none;gap:6px;flex-wrap:wrap;width:100%;margin-top:4px;">
+          <button class="export-btn" onclick="exportSequenceSRT('${ch}')" title="SRT recalculé pour la nouvelle séquence montée">↓ SRT séquence</button>
+          <button class="export-btn" onclick="exportGlobalSRT('${ch}')">↓ SRT rush</button>
+          <button class="export-btn" onclick="exportBrief('${ch}')">↓ Brief</button>
+          <button class="export-btn" onclick="exportSegmentSRTs('${ch}')">↓ SRT segments</button>
+        </div>
       </div>
     </div>
     <div id="quality-bar-${ch}" style="margin-bottom:12px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:3px;font-size:11px;"></div>
@@ -6024,7 +6341,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.105 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.115 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
