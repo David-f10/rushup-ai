@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.118</title>
+<title>RUSHUP.AI V5.125</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -249,7 +249,7 @@ header {
 .srt-preview.visible { display: block; }
 .srt-preview .tc { color: #9F58F5; }
 
-/* ── V5.118 SRT VIEWER INTERACTIF ── */
+/* ── V5.125 SRT VIEWER INTERACTIF ── */
 .srt-viewer {
   margin-top: 12px;
   border: 1px solid var(--border);
@@ -1404,7 +1404,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <div id="mainApp" style="display:none;">
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.118</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.125</span></div>
   <div class="header-right">
     <span id="userGreeting" style="font-size:11px;color:var(--muted);margin-right:12px;"></span>
     <button id="adminResetBtn" onclick="adminReset()" style="display:none;background:transparent;border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--muted2);font-size:10px;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;margin-right:8px;" title="Reset expérience (admin)">↺ Reset</button>
@@ -1574,7 +1574,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         <div class="stat"><div class="stat-val" id="stTakes">—</div><div class="stat-lbl">Prises est.</div></div>
       </div>
       <div class="srt-preview" id="srtPreview"></div>
-      <!-- V5.118 — SRT Viewer interactif -->
+      <!-- V5.125 — SRT Viewer interactif -->
       <div class="srt-viewer" id="srtViewer">
         <div class="srt-viewer-header">
           <span>📄 Transcript complet — surligne pour créer un segment</span>
@@ -2004,7 +2004,7 @@ async function transcribeWithWhisper(file) {
     const formData = new FormData();
     formData.append('file', file, file.name);
     formData.append('model', 'whisper-1');
-    formData.append('response_format', 'verbose_json'); // V5.118 — word timestamps mot par mot
+    formData.append('response_format', 'verbose_json'); // V5.125 — word timestamps mot par mot
     formData.append('timestamp_granularities[]', 'word');
     formData.append('language', 'fr');
     formData.append('temperature', '0');
@@ -2031,7 +2031,7 @@ async function transcribeWithWhisper(file) {
 
     const jsonData = await response.json();
 
-    // V5.118 — Construit parsedSRT mot par mot depuis word timestamps
+    // V5.125 — Construit parsedSRT mot par mot depuis word timestamps
     statusText.textContent = '⚙️ Traitement des timecodes mot par mot...';
 
     // Stocke les données brutes
@@ -2052,7 +2052,7 @@ async function transcribeWithWhisper(file) {
     try { localStorage.setItem('rushai_whisper_srt', wordSRT); } catch(e) {}
     parseSRT(wordSRT, file.name);
 
-    // V5.118 — Vérification cohérence durée MP3 vs sources déclarées
+    // V5.125 — Vérification cohérence durée MP3 vs sources déclarées
     const audioDur = jsonData.duration || (window._whisperWords.length > 0
       ? window._whisperWords[window._whisperWords.length - 1].end
       : 0);
@@ -2073,7 +2073,7 @@ function fileToBase64(file) {
   });
 }
 
-// ── V5.118 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
+// ── V5.125 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
 function buildWordTimestampSRT(jsonData, maxChars) {
   maxChars = maxChars || 25;
   const words = jsonData.words || [];
@@ -2442,6 +2442,7 @@ function setFPS(fps, btn) {
 }
 
 // ── LECTURE MÉTADONNÉES VIDÉO ────────────────────────────────────────────────
+// ── LECTURE MÉTADONNÉES VIDÉO ────────────────────────────────────────────────
 function onVideoDrop(e) {
   e.preventDefault();
   const zone = document.getElementById('videoDropZone');
@@ -2483,6 +2484,73 @@ function readVideoMetadata(file) {
   };
 }
 
+
+
+function addSourceWithData(filename, durationSec) {
+  addSource();
+
+  const nameEl = document.getElementById('source-name-' + sourceCount);
+  const durEl = document.getElementById('source-dur-' + sourceCount);
+
+  if (nameEl) nameEl.value = filename;
+
+  if (durEl && durationSec) {
+    const fps = sequenceFPS || 25;
+    const totalFrames = Math.floor(durationSec * fps);
+    const frames = totalFrames % fps;
+    const totalSec = Math.floor(durationSec);
+    const hh = String(Math.floor(totalSec / 3600)).padStart(2, '0');
+    const mm = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
+    const ss = String(totalSec % 60).padStart(2, '0');
+    const ff = String(frames).padStart(2, '0');
+    durEl.value = hh + ':' + mm + ':' + ss + ':' + ff;
+    formatDurInput(durEl);
+  }
+
+  updateSources();
+  sortSourcesByName();
+  showToast('🎬 ' + filename + (durationSec ? ' · ' + secToMin(durationSec) : ' · durée non lisible'));
+}
+
+function sortSourcesByName() {
+  const list = document.getElementById('sourcesList');
+  if (!list) return;
+
+  const rows = Array.from(list.querySelectorAll('.source-row'));
+  if (rows.length < 2) return;
+
+  const data = rows.map(row => {
+    const id = row.id.replace('source-row-', '');
+    const nameEl = document.getElementById('source-name-' + id);
+    const durEl = document.getElementById('source-dur-' + id);
+    const pathEl = document.getElementById('source-path-' + id);
+    const audioCh = getAudioCh(parseInt(id));
+    return {
+      name: nameEl ? nameEl.value : '',
+      dur: durEl ? durEl.value : '',
+      path: pathEl ? pathEl.value : '',
+      audioCh
+    };
+  });
+
+  data.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+  rows.forEach((row, i) => {
+    const id = row.id.replace('source-row-', '');
+    const nameEl = document.getElementById('source-name-' + id);
+    const durEl = document.getElementById('source-dur-' + id);
+    const pathEl = document.getElementById('source-path-' + id);
+    const numEl = row.querySelector('.source-num');
+
+    if (nameEl) nameEl.value = data[i].name;
+    if (durEl) durEl.value = data[i].dur;
+    if (pathEl) pathEl.value = data[i].path || '';
+    if (numEl) numEl.textContent = String(i + 1).padStart(2, '0');
+  });
+
+  updateSources();
+}
+
 // ── VÉRIFICATION COHÉRENCE DURÉE MP3 VS SOURCES ──────────────────────────────
 function checkAudioDurationVsSources(audioDurSec) {
   if (!sources || sources.length === 0) return; // pas de sources déclarées
@@ -2521,74 +2589,7 @@ function checkAudioDurationVsSources(audioDurSec) {
   if (whisperStatus) whisperStatus.parentNode.insertBefore(msg, whisperStatus.nextSibling);
 }
 
-function addSourceWithData(filename, durationSec) {
-  addSource();
 
-  const nameEl = document.getElementById('source-name-' + sourceCount);
-  const durEl = document.getElementById('source-dur-' + sourceCount);
-
-  if (nameEl) nameEl.value = filename;
-
-  if (durEl && durationSec) {
-    const fps = sequenceFPS || 25;
-    const totalFrames = Math.floor(durationSec * fps);
-    const frames = totalFrames % fps;
-    const totalSec = Math.floor(durationSec);
-    const hh = String(Math.floor(totalSec / 3600)).padStart(2, '0');
-    const mm = String(Math.floor((totalSec % 3600) / 60)).padStart(2, '0');
-    const ss = String(totalSec % 60).padStart(2, '0');
-    const ff = String(frames).padStart(2, '0');
-    durEl.value = hh + ':' + mm + ':' + ss + ':' + ff;
-    formatDurInput(durEl);
-  }
-
-  updateSources();
-  sortSourcesByName(); // Retrie automatiquement après chaque ajout
-  showToast('🎬 ' + filename + (durationSec ? ' · ' + secToMin(durationSec) : ' · durée non lisible'));
-}
-
-function sortSourcesByName() {
-  // Collecte toutes les données des lignes sources existantes
-  const list = document.getElementById('sourcesList');
-  if (!list) return;
-
-  const rows = Array.from(list.querySelectorAll('.source-row'));
-  if (rows.length < 2) return;
-
-  // Extrait nom + durée + path + audio de chaque ligne
-  const data = rows.map(row => {
-    const id = row.id.replace('source-row-', '');
-    const nameEl = document.getElementById('source-name-' + id);
-    const durEl = document.getElementById('source-dur-' + id);
-    const pathEl = document.getElementById('source-path-' + id);
-    const audioCh = getAudioCh(parseInt(id));
-    return {
-      name: nameEl ? nameEl.value : '',
-      dur: durEl ? durEl.value : '',
-      path: pathEl ? pathEl.value : '',
-      audioCh
-    };
-  });
-
-  // Trie par nom de fichier alphabétiquement
-  data.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
-
-  // Réécrit les valeurs dans les lignes (dans l'ordre DOM existant)
-  rows.forEach((row, i) => {
-    const id = row.id.replace('source-row-', '');
-    const nameEl = document.getElementById('source-name-' + id);
-    const durEl = document.getElementById('source-dur-' + id);
-    const pathEl = document.getElementById('source-path-' + id);
-    const numEl = row.querySelector('.source-num');
-
-    if (nameEl) nameEl.value = data[i].name;
-    if (durEl) durEl.value = data[i].dur;
-    if (pathEl) pathEl.value = data[i].path || '';
-    if (numEl) numEl.textContent = String(i + 1).padStart(2, '0');
-  });
-
-  updateSources();
-}
 
 function addSource() {
   sourceCount++;
@@ -2785,7 +2786,7 @@ function parseSRT(text, filename) {
   ).join('') + `<span style="color:var(--muted2)">... ${parsedSRT.length-5} blocs de plus</span>`;
   preview.classList.add('visible');
 
-  // V5.118 — Affiche le viewer SRT interactif complet
+  // V5.125 — Affiche le viewer SRT interactif complet
   renderSRTViewer();
 
   dz.querySelector('.drop-main').textContent = '✓ ' + filename;
@@ -2852,7 +2853,7 @@ function analyzeRushQuality() {
   if (window._audioFile) analyzeAudioQuality(window._audioFile);
 }
 
-// ── V5.118 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
+// ── V5.125 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
 async function analyzeAudioQuality(file) {
   const badge = document.getElementById('audioQualityBadge');
   try {
@@ -2955,7 +2956,7 @@ async function analyzeAudioQuality(file) {
   }
 }
 
-// ── V5.118 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
+// ── V5.125 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
 let _srtSelection = null; // { startIdx, endIdx, startSec, endSec, text }
 
 function renderSRTViewer() {
@@ -3036,7 +3037,7 @@ function onSRTSelection() {
   const text = parsedSRT.slice(from, to + 1).map(b => b.text).join(' ');
   const dur = endSec - startSec;
 
-  // V5.118 — Affine avec word timestamps si disponibles
+  // V5.125 — Affine avec word timestamps si disponibles
   let adjStartSec = startSec;
   let adjEndSec = endSec;
   if (window._whisperWords && window._whisperWords.length) {
@@ -3482,7 +3483,7 @@ Réponds UNIQUEMENT en JSON :
       // Stocke l'original pour restauration
       if (!seg._original) seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
 
-      // V5.118 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
+      // V5.125 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
       let newStartSec = startSec;
       let newEndSec = endSec;
       let tcSource = 'proportionnel';
@@ -3699,7 +3700,7 @@ function onSegTextSelection(e, ch, idx) {
   const segEndSec = tcToSec((seg.end || '').replace(',', '.'));
   const totalDur = segEndSec - segStartSec;
 
-  // V5.118 — Cherche d'abord dans les word timestamps précis
+  // V5.125 — Cherche d'abord dans les word timestamps précis
   let newStartSec = segStartSec + (start / Math.max(1, fullText.length)) * totalDur;
   let newEndSec = segStartSec + (end / Math.max(1, fullText.length)) * totalDur;
 
@@ -4322,7 +4323,7 @@ function calcPerfScore(channelKey, segments, accroches, totalSec) {
   };
 }
 
-// ── V5.118 — REVALIDATION CLAUDE ───────────────────────────────────────────────
+// ── V5.125 — REVALIDATION CLAUDE ───────────────────────────────────────────────
 // Détecte les répétitions dans un texte (mots > 3 lettres répétés)
 function detectRepetitionsInText(text) {
   const repetitions = [];
@@ -4492,7 +4493,7 @@ async function runStep3() {
       await runModeC(key);
     }
 
-    // ── V5.118 — Revalidation Claude ──────────────────────────────────────────
+    // ── V5.125 — Revalidation Claude ──────────────────────────────────────────
     if (rawResult) {
       btn.querySelector('.btn-text').textContent = '⚙️ Revalidation…';
       rawResult = await revalidateResult(key, rawResult);
@@ -5505,7 +5506,7 @@ function finalizeResults() {
     });
     const allSegs = [...accrocheSegs, ...bodySegs];
 
-    // V5.118 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
+    // V5.125 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
     if (window._whisperWords && window._whisperWords.length) {
       allSegs.forEach(seg => {
         if (seg._trimmed || seg.isManual) return;
@@ -5901,9 +5902,10 @@ function startNewScript() {
     : '🎙 Colle ton nouveau script et relance';
   showToast(cacheMsg);
 }
+// ── BUILD CHANNEL RESULT HTML ─────────────────────────────────────────────────
+function buildChannelResultHTML(ch, data, cfg) {
   const { segments, editorial_note, total_duration_sec, perf } = data;
 
-  // Arc bar
   const arcParts = ['accroche', 'intro', 'tension', 'développement', 'conclusion'];
   const presentArc = [...new Set(segments.map(s => s.arc_part).filter(Boolean))];
 
@@ -5915,7 +5917,6 @@ function startNewScript() {
   });
   arcBarHTML += '</div>';
 
-  // Performance block
   const priorityBadge = perf.isPriority ? ' <span style="font-size:10px;color:var(--accent);background:rgba(151,71,255,0.1);border:1px solid rgba(151,71,255,0.3);padding:2px 6px;border-radius:2px;letter-spacing:1px;">★ PRIORITAIRE</span>' : '';
   let perfHTML = `<div class="perf-block">
     <div class="perf-header">
@@ -5937,7 +5938,6 @@ function startNewScript() {
   }
   perfHTML += `</div>`;
 
-  // Segments
   let segsHTML = '<div class="segments-list">';
   segments.forEach((seg, i) => {
     const dur = seg.duration_sec || Math.max(0, tcToSec((seg.end || '').replace(',','.')) - tcToSec((seg.start || '').replace(',','.')));
@@ -5949,23 +5949,12 @@ function startNewScript() {
     if (seg.arc_part && !isAccroche) {
       const arcLower = seg.arc_part.toLowerCase();
       let arcClass = 'tag-arc';
-      // Match by keyword presence for flexible IA output
-      if (arcLower.includes('intro') || arcLower.includes('reveal') || arcLower.includes('ouverture') || arcLower.includes('credibilite')) {
-        arcClass = 'tag-arc-intro';
-      } else if (arcLower.includes('tension') || arcLower.includes('story') || arcLower.includes('intime') || arcLower.includes('conflit') || arcLower.includes('probleme')) {
-        arcClass = 'tag-arc-tension';
-      } else if (arcLower.includes('develop') || arcLower.includes('vision') || arcLower.includes('decision') || arcLower.includes('action') || arcLower.includes('convention') || arcLower.includes('argument') || arcLower.includes('motivation') || arcLower.includes('intimite')) {
-        arcClass = 'tag-arc-developpement';
-      } else if (arcLower.includes('conclu') || arcLower.includes('call') || arcLower.includes('chute') || arcLower.includes('fin') || arcLower.includes('partenariat')) {
-        arcClass = 'tag-arc-conclusion';
-      } else if (arcLower.includes('hook') || arcLower.includes('challenge') || arcLower.includes('cap')) {
-        arcClass = 'tag-arc-hook';
-      }
-      // Color fallback by position if no keyword match — cycle through colors
-      if (arcClass === 'tag-arc') {
-        const colors = ['tag-arc-intro','tag-arc-tension','tag-arc-developpement','tag-arc-conclusion','tag-arc-hook'];
-        arcClass = colors[Math.abs(seg.order || 0) % colors.length];
-      }
+      if (arcLower.includes('intro') || arcLower.includes('reveal') || arcLower.includes('ouverture') || arcLower.includes('credibilite')) arcClass = 'tag-arc-intro';
+      else if (arcLower.includes('tension') || arcLower.includes('story') || arcLower.includes('intime') || arcLower.includes('conflit') || arcLower.includes('probleme')) arcClass = 'tag-arc-tension';
+      else if (arcLower.includes('develop') || arcLower.includes('vision') || arcLower.includes('decision') || arcLower.includes('action') || arcLower.includes('convention') || arcLower.includes('argument') || arcLower.includes('motivation') || arcLower.includes('intimite')) arcClass = 'tag-arc-developpement';
+      else if (arcLower.includes('conclu') || arcLower.includes('call') || arcLower.includes('chute') || arcLower.includes('fin') || arcLower.includes('partenariat')) arcClass = 'tag-arc-conclusion';
+      else if (arcLower.includes('hook') || arcLower.includes('challenge') || arcLower.includes('cap')) arcClass = 'tag-arc-hook';
+      if (arcClass === 'tag-arc') { const colors = ['tag-arc-intro','tag-arc-tension','tag-arc-developpement','tag-arc-conclusion','tag-arc-hook']; arcClass = colors[Math.abs(seg.order || 0) % colors.length]; }
       tags.push(`<span class="seg-tag ${arcClass}">${seg.arc_part}</span>`);
     }
     if (seg.reordered) tags.push(`<span class="seg-tag tag-reorder">⚑ Réorganisé · ${seg.original_position||''}</span>`);
@@ -5976,15 +5965,11 @@ function startNewScript() {
     const dots = Array.from({length:5},(_,j)=>`<div class="dot ${j<(seg.score_force||3)?'on':''}"></div>`).join('');
     const label = isAccroche ? `A${i+1}` : String(seg.order||i);
 
-    // ── Source file tag ──────────────────────────────────────────────────────
     const segStartSec = tcToSec((seg.start || '').replace(',','.'));
     const segSource = sources.length ? getSourceForTC(segStartSec) : null;
-    // Fallback : si aucune source déclarée, n'affiche rien (pas le nom MP3)
-    const sourceTag = segSource
-      ? `<span style="font-size:10px;color:var(--muted);background:var(--surface3);border:1px solid var(--border);border-radius:2px;padding:1px 6px;margin-left:8px;letter-spacing:0.3px;">📁 ${segSource.name}</span>`
-      : (sources.length === 0 ? '' : '');
+    const sourceTag = segSource ? `<span style="font-size:10px;color:var(--muted);background:var(--surface3);border:1px solid var(--border);border-radius:2px;padding:1px 6px;margin-left:8px;letter-spacing:0.3px;">📁 ${segSource.name}</span>` : '';
 
-    segsHTML += `<div class="segment${isAccroche?' is-accroche':''}${(hasWarn||seg._editedText)?' has-warning':''}" 
+    segsHTML += `<div class="segment${isAccroche?' is-accroche':''}${(hasWarn||seg._editedText)?' has-warning':''}"
       draggable="true"
       data-ch="${ch}" data-idx="${i}"
       ondragstart="onSegDragStart(event,this)"
@@ -6008,7 +5993,6 @@ function startNewScript() {
           <button class="seg-trim-btn" onclick="applySegTrim('${ch}',${i})">✂️ Réduire au passage sélectionné</button>
           <button onclick="clearSegTrim('${ch}',${i})" style="background:transparent;border:1px solid var(--border);border-radius:2px;padding:3px 8px;color:var(--muted);font-size:10px;cursor:pointer;">✕</button>
         </div>
-        <!-- Waveform inline du segment -->
         <div id="seg-waveform-${ch}-${i}" style="display:none;margin-top:8px;">
           <div style="position:relative;height:80px;background:var(--surface3);border-radius:3px;overflow:hidden;cursor:pointer;" id="seg-wf-container-${ch}-${i}">
             <canvas id="seg-wf-canvas-${ch}-${i}" style="width:100%;height:80px;display:block;"></canvas>
@@ -6023,8 +6007,6 @@ function startNewScript() {
           </div>
         </div>
         ${seg._trimmed ? `<div style="margin-top:4px;"><button onclick="restoreSegment('${ch}',${i})" style="background:transparent;border:1px solid var(--border2);border-radius:2px;padding:3px 10px;color:var(--muted);font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">↩ Restaurer l'original</button></div>` : ''}
-
-        <!-- Prises alternatives Mode Script -->
         ${(window._scriptPrises && window._scriptPrises[ch] && window._scriptPrises[ch][i]) ? `
         <div id="prises-panel-${ch}-${i}" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
           <div style="font-size:10px;letter-spacing:1px;color:var(--muted2);margin-bottom:8px;font-family:'DM Mono',monospace;">3 PRISES DISPONIBLES — ÉCOUTE ET CHOISIS</div>
@@ -6033,8 +6015,6 @@ function startNewScript() {
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
                 <span style="font-size:10px;font-family:'DM Mono',monospace;color:${pi===0?'var(--accent)':'var(--muted2)'};">PRISE ${pi+1}${pi===0?' ★':''}</span>
                 <span style="font-size:10px;color:var(--muted2);">${prise.start} → ${prise.end}</span>
-                <span style="font-size:10px;color:var(--green);">Clarté ${prise.clarte||'?'}/5</span>
-                <span style="font-size:10px;color:var(--accent);">Énergie ${prise.energie||'?'}/5</span>
                 ${prise.energie_rms ? `<span style="font-size:10px;color:var(--muted2);">RMS ${prise.energie_rms.toFixed(3)}</span>` : ''}
               </div>
               <div style="font-size:12px;color:var(--text);margin-bottom:8px;line-height:1.5;">${prise.text||''}</div>
@@ -6046,7 +6026,6 @@ function startNewScript() {
             </div>
           `).join('')}
         </div>` : ''}
-
         <div class="seg-reason">${seg.reason||''}</div>
         ${hasWarn ? `<div class="seg-warning-detail">⚠ ${seg.warnings.join(' · ')}</div>` : ''}
       </div>
@@ -6063,7 +6042,6 @@ function startNewScript() {
   });
   segsHTML += '</div>';
 
-  // Always recalculate from segments to ensure accuracy after edits/deletions
   const total = segments.reduce((a,s) => a + (s.duration_sec || Math.max(0, tcToSec((s.end || '').replace(',','.')) - tcToSec((s.start || '').replace(',','.')))), 0) || total_duration_sec || 0;
 
   return `
@@ -6107,7 +6085,7 @@ function startNewScript() {
   `;
 }
 
-// ── BULK CLEAN — Descript-style ───────────────────────────────────────────────
+
 function bulkDeleteWarnings(ch) {
   if (!window._lastChannelResults || !window._lastChannelResults[ch]) return;
   const chData = window._lastChannelResults[ch];
@@ -6286,7 +6264,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.118 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.125 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
