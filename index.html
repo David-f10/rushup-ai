@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.130</title>
+<title>RUSHUP.AI V5.132</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -249,7 +249,7 @@ header {
 .srt-preview.visible { display: block; }
 .srt-preview .tc { color: #9F58F5; }
 
-/* ── V5.130 SRT VIEWER INTERACTIF ── */
+/* ── V5.132 SRT VIEWER INTERACTIF ── */
 .srt-viewer {
   margin-top: 12px;
   border: 1px solid var(--border);
@@ -1404,7 +1404,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <div id="mainApp" style="display:none;">
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.130</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.132</span></div>
   <div class="header-right">
     <span id="userGreeting" style="font-size:11px;color:var(--muted);margin-right:12px;"></span>
     <button id="adminResetBtn" onclick="adminReset()" style="display:none;background:transparent;border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--muted2);font-size:10px;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;margin-right:8px;" title="Reset expérience (admin)">↺ Reset</button>
@@ -1574,7 +1574,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
         <div class="stat"><div class="stat-val" id="stTakes">—</div><div class="stat-lbl">Prises est.</div></div>
       </div>
       <div class="srt-preview" id="srtPreview"></div>
-      <!-- V5.130 — SRT Viewer interactif -->
+      <!-- V5.132 — SRT Viewer interactif -->
       <div class="srt-viewer" id="srtViewer">
         <div class="srt-viewer-header">
           <span>📄 Transcript complet — surligne pour créer un segment</span>
@@ -2004,7 +2004,7 @@ async function transcribeWithWhisper(file) {
     const formData = new FormData();
     formData.append('file', file, file.name);
     formData.append('model', 'whisper-1');
-    formData.append('response_format', 'verbose_json'); // V5.130 — word timestamps mot par mot
+    formData.append('response_format', 'verbose_json'); // V5.132 — word timestamps mot par mot
     formData.append('timestamp_granularities[]', 'word');
     formData.append('language', 'fr');
     formData.append('temperature', '0');
@@ -2031,11 +2031,11 @@ async function transcribeWithWhisper(file) {
 
     const jsonData = await response.json();
 
-    // V5.130 — Construit parsedSRT mot par mot depuis word timestamps
+    // V5.132 — Construit parsedSRT mot par mot depuis word timestamps
     statusText.textContent = '⚙️ Traitement des timecodes mot par mot...';
 
     // Stocke les données brutes
-    window._whisperWords = (jsonData.words && jsonData.words.length) ? jsonData.words : [];
+    window._whisperWords = (jsonData.words && jsonData.words.length) ? removeWhisperLoops(jsonData.words) : [];
     window._whisperSegments = jsonData.segments || [];
 
     const wordSRT = buildWordTimestampSRT(jsonData);
@@ -2052,7 +2052,7 @@ async function transcribeWithWhisper(file) {
     try { localStorage.setItem('rushai_whisper_srt', wordSRT); } catch(e) {}
     parseSRT(wordSRT, file.name);
 
-    // V5.130 — Vérification cohérence durée MP3 vs sources déclarées
+    // V5.132 — Vérification cohérence durée MP3 vs sources déclarées
     const audioDur = jsonData.duration || (window._whisperWords.length > 0
       ? window._whisperWords[window._whisperWords.length - 1].end
       : 0);
@@ -2073,7 +2073,42 @@ function fileToBase64(file) {
   });
 }
 
-// ── V5.130 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
+// ── DÉTECTION BOUCLES WHISPER ────────────────────────────────────────────────
+function removeWhisperLoops(words) {
+  if (!words || words.length < 10) return words;
+  const cleaned = [];
+  let i = 0;
+  while (i < words.length) {
+    const w = (words[i].word || '').toLowerCase().trim();
+    // Détecte répétition consécutive du même mot
+    let repeatCount = 0, j = i;
+    while (j < words.length && (words[j].word || '').toLowerCase().trim() === w) { repeatCount++; j++; }
+    if (repeatCount > 8) {
+      console.warn('[Whisper] Boucle mot détectée "' + w + '" (' + repeatCount + 'x) — troncature à ' + i);
+      showToast('⚠️ Boucle Whisper détectée — transcript tronqué à ' + secToMin(words[i].start || 0));
+      break;
+    }
+    // Détecte répétition de séquence de 4 mots
+    if (i >= 4) {
+      const seq = words.slice(i - 4, i).map(ww => (ww.word || '').toLowerCase().trim()).join(' ');
+      let seqCount = 0, k = i;
+      while (k + 4 <= words.length) {
+        const s = words.slice(k, k + 4).map(ww => (ww.word || '').toLowerCase().trim()).join(' ');
+        if (s === seq) { seqCount++; k += 4; } else break;
+      }
+      if (seqCount > 3) {
+        console.warn('[Whisper] Boucle séquence "' + seq + '" (' + seqCount + 'x) — troncature');
+        showToast('⚠️ Boucle Whisper détectée — transcript tronqué à ' + secToMin(words[i].start || 0));
+        break;
+      }
+    }
+    cleaned.push(words[i]);
+    i++;
+  }
+  return cleaned;
+}
+
+// ── V5.132 — WORD TIMESTAMPS : construction SRT mot par mot ────────────────────
 function buildWordTimestampSRT(jsonData, maxChars) {
   maxChars = maxChars || 25;
   const words = jsonData.words || [];
@@ -2786,7 +2821,7 @@ function parseSRT(text, filename) {
   ).join('') + `<span style="color:var(--muted2)">... ${parsedSRT.length-5} blocs de plus</span>`;
   preview.classList.add('visible');
 
-  // V5.130 — Affiche le viewer SRT interactif complet
+  // V5.132 — Affiche le viewer SRT interactif complet
   renderSRTViewer();
 
   dz.querySelector('.drop-main').textContent = '✓ ' + filename;
@@ -2853,7 +2888,7 @@ function analyzeRushQuality() {
   if (window._audioFile) analyzeAudioQuality(window._audioFile);
 }
 
-// ── V5.130 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
+// ── V5.132 — DÉTECTION QUALITÉ AUDIO RÉELLE (Web Audio API) ────────────────────
 async function analyzeAudioQuality(file) {
   const badge = document.getElementById('audioQualityBadge');
   try {
@@ -2956,7 +2991,7 @@ async function analyzeAudioQuality(file) {
   }
 }
 
-// ── V5.130 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
+// ── V5.132 — SRT VIEWER INTERACTIF + SURLIGNAGE ────────────────────────────────
 let _srtSelection = null; // { startIdx, endIdx, startSec, endSec, text }
 
 function renderSRTViewer() {
@@ -3037,7 +3072,7 @@ function onSRTSelection() {
   const text = parsedSRT.slice(from, to + 1).map(b => b.text).join(' ');
   const dur = endSec - startSec;
 
-  // V5.130 — Affine avec word timestamps si disponibles
+  // V5.132 — Affine avec word timestamps si disponibles
   let adjStartSec = startSec;
   let adjEndSec = endSec;
   if (window._whisperWords && window._whisperWords.length) {
@@ -3483,7 +3518,7 @@ Réponds UNIQUEMENT en JSON :
       // Stocke l'original pour restauration
       if (!seg._original) seg._original = { start: seg.start, end: seg.end, text: seg.text, duration_sec: seg.duration_sec };
 
-      // V5.130 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
+      // V5.132 — Cherche les timecodes exacts du texte nettoyé dans _whisperWords
       let newStartSec = startSec;
       let newEndSec = endSec;
       let tcSource = 'proportionnel';
@@ -3700,7 +3735,7 @@ function onSegTextSelection(e, ch, idx) {
   const segEndSec = tcToSec((seg.end || '').replace(',', '.'));
   const totalDur = segEndSec - segStartSec;
 
-  // V5.130 — Cherche d'abord dans les word timestamps précis
+  // V5.132 — Cherche d'abord dans les word timestamps précis
   let newStartSec = segStartSec + (start / Math.max(1, fullText.length)) * totalDur;
   let newEndSec = segStartSec + (end / Math.max(1, fullText.length)) * totalDur;
 
@@ -4323,7 +4358,7 @@ function calcPerfScore(channelKey, segments, accroches, totalSec) {
   };
 }
 
-// ── V5.130 — REVALIDATION CLAUDE ───────────────────────────────────────────────
+// ── V5.132 — REVALIDATION CLAUDE ───────────────────────────────────────────────
 // Détecte les répétitions dans un texte (mots > 3 lettres répétés)
 function detectRepetitionsInText(text) {
   const repetitions = [];
@@ -4493,7 +4528,7 @@ async function runStep3() {
       await runModeC(key);
     }
 
-    // ── V5.130 — Revalidation Claude ──────────────────────────────────────────
+    // ── V5.132 — Revalidation Claude ──────────────────────────────────────────
     if (rawResult) {
       btn.querySelector('.btn-text').textContent = '⚙️ Revalidation…';
       rawResult = await revalidateResult(key, rawResult);
@@ -4774,14 +4809,22 @@ Réponds UNIQUEMENT en JSON valide :
       const formData = new FormData();
       formData.append('files', blob, 'audio.mp3');
 
-      // Upload direct vers HF
-      const uploadRes = await fetch(`${HF_SPACE_URL}/gradio_api/upload`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-        body: formData
-      });
-
-      console.log('[WhisperX] Upload status:', uploadRes.status);
+      // Upload direct vers HF — retry si 503 (space endormi)
+      let uploadRes;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) {
+          showToast('⏳ WhisperX se réveille, patience... (' + attempt + '/3)');
+          await new Promise(r => setTimeout(r, 15000));
+        }
+        uploadRes = await fetch(`${HF_SPACE_URL}/gradio_api/upload`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+        console.log('[WhisperX] Upload status (attempt ' + (attempt+1) + '):', uploadRes.status);
+        if (uploadRes.ok) break;
+        if (uploadRes.status !== 503) break; // autre erreur → pas la peine de retry
+      }
       if (!uploadRes.ok) { console.warn('[WhisperX] Upload échoué'); return null; }
 
       const uploadData = await uploadRes.json();
@@ -5554,7 +5597,7 @@ function finalizeResults() {
     });
     const allSegs = [...accrocheSegs, ...bodySegs];
 
-    // V5.130 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
+    // V5.132 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
     if (window._whisperWords && window._whisperWords.length) {
       allSegs.forEach(seg => {
         if (seg._trimmed || seg.isManual) return;
@@ -6312,7 +6355,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.130 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.132 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
@@ -6878,7 +6921,7 @@ async function callAPI(key, prompt) {
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
-      max_tokens: currentMode === 'C' ? 20000 : 6000,
+      max_tokens: currentMode === 'C' ? 8000 : 6000,
       temperature: window._reanalyzing ? 0.8 : 0,
       messages: [{ role: "user", content: prompt }]
     })
