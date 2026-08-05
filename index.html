@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.132</title>
+<title>RUSHUP.AI V5.135</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -1404,7 +1404,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <div id="mainApp" style="display:none;">
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.132</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.135</span></div>
   <div class="header-right">
     <span id="userGreeting" style="font-size:11px;color:var(--muted);margin-right:12px;"></span>
     <button id="adminResetBtn" onclick="adminReset()" style="display:none;background:transparent;border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--muted2);font-size:10px;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;margin-right:8px;" title="Reset expérience (admin)">↺ Reset</button>
@@ -2035,6 +2035,7 @@ async function transcribeWithWhisper(file) {
     statusText.textContent = '⚙️ Traitement des timecodes mot par mot...';
 
     // Stocke les données brutes
+    window._whisperWordsRaw = jsonData.words || []; // V5.135 — B2/B1 : conserve les words bruts (calibration seuils + prérequis reprise post-troncature)
     window._whisperWords = (jsonData.words && jsonData.words.length) ? removeWhisperLoops(jsonData.words) : [];
     window._whisperSegments = jsonData.segments || [];
 
@@ -2074,34 +2075,68 @@ function fileToBase64(file) {
 }
 
 // ── DÉTECTION BOUCLES WHISPER ────────────────────────────────────────────────
+// V5.134 — B2 : détection par densité de timecode (Stratégie 3).
+// Le signal PRIMAIRE est la densité temporelle : une hallucination entasse des
+// mots à une cadence physiquement impossible (timecodes qui stagnent/reculent),
+// indépendamment de la longueur du motif répété — ce qui corrige l'angle mort de
+// phase de l'ancienne détection textuelle (motifs de 3, 5, 6, 7 mots passaient).
+// Les deux détecteurs textuels sont conservés mais GATÉS : ils ne tranchent que
+// si un run dense est aussi présent. Conséquence : une répétition volontaire
+// (prises multiples, cadence normale) n'est JAMAIS tronquée → fin des faux positifs.
 function removeWhisperLoops(words) {
   if (!words || words.length < 10) return words;
+
+  const MIN_STEP = 0.10;      // V5.134 — cadence plancher (s) : écart début-à-début < MIN_STEP = pas "dense"
+  const RUN_THRESHOLD = 12;   // V5.134 — nb de pas denses consécutifs requis pour confirmer une boucle
+
+  // Timecode valide = nombre fini (0 accepté ; undefined / null / NaN = manquant)
+  const validTC = x => Number.isFinite(x);
+  const norm = ww => (ww.word || '').toLowerCase().trim();
+
   const cleaned = [];
   let i = 0;
   while (i < words.length) {
-    const w = (words[i].word || '').toLowerCase().trim();
-    // Détecte répétition consécutive du même mot
-    let repeatCount = 0, j = i;
-    while (j < words.length && (words[j].word || '').toLowerCase().trim() === w) { repeatCount++; j++; }
-    if (repeatCount > 8) {
-      console.warn('[Whisper] Boucle mot détectée "' + w + '" (' + repeatCount + 'x) — troncature à ' + i);
-      showToast('⚠️ Boucle Whisper détectée — transcript tronqué à ' + secToMin(words[i].start || 0));
+    // ── PRIMAIRE : run de pas denses en timecode ──────────────────────────────
+    // "pas dense" = écart début-à-début entre deux mots consécutifs < MIN_STEP
+    // (inclut ≤ 0 = timecodes qui stagnent/reculent). Protégé sur timecodes manquants.
+    let denseRun = 0, m = i + 1;
+    while (m < words.length) {
+      const prevStart = words[m - 1].start;
+      const curStart  = words[m].start;
+      if (!validTC(prevStart) || !validTC(curStart)) break; // timecode manquant → on ne compte pas (sécurité)
+      if (curStart - prevStart < MIN_STEP) { denseRun++; m++; } else break;
+    }
+
+    if (denseRun >= RUN_THRESHOLD) {
+      // ── Détecteurs TEXTUELS (gatés) : ne servent qu'à CARACTÉRISER la boucle ─
+      // Ils ne tranchent jamais seuls — on n'arrive ici que si le run dense existe.
+      const w = norm(words[i]);
+      let repeatCount = 0, j = i;
+      while (j < words.length && norm(words[j]) === w) { repeatCount++; j++; }
+
+      let seqCount = 0, seq = '';
+      if (i >= 4) {
+        seq = words.slice(i - 4, i).map(norm).join(' ');
+        let k = i;
+        while (k + 4 <= words.length) {
+          const s = words.slice(k, k + 4).map(norm).join(' ');
+          if (s === seq) { seqCount++; k += 4; } else break;
+        }
+      }
+
+      const tc = secToMin(validTC(words[i].start) ? words[i].start : 0);
+      if (repeatCount > 8) {
+        console.warn('[Whisper] Boucle mot détectée "' + w + '" (' + repeatCount + 'x, run dense ' + denseRun + ') — troncature à ' + i);
+      } else if (seqCount > 8) {
+        console.warn('[Whisper] Boucle séquence "' + seq + '" (' + seqCount + 'x, run dense ' + denseRun + ') — troncature à ' + i);
+      } else {
+        console.warn('[Whisper] Boucle timecode détectée (run dense ' + denseRun + ' mots) — troncature à ' + i);
+      }
+      showToast('⚠️ Boucle Whisper détectée — transcript tronqué à ' + tc);
       break;
     }
-    // Détecte répétition de séquence de 4 mots
-    if (i >= 4) {
-      const seq = words.slice(i - 4, i).map(ww => (ww.word || '').toLowerCase().trim()).join(' ');
-      let seqCount = 0, k = i;
-      while (k + 4 <= words.length) {
-        const s = words.slice(k, k + 4).map(ww => (ww.word || '').toLowerCase().trim()).join(' ');
-        if (s === seq) { seqCount++; k += 4; } else break;
-      }
-      if (seqCount > 3) {
-        console.warn('[Whisper] Boucle séquence "' + seq + '" (' + seqCount + 'x) — troncature');
-        showToast('⚠️ Boucle Whisper détectée — transcript tronqué à ' + secToMin(words[i].start || 0));
-        break;
-      }
-    }
+
+    // Pas de run dense → contenu légitime (y compris répétitions volontaires) : on garde.
     cleaned.push(words[i]);
     i++;
   }
@@ -3495,7 +3530,7 @@ Réponds UNIQUEMENT en JSON :
             'anthropic-dangerous-allow-browser': 'true'
           },
           body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
+            model: 'claude-sonnet-4-5', // V5.133 — B6 : migration modèle (claude-sonnet-4 déprécié)
             max_tokens: 500,
             messages: [{ role: 'user', content: prompt }]
           })
@@ -6355,7 +6390,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.132 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.135 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
@@ -6920,7 +6955,7 @@ async function callAPI(key, prompt) {
       "anthropic-dangerous-direct-browser-access": "true"
     },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-5", // V5.133 — B6 : migration modèle (claude-sonnet-4 déprécié)
       max_tokens: currentMode === 'C' ? 8000 : 6000,
       temperature: window._reanalyzing ? 0.8 : 0,
       messages: [{ role: "user", content: prompt }]
