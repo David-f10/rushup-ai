@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.135</title>
+<title>RUSHUP.AI V5.136</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -1404,7 +1404,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <div id="mainApp" style="display:none;">
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.135</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.136</span></div>
   <div class="header-right">
     <span id="userGreeting" style="font-size:11px;color:var(--muted);margin-right:12px;"></span>
     <button id="adminResetBtn" onclick="adminReset()" style="display:none;background:transparent;border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--muted2);font-size:10px;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;margin-right:8px;" title="Reset expérience (admin)">↺ Reset</button>
@@ -4745,6 +4745,7 @@ Réponds UNIQUEMENT en JSON valide, sans markdown :
     showToast('⚡ Timecodes affinés mot par mot — Mode A');
   }
 
+  refineAccroches(rawResult.accroches, wordsSourceA); // V5.136 — P1 : affine les accroches par matching texte (comme le corps)
   renderAccroches(rawResult.accroches);
 }
 
@@ -5161,6 +5162,42 @@ function findAllPassageOccurrences(text, wordsSource) {
   return deduped;
 }
 
+// V5.136 — P1 : affine les accroches par matching texte (Design 1), comme les segments de corps.
+// Spécificités accroche : (1) sélection par SCORE, pas RMS — on veut le passage qui correspond
+// à ce que Claude a désigné, pas le plus énergique ; (2) flag-and-keep — on garde l'accroche
+// même sans match, avec _matchedLocal=false ; (3) _matchScore exposé pour calibration (pas de
+// seuil de flag en v1) ; (4) duration_sec TOUJOURS recalculé (valeur Claude non fiable).
+// Ne touche jamais why / hook_type / rank.
+function refineAccroches(accroches, wordsSource) {
+  if (!accroches || !accroches.length || !wordsSource || !wordsSource.length) return;
+  accroches.forEach(a => {
+    const txt = (a && a.text) || '';
+    if (!txt) { if (a) { a._matchedLocal = false; a._matchScore = 0; } return; }
+    const occurrences = findAllPassageOccurrences(txt, wordsSource);
+    if (occurrences.length) {
+      // findAllPassageOccurrences retourne déjà trié par SCORE décroissant → occurrences[0] = meilleur match.
+      // PAS de re-tri RMS (contrairement à l'affinage corps).
+      const best = occurrences[0];
+      a.start = secToSRTTC(best.start);
+      a.end = secToSRTTC(best.end);
+      a.text = best.text;
+      a.duration_sec = best.end - best.start;
+      a._matchedLocal = true;
+      a._matchScore = best.score;
+      console.log('[Accroche] retrouvée · score=' + (best.score || 0).toFixed(2) + ' · ' + a.start + ' → ' + a.end + ' : "' + (best.text || '').slice(0, 60) + '"');
+    } else {
+      // Pas de match = probable chimère (assemblage de deux prises). On garde + on signale.
+      // duration_sec recalculé depuis le TC brut de Claude, par cohérence (TC non vérifié).
+      a._matchedLocal = false;
+      a._matchScore = 0;
+      const s = tcToSec((a.start || '').replace(',', '.'));
+      const e = tcToSec((a.end || '').replace(',', '.'));
+      if (Number.isFinite(s) && Number.isFinite(e) && e > s) a.duration_sec = e - s;
+      console.warn('[Accroche] NON retrouvée dans l\'audio (probable chimère) — "' + txt.slice(0, 60) + '" — TC brut conservé ' + a.start + ' → ' + a.end);
+    }
+  });
+}
+
 async function runModeB(key) {
   // Échantillonnage adaptatif selon la taille du SRT pour éviter les timeouts
   let sampledSRT;
@@ -5330,6 +5367,7 @@ Réponds UNIQUEMENT en JSON valide, sans markdown :
     }
 
     markDone('step4');
+    refineAccroches(rawResult.accroches, wordsSourceB); // V5.136 — P1 : affine les accroches par matching texte (comme le corps)
     renderAccroches(rawResult.accroches);
   } catch(err) {
     showError("Erreur : " + err.message);
@@ -5545,6 +5583,12 @@ function renderAccrocheVersion(vIdx) {
       '<div class="accroche-text">' + a.text + '</div>' +
       '<div class="accroche-tc">' + a.start + ' → ' + a.end + '</div>' +
       '<div class="accroche-why">' + (a.why||'') + '</div>' +
+      // V5.136 — P1 : diagnostic de matching visible (pas de seuil de flag en v1, calibration au tour suivant)
+      (a._matchScore !== undefined
+        ? '<div style="font-family:\'DM Mono\',monospace;font-size:9px;margin-top:5px;color:' + (a._matchedLocal ? 'var(--green)' : '#e6708a') + ';">' +
+            (a._matchedLocal ? '● retrouvée dans l\'audio · score ' + (a._matchScore||0).toFixed(2) : '○ non retrouvée — à vérifier (possible assemblage)') +
+          '</div>'
+        : '') +
       '</div>' +
       '<div class="accroche-dur">' + secToMin(a.duration_sec||0) + '</div>';
     card.addEventListener('click', () => {
@@ -5635,7 +5679,7 @@ function finalizeResults() {
     // V5.132 — Remplace texte Claude par texte Whisper RÉEL aux timecodes donnés
     if (window._whisperWords && window._whisperWords.length) {
       allSegs.forEach(seg => {
-        if (seg._trimmed || seg.isManual) return;
+        if (seg._trimmed || seg.isManual || seg._matchedLocal === true) return; // V5.136 — P1 : le matching (accroches + corps) fait autorité → pas de re-dérivation TC (élimine la dérive)
 
         const segStartSec = tcToSec((seg.start || '').replace(',', '.'));
         const segEndSec = tcToSec((seg.end || '').replace(',', '.'));
@@ -6390,7 +6434,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.135 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.136 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
