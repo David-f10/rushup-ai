@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.136</title>
+<title>RUSHUP.AI V5.137</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -1404,7 +1404,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <div id="mainApp" style="display:none;">
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.136</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.137</span></div>
   <div class="header-right">
     <span id="userGreeting" style="font-size:11px;color:var(--muted);margin-right:12px;"></span>
     <button id="adminResetBtn" onclick="adminReset()" style="display:none;background:transparent;border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--muted2);font-size:10px;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;margin-right:8px;" title="Reset expérience (admin)">↺ Reset</button>
@@ -6434,7 +6434,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.136 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.137 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
@@ -6697,180 +6697,19 @@ function exportXML(ch) {
   const scaleAVal = scaleAEl ? (parseFloat(scaleAEl.value) || 100) : 100;
   const scaleBVal = scaleBEl ? (parseFloat(scaleBEl.value) || 85) : 85;
 
-  let videoClips = '';
-  let audioClips = '';
-  let timelineOffset = 0;
-  let missingSources = [];
-  const declaredFileIds = new Set(); // track which <file> blocks have been fully declared
+  // V5.137 — P8 : variante de linkage testable sans second tour.
+  // window.RUSHUP_LINK_MODE = 'full' → ajoute les <link> de grouping A/V ; défaut 'none' = sourcetrack seul.
+  const linkMode = (window.RUSHUP_LINK_MODE === 'full') ? 'full' : 'none';
 
-  segs.forEach(function(seg, i) {
-    const startSec = tcToSec((seg.start || '').replace(',','.'));
-    const endSec = tcToSec((seg.end || '').replace(',','.'));
-    const duration = Math.max(0, endSec - startSec);
-    if (duration < 0.1) { console.warn('Segment trop court ignoré:', seg.start, seg.end); return; }
-
-    const source = getSourceForTC(startSec);
-    if (!source) {
-      console.warn('Source introuvable pour TC:', startSec);
-      missingSources.push(`TC ${seg.start} (segment ${i+1})`);
-      return;
-    }
-
-    const localStart = source.localTC;
-    const localEnd = localStart + duration;
-    const inFrames = Math.round(localStart * fps);
-    const outFrames = Math.round(localEnd * fps);
-    const startFrames = Math.round(timelineOffset * fps);
-    const endFrames = Math.round((timelineOffset + duration) * fps);
-    const clipDurFrames = outFrames - inFrames;
-    const fileId = "file-" + (source.sourceIndex + 1);
-    const clipName = source.name;
-    const srcDurFrames = Math.round(sources[source.sourceIndex].durationSec * fps);
-
-    // En XMEML, le bloc <file> complet n'est déclaré QU'UNE SEULE FOIS par source.
-    // Les clips suivants du même fichier utilisent juste <file id="file-X"/> (référence vide).
-    const alreadyDeclared = declaredFileIds.has(fileId);
-    if (!alreadyDeclared) declaredFileIds.add(fileId);
-
-    const fileBlock = alreadyDeclared
-      ? '            <file id="' + fileId + '"/>'
-      : '            <file id="' + fileId + '">\n' +
-        '              <n>' + clipName + '</n>\n' +
-        '              <pathurl>' + (source && source.path ? 'file://localhost' + source.path : 'file://localhost/' + clipName) + '</pathurl>\n' +
-        '              <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
-        '              <duration>' + srcDurFrames + '</duration>\n' +
-        '              <timecode>\n' +
-        '                <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
-        '                <string>00:00:00:00</string>\n' +
-        '                <frame>0</frame>\n' +
-        '                <displayformat>NDF</displayformat>\n' +
-        '              </timecode>\n' +
-        '              <media>\n' +
-        '                <video><samplecharacteristics><rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate><width>' + sequenceWidth + '</width><height>' + sequenceHeight + '</height></samplecharacteristics></video>\n' +
-        '                <audio><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate><channels>' + (source.audioChannels || 2) + '</channels></samplecharacteristics></audio>\n' +
-        '              </media>\n' +
-        '            </file>';
-
-    // ── Arc → Premiere label color ───────────────────────────────────────────
-    var arcLabel = (seg.arc_part || '').toLowerCase();
-    var clipLabel = 'Cerulean'; // défaut
-    if (seg.isAccroche) clipLabel = 'Violet';
-    else if (arcLabel.includes('intro') || arcLabel.includes('reveal') || arcLabel.includes('ouverture')) clipLabel = 'Iris';
-    else if (arcLabel.includes('tension') || arcLabel.includes('conflit') || arcLabel.includes('story')) clipLabel = 'Mango';
-    else if (arcLabel.includes('conclu') || arcLabel.includes('call') || arcLabel.includes('fin') || arcLabel.includes('partenariat')) clipLabel = 'Forest';
-    if (seg.warnings && seg.warnings.length > 0) clipLabel = 'Rose'; // IA détecte hésitation
-    if (seg._editedText) clipLabel = 'Rose'; // monteur a modifié le texte manuellement
-
-    const clipScale = (i % 2 === 0) ? scaleAVal : scaleBVal;
-    const buildClip = function(clipId) {
-      return '          <clipitem id="' + clipId + '">\n' +
-        '            <n>' + clipName + '</n>\n' +
-        '            <duration>' + clipDurFrames + '</duration>\n' +
-        '            <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
-        '            <start>' + startFrames + '</start>\n' +
-        '            <end>' + endFrames + '</end>\n' +
-        '            <in>' + inFrames + '</in>\n' +
-        '            <out>' + outFrames + '</out>\n' +
-        '            <labels><label2>' + clipLabel + '</label2></labels>\n' +
-        fileBlock + '\n' +
-        '            <filter>\n' +
-        '              <effect>\n' +
-        '                <n>Motion</n>\n' +
-        '                <effectid>basic</effectid>\n' +
-        '                <effecttype>motion</effecttype>\n' +
-        '                <mediatype>video</mediatype>\n' +
-        '                <parameter>\n' +
-        '                  <parameterid>scale</parameterid>\n' +
-        '                  <n>Scale</n>\n' +
-        '                  <value>' + clipScale + '</value>\n' +
-        '                </parameter>\n' +
-        '              </effect>\n' +
-        '            </filter>\n' +
-        '          </clipitem>';
-    };
-
-    videoClips += '\n' + buildClip('clipitem-v' + (i+1));
-    audioClips += '\n' + buildClip('clipitem-a' + (i+1));
-    timelineOffset += duration;
+  const built = buildSequenceXML({
+    ch: ch, cfg: cfg, segs: segs, sources: sources, fps: fps,
+    seqName: seqName, sequenceWidth: sequenceWidth, sequenceHeight: sequenceHeight,
+    scaleA: scaleAVal, scaleB: scaleBVal, linkMode: linkMode, getSourceForTC: getSourceForTC
   });
+  const xml = built.xml;
 
-  const totalFrames = Math.round(timelineOffset * fps);
-
-  // Build sequence markers — one per segment at timeline position
-  let markers = '';
-  let markerOffset = 0;
-  segs.forEach(function(seg, i) {
-    const segStart = tcToSec((seg.start || '').replace(',','.'));
-    const segEnd = tcToSec((seg.end || '').replace(',','.'));
-    const dur = Math.max(0, segEnd - segStart);
-    if (dur < 0.1) return;
-
-    const markerFrame = Math.round(markerOffset * fps);
-    const label = (seg.isAccroche ? "ACCROCHE" : (seg.arc_part || ("Segment " + (i+1)))).toUpperCase();
-    const shortText = (seg.text || '').substring(0, 60).replace(/[<>&"]/g, ' ');
-    const hasWarning = seg.warnings && seg.warnings.length > 0;
-    const comment = (hasWarning ? "[A NETTOYER] " : "") + shortText;
-
-    // Premiere marker colors: 0=red 1=orange 2=yellow 3=green 4=cyan 5=blue 6=purple 7=pink
-    var arcL = (seg.arc_part || '').toLowerCase();
-    var markerColor = 5; // blue default
-    if (seg.isAccroche) markerColor = 6; // purple
-    else if (arcL.includes('intro') || arcL.includes('reveal') || arcL.includes('ouverture')) markerColor = 5; // blue
-    else if (arcL.includes('tension') || arcL.includes('story') || arcL.includes('conflit')) markerColor = 0; // red
-    else if (arcL.includes('develop') || arcL.includes('action') || arcL.includes('vision') || arcL.includes('motivation') || arcL.includes('hook') || arcL.includes('challenge')) markerColor = 2; // yellow
-    else if (arcL.includes('conclu') || arcL.includes('call') || arcL.includes('fin') || arcL.includes('partenariat')) markerColor = 3; // green
-    if (hasWarning) markerColor = 1; // orange for cleanup
-
-    // Marker spans entire segment duration
-    const markerEndFrame = markerFrame + Math.round(dur * fps);
-
-    markers += '    <marker>\n' +
-      '      <name>' + label + '</name>\n' +
-      '      <comment>' + label + ' - ' + comment + '</comment>\n' +
-      '      <in>' + markerFrame + '</in>\n' +
-      '      <out>' + markerEndFrame + '</out>\n' +
-      '      <color>' + markerColor + '</color>\n' +
-      '    </marker>\n';
-
-    markerOffset += dur;
-  });
-
-  const xml = '<?xml version="1.0" encoding="UTF-8"?>\n' +
-    '<!DOCTYPE xmeml>\n' +
-    '<xmeml version="4">\n' +
-    '  <sequence id="seq-' + ch + '">\n' +
-    '    <n>' + seqName + '</n>\n' +
-    '    <duration>' + totalFrames + '</duration>\n' +
-    '    <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
-    '    <timecode>\n' +
-    '      <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
-    '      <string>00:00:00:00</string>\n' +
-    '      <frame>0</frame>\n' +
-    '      <displayformat>NDF</displayformat>\n' +
-    '    </timecode>\n' +
-    '    <media>\n' +
-    '      <video>\n' +
-    '        <format><samplecharacteristics>\n' +
-    '          <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
-    '          <width>' + sequenceWidth + '</width><height>' + sequenceHeight + '</height>\n' +
-    '          <pixelaspectratio>square</pixelaspectratio>\n' +
-    '          <fielddominance>none</fielddominance>\n' +
-    '        </samplecharacteristics></format>\n' +
-    '        <track>' + videoClips + '\n        </track>\n' +
-    '      </video>\n' +
-    '      <audio>\n' +
-    '        <numOutputChannels>' + (sources[0] ? (sources[0].audioChannels || 2) : 2) + '</numOutputChannels>\n' +
-    '        <format><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate><channels>' + (sources[0] ? (sources[0].audioChannels || 2) : 2) + '</channels></samplecharacteristics></format>\n' +
-    '        <track><enabled>TRUE</enabled><locked>FALSE</locked>' + audioClips + '\n        </track>\n' +
-    ((!sources[0] || (sources[0].audioChannels || 2) === 2) ? '        <track><enabled>TRUE</enabled><locked>FALSE</locked>\n        </track>\n' : '') +
-    '      </audio>\n' +
-    '    </media>\n' +
-    markers +
-    '  </sequence>\n' +
-    '</xmeml>';
-
-  if (missingSources.length) {
-    alert(`⚠ ${missingSources.length} segment(s) ignoré(s) — source introuvable :\n${missingSources.join('\n')}\n\nVérifie que les fichiers source sont déclarés dans l'étape 00 avec les bonnes durées.`);
+  if (built.missingSources.length) {
+    alert(`⚠ ${built.missingSources.length} segment(s) ignoré(s) — source introuvable :\n${built.missingSources.join('\n')}\n\nVérifie que les fichiers source sont déclarés dans l'étape 00 avec les bonnes durées.`);
   }
 
   const dateStr = new Date().toISOString().slice(0,10);
@@ -6899,6 +6738,242 @@ function exportXML(ch) {
 
   // Popup à chaque export
   setTimeout(() => showV6Waitlist(baseName), 1500);
+}
+
+// V5.137 — P8 : construction XMEML PURE (pas de DOM, pas de Blob) → testable hors Premiere.
+// Corrige les pistes audio : un clipitem par canal avec <sourcetrack>/<trackindex>, aucune
+// piste vide, aucun filtre Motion sur l'audio, <file> déclaré une seule fois (par la vidéo).
+// linkMode : 'none' (sourcetrack seul) | 'full' (+ <link> de grouping A/V, ajoutés aussi aux clips vidéo).
+// NE MODIFIE PAS la géométrie vidéo (in/out/start/end/scale/Motion inchangés). Périmètre v1 :
+// mono + stéréo mono-source. Multi-source hétérogène = limitation connue (piste = max des canaux).
+function buildSequenceXML(o) {
+  const ch = o.ch, cfg = o.cfg, segs = o.segs, sources = o.sources, fps = o.fps;
+  const seqName = o.seqName, sequenceWidth = o.sequenceWidth, sequenceHeight = o.sequenceHeight;
+  const scaleAVal = o.scaleA, scaleBVal = o.scaleB;
+  const linkMode = (o.linkMode === 'full') ? 'full' : 'none';
+  const getSourceForTC = o.getSourceForTC;
+
+  let videoClips = '';
+  const audioByTrack = {};   // { trackIndex: chaîne de clipitems }
+  let seqAudioCh = 1;
+  let markers = '';
+  let timelineOffset = 0;
+  let markerOffset = 0;
+  let emitted = 0;           // clipindex réel parmi les segments émis (gère les segments ignorés)
+  const missingSources = [];
+  const declaredFileIds = new Set();
+
+  function linkEl(ref, mtype, tIdx, cIdx) {
+    return '            <link>\n' +
+      '              <linkclipref>' + ref + '</linkclipref>\n' +
+      '              <mediatype>' + mtype + '</mediatype>\n' +
+      '              <trackindex>' + tIdx + '</trackindex>\n' +
+      '              <clipindex>' + cIdx + '</clipindex>\n' +
+      '            </link>\n';
+  }
+
+  segs.forEach(function(seg, i) {
+    const startSec = tcToSec((seg.start || '').replace(',','.'));
+    const endSec = tcToSec((seg.end || '').replace(',','.'));
+    const duration = Math.max(0, endSec - startSec);
+    if (duration < 0.1) { console.warn('Segment trop court ignoré:', seg.start, seg.end); return; }
+
+    const source = getSourceForTC(startSec);
+    if (!source) {
+      console.warn('Source introuvable pour TC:', startSec);
+      missingSources.push('TC ' + seg.start + ' (segment ' + (i+1) + ')');
+      return;
+    }
+
+    const srcObj = sources[source.sourceIndex] || {};
+    const srcAudioCh = Math.max(1, srcObj.audioChannels || 2);  // valeur RÉELLE par source (corrige le défaut mono)
+    if (srcAudioCh > seqAudioCh) seqAudioCh = srcAudioCh;
+
+    const localStart = source.localTC;
+    const localEnd = localStart + duration;
+    const inFrames = Math.round(localStart * fps);
+    const outFrames = Math.round(localEnd * fps);
+    const startFrames = Math.round(timelineOffset * fps);
+    const endFrames = Math.round((timelineOffset + duration) * fps);
+    const clipDurFrames = outFrames - inFrames;
+    const fileId = "file-" + (source.sourceIndex + 1);
+    const clipName = source.name;
+    const srcDurFrames = Math.round((srcObj.durationSec || 0) * fps);
+
+    const alreadyDeclared = declaredFileIds.has(fileId);
+    if (!alreadyDeclared) declaredFileIds.add(fileId);
+
+    // <file> complet déclaré UNE seule fois (par le clip vidéo) ; l'audio ne fait que référencer.
+    const fileBlockFull =
+      '            <file id="' + fileId + '">\n' +
+      '              <n>' + clipName + '</n>\n' +
+      '              <pathurl>' + (source && source.path ? 'file://localhost' + source.path : 'file://localhost/' + clipName) + '</pathurl>\n' +
+      '              <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
+      '              <duration>' + srcDurFrames + '</duration>\n' +
+      '              <timecode>\n' +
+      '                <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
+      '                <string>00:00:00:00</string>\n' +
+      '                <frame>0</frame>\n' +
+      '                <displayformat>NDF</displayformat>\n' +
+      '              </timecode>\n' +
+      '              <media>\n' +
+      '                <video><samplecharacteristics><rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate><width>' + sequenceWidth + '</width><height>' + sequenceHeight + '</height></samplecharacteristics></video>\n' +
+      '                <audio><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate><channels>' + srcAudioCh + '</channels></samplecharacteristics></audio>\n' +
+      '              </media>\n' +
+      '            </file>';
+    const fileRef = '            <file id="' + fileId + '"/>';
+    const videoFileBlock = alreadyDeclared ? fileRef : fileBlockFull;
+
+    // ── Arc → couleur de label (inchangé) ────────────────────────────────────
+    var arcLabel = (seg.arc_part || '').toLowerCase();
+    var clipLabel = 'Cerulean';
+    if (seg.isAccroche) clipLabel = 'Violet';
+    else if (arcLabel.includes('intro') || arcLabel.includes('reveal') || arcLabel.includes('ouverture')) clipLabel = 'Iris';
+    else if (arcLabel.includes('tension') || arcLabel.includes('conflit') || arcLabel.includes('story')) clipLabel = 'Mango';
+    else if (arcLabel.includes('conclu') || arcLabel.includes('call') || arcLabel.includes('fin') || arcLabel.includes('partenariat')) clipLabel = 'Forest';
+    if (seg.warnings && seg.warnings.length > 0) clipLabel = 'Rose';
+    if (seg._editedText) clipLabel = 'Rose';
+
+    const clipScale = (i % 2 === 0) ? scaleAVal : scaleBVal;
+    const n = i + 1;
+    emitted++;
+    const k = emitted;
+
+    // Bloc <link> partagé (mode 'full' uniquement) : vidéo + tous les canaux audio du segment.
+    let linkBlock = '';
+    if (linkMode === 'full') {
+      linkBlock += linkEl('clipitem-v' + n, 'video', 1, k);
+      for (var lc = 1; lc <= srcAudioCh; lc++) linkBlock += linkEl('clipitem-a' + n + '-' + lc, 'audio', lc, k);
+    }
+
+    // ── Clip VIDÉO (géométrie inchangée ; linkBlock vide en mode 'none' → sortie identique) ──
+    const videoClip =
+      '          <clipitem id="clipitem-v' + n + '">\n' +
+      '            <n>' + clipName + '</n>\n' +
+      '            <duration>' + clipDurFrames + '</duration>\n' +
+      '            <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
+      '            <start>' + startFrames + '</start>\n' +
+      '            <end>' + endFrames + '</end>\n' +
+      '            <in>' + inFrames + '</in>\n' +
+      '            <out>' + outFrames + '</out>\n' +
+      '            <labels><label2>' + clipLabel + '</label2></labels>\n' +
+      videoFileBlock + '\n' +
+      '            <filter>\n' +
+      '              <effect>\n' +
+      '                <n>Motion</n>\n' +
+      '                <effectid>basic</effectid>\n' +
+      '                <effecttype>motion</effecttype>\n' +
+      '                <mediatype>video</mediatype>\n' +
+      '                <parameter>\n' +
+      '                  <parameterid>scale</parameterid>\n' +
+      '                  <n>Scale</n>\n' +
+      '                  <value>' + clipScale + '</value>\n' +
+      '                </parameter>\n' +
+      '              </effect>\n' +
+      '            </filter>\n' +
+      linkBlock +
+      '          </clipitem>';
+    videoClips += '\n' + videoClip;
+
+    // ── Clips AUDIO : un par canal, <sourcetrack>/<trackindex>, PAS de filtre Motion ──
+    for (var c = 1; c <= srcAudioCh; c++) {
+      const audioClip =
+        '          <clipitem id="clipitem-a' + n + '-' + c + '">\n' +
+        '            <n>' + clipName + '</n>\n' +
+        '            <duration>' + clipDurFrames + '</duration>\n' +
+        '            <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
+        '            <start>' + startFrames + '</start>\n' +
+        '            <end>' + endFrames + '</end>\n' +
+        '            <in>' + inFrames + '</in>\n' +
+        '            <out>' + outFrames + '</out>\n' +
+        '            <labels><label2>' + clipLabel + '</label2></labels>\n' +
+        fileRef + '\n' +
+        '            <sourcetrack><mediatype>audio</mediatype><trackindex>' + c + '</trackindex></sourcetrack>\n' +
+        linkBlock +
+        '          </clipitem>';
+      audioByTrack[c] = (audioByTrack[c] || '') + '\n' + audioClip;
+    }
+
+    timelineOffset += duration;
+  });
+
+  const totalFrames = Math.round(timelineOffset * fps);
+
+  // ── Markers (inchangé) ──────────────────────────────────────────────────────
+  segs.forEach(function(seg, i) {
+    const segStart = tcToSec((seg.start || '').replace(',','.'));
+    const segEnd = tcToSec((seg.end || '').replace(',','.'));
+    const dur = Math.max(0, segEnd - segStart);
+    if (dur < 0.1) return;
+
+    const markerFrame = Math.round(markerOffset * fps);
+    const label = (seg.isAccroche ? "ACCROCHE" : (seg.arc_part || ("Segment " + (i+1)))).toUpperCase();
+    const shortText = (seg.text || '').substring(0, 60).replace(/[<>&"]/g, ' ');
+    const hasWarning = seg.warnings && seg.warnings.length > 0;
+    const comment = (hasWarning ? "[A NETTOYER] " : "") + shortText;
+
+    var arcL = (seg.arc_part || '').toLowerCase();
+    var markerColor = 5;
+    if (seg.isAccroche) markerColor = 6;
+    else if (arcL.includes('intro') || arcL.includes('reveal') || arcL.includes('ouverture')) markerColor = 5;
+    else if (arcL.includes('tension') || arcL.includes('story') || arcL.includes('conflit')) markerColor = 0;
+    else if (arcL.includes('develop') || arcL.includes('action') || arcL.includes('vision') || arcL.includes('motivation') || arcL.includes('hook') || arcL.includes('challenge')) markerColor = 2;
+    else if (arcL.includes('conclu') || arcL.includes('call') || arcL.includes('fin') || arcL.includes('partenariat')) markerColor = 3;
+    if (hasWarning) markerColor = 1;
+
+    const markerEndFrame = markerFrame + Math.round(dur * fps);
+
+    markers += '    <marker>\n' +
+      '      <name>' + label + '</name>\n' +
+      '      <comment>' + label + ' - ' + comment + '</comment>\n' +
+      '      <in>' + markerFrame + '</in>\n' +
+      '      <out>' + markerEndFrame + '</out>\n' +
+      '      <color>' + markerColor + '</color>\n' +
+      '    </marker>\n';
+
+    markerOffset += dur;
+  });
+
+  // ── Section AUDIO : une <track> RÉELLE par canal (aucune piste vide) ─────────
+  let audioTracksXml = '';
+  for (var t = 1; t <= seqAudioCh; t++) {
+    audioTracksXml += '        <track><enabled>TRUE</enabled><locked>FALSE</locked>' + (audioByTrack[t] || '') + '\n        </track>\n';
+  }
+
+  const xml = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<!DOCTYPE xmeml>\n' +
+    '<xmeml version="4">\n' +
+    '  <sequence id="seq-' + ch + '">\n' +
+    '    <n>' + seqName + '</n>\n' +
+    '    <duration>' + totalFrames + '</duration>\n' +
+    '    <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
+    '    <timecode>\n' +
+    '      <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
+    '      <string>00:00:00:00</string>\n' +
+    '      <frame>0</frame>\n' +
+    '      <displayformat>NDF</displayformat>\n' +
+    '    </timecode>\n' +
+    '    <media>\n' +
+    '      <video>\n' +
+    '        <format><samplecharacteristics>\n' +
+    '          <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
+    '          <width>' + sequenceWidth + '</width><height>' + sequenceHeight + '</height>\n' +
+    '          <pixelaspectratio>square</pixelaspectratio>\n' +
+    '          <fielddominance>none</fielddominance>\n' +
+    '        </samplecharacteristics></format>\n' +
+    '        <track>' + videoClips + '\n        </track>\n' +
+    '      </video>\n' +
+    '      <audio>\n' +
+    '        <numOutputChannels>' + seqAudioCh + '</numOutputChannels>\n' +
+    '        <format><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate><channels>' + seqAudioCh + '</channels></samplecharacteristics></format>\n' +
+    audioTracksXml +
+    '      </audio>\n' +
+    '    </media>\n' +
+    markers +
+    '  </sequence>\n' +
+    '</xmeml>';
+
+  return { xml: xml, missingSources: missingSources };
 }
 
 // ── HISTORY ───────────────────────────────────────────────────────────────────
