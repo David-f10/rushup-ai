@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.138</title>
+<title>RUSHUP.AI V5.140</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -1404,7 +1404,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <div id="mainApp" style="display:none;">
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.138</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.140</span></div>
   <div class="header-right">
     <span id="userGreeting" style="font-size:11px;color:var(--muted);margin-right:12px;"></span>
     <button id="adminResetBtn" onclick="adminReset()" style="display:none;background:transparent;border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--muted2);font-size:10px;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;margin-right:8px;" title="Reset expérience (admin)">↺ Reset</button>
@@ -2682,6 +2682,9 @@ function addSource() {
     <input class="source-input" type="text" placeholder="/Volumes/Disque/RUSHES/FX30001.mp4 (optionnel)" id="source-path-${idx}"
       style="grid-column:1/-1;font-size:10px;color:var(--muted);margin-top:-4px;"
       title="Chemin absolu optionnel — permet à Premiere de lier automatiquement le média sans clic droit">
+    <input class="source-input" type="text" placeholder="TC départ HH:MM:SS:FF (optionnel — défaut 00:00:00:00)" id="source-tc-${idx}"
+      style="grid-column:1/-1;font-size:10px;color:var(--muted);margin-top:-4px;text-align:center;"
+      title="Timecode de départ embarqué du rush (caméra). Laisser vide si le fichier démarre à 00:00:00:00.">
   `;
   list.appendChild(row);
   updateSources();
@@ -2697,6 +2700,15 @@ function addSource() {
     // Only allow digits
     if (e.key && !/\d/.test(e.key)) e.preventDefault();
   });
+  // V5.140 — P10 : champ TC de départ (même formateur HH:MM:SS:FF que la durée)
+  const tcEl = document.getElementById(`source-tc-${idx}`);
+  if (tcEl) {
+    tcEl.addEventListener('input', function() { formatDurInput(this); updateSources(); });
+    tcEl.addEventListener('keydown', function(e) {
+      if ([8,46,9,27,37,38,39,40].indexOf(e.keyCode) !== -1) return;
+      if (e.key && !/\d/.test(e.key)) e.preventDefault();
+    });
+  }
 }
 
 function setAudioCh(idx, ch, btn) {
@@ -2751,7 +2763,9 @@ function updateSources() {
     const audioChannels = getAudioCh(i);
     const pathEl = document.getElementById(`source-path-${i}`);
     const path = pathEl ? pathEl.value.trim() : '';
-    sources.push({ name, durationSec, offset: cumulativeSec, audioChannels, path });
+    const tcEl = document.getElementById(`source-tc-${i}`);       // V5.140 — P10 : TC de départ manuel par source
+    const startTC = tcEl ? tcEl.value.trim() : '';
+    sources.push({ name, durationSec, offset: cumulativeSec, audioChannels, path, startTC });
     cumulativeSec += durationSec;
   }
 
@@ -6434,7 +6448,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.138 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.140 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
@@ -6689,7 +6703,25 @@ function exportXML(ch) {
   const cfg = CHANNEL_CONFIG[ch];
   const fps = sequenceFPS || 25;
   const rushName = (currentFilename || 'rush').replace(/\.srt$/i, '').replace(/\.txt$/i, '');
-  const seqName = rushName + " — " + cfg.name + " — " + new Date().toLocaleDateString('fr');
+
+  // V5.139 — P11 : version + nom calculés AVANT le nom de séquence, une seule incrémentation,
+  // partagée entre le nom de fichier et le <name> de la séquence (sinon fichier _v2 / séquence _v1).
+  const dateStr = new Date().toISOString().slice(0,10);
+  const projectRaw = (document.getElementById('projectNameInput') ? document.getElementById('projectNameInput').value.trim() : '') || 'RUSHUP';
+  const projectName = projectRaw.toUpperCase().replace(/[^A-Z0-9_]/g, '_') || 'RUSHUP';
+  const chName = (cfg.name || ch).toUpperCase().replace(/[^A-Z0-9]/g, '_');
+  const exportKey = 'rushup_export_' + projectName + '_' + chName + '_' + dateStr;
+  let versionNum = 1;
+  try {
+    const savedV = parseInt(localStorage.getItem(exportKey) || '0');
+    versionNum = savedV + 1;
+    localStorage.setItem(exportKey, String(versionNum));
+  } catch(e) {}
+  const versionStr = 'v' + versionNum;
+  const baseName = 'RUSHUP_' + projectName + '_' + chName + '_' + versionStr + '_' + dateStr;
+
+  // V5.139 — P11 : nom de séquence = PROJET_CANAL_vN (même projectName + versionNum que le fichier).
+  const seqName = projectName + '_' + chName + '_' + versionStr;
 
   // Read scale values from inputs (safe fallback)
   const scaleAEl = document.getElementById('scaleA');
@@ -6700,36 +6732,19 @@ function exportXML(ch) {
   // V5.137 — P8 : variante de linkage testable sans second tour.
   // window.RUSHUP_LINK_MODE = 'full' → ajoute les <link> de grouping A/V ; défaut 'none' = sourcetrack seul.
   const linkMode = (window.RUSHUP_LINK_MODE === 'full') ? 'full' : 'none';
+  // V5.140 — P10 : window.RUSHUP_TC_MODE = 'relative' pour tester la 2e interprétation ; défaut 'absolute'.
+  const tcMode = (window.RUSHUP_TC_MODE === 'relative') ? 'relative' : 'absolute';
 
   const built = buildSequenceXML({
     ch: ch, cfg: cfg, segs: segs, sources: sources, fps: fps,
     seqName: seqName, sequenceWidth: sequenceWidth, sequenceHeight: sequenceHeight,
-    scaleA: scaleAVal, scaleB: scaleBVal, linkMode: linkMode, getSourceForTC: getSourceForTC
+    scaleA: scaleAVal, scaleB: scaleBVal, linkMode: linkMode, tcMode: tcMode, getSourceForTC: getSourceForTC
   });
   const xml = built.xml;
 
   if (built.missingSources.length) {
     alert(`⚠ ${built.missingSources.length} segment(s) ignoré(s) — source introuvable :\n${built.missingSources.join('\n')}\n\nVérifie que les fichiers source sont déclarés dans l'étape 00 avec les bonnes durées.`);
   }
-
-  const dateStr = new Date().toISOString().slice(0,10);
-
-  // Nom de projet + canal + version auto-incrémentée
-  const projectRaw = (document.getElementById('projectNameInput') ? document.getElementById('projectNameInput').value.trim() : '') || 'RUSHUP';
-  const projectName = projectRaw.toUpperCase().replace(/[^A-Z0-9_]/g, '_') || 'RUSHUP';
-  const chName = (cfg.name || ch).toUpperCase().replace(/[^A-Z0-9]/g, '_');
-
-  // Détecte la version — incrémente si déjà exporté aujourd'hui
-  const exportKey = 'rushup_export_' + projectName + '_' + chName + '_' + dateStr;
-  let versionNum = 1;
-  try {
-    const savedV = parseInt(localStorage.getItem(exportKey) || '0');
-    versionNum = savedV + 1;
-    localStorage.setItem(exportKey, String(versionNum));
-  } catch(e) {}
-
-  const versionStr = 'v' + versionNum;
-  const baseName = 'RUSHUP_' + projectName + '_' + chName + '_' + versionStr + '_' + dateStr;
 
   download(baseName + '.xml', xml, 'text/xml');
 
@@ -6752,6 +6767,23 @@ function buildSequenceXML(o) {
   const scaleAVal = o.scaleA, scaleBVal = o.scaleB;
   const linkMode = (o.linkMode === 'full') ? 'full' : 'none';
   const getSourceForTC = o.getSourceForTC;
+  // V5.140 — P10 : variante de timecode source testable sans second tour.
+  // 'absolute' = TC déclaré + in/out décalés du TC de départ ; 'relative' = TC déclaré, in/out inchangés.
+  const tcMode = (o.tcMode === 'relative') ? 'relative' : 'absolute';
+
+  // V5.140 — P10 : conversion timecode SMPTE "HH:MM:SS:FF" ↔ frames (vide/invalide → 0 = cas TC nul inchangé).
+  const tcToFrames = (tc) => {
+    if (!tc) return 0;
+    const p = String(tc).split(':').map(x => parseInt(x, 10) || 0);
+    while (p.length < 4) p.push(0);   // padding à droite : [HH, MM, SS, FF]
+    return ((p[0] * 3600 + p[1] * 60 + p[2]) * fps) + p[3];
+  };
+  const framesToTC = (fr) => {
+    fr = Math.max(0, Math.round(fr));
+    const p2 = n => String(n).padStart(2, '0');
+    const ff = fr % fps, tot = Math.floor(fr / fps);
+    return p2(Math.floor(tot / 3600)) + ':' + p2(Math.floor(tot / 60) % 60) + ':' + p2(tot % 60) + ':' + p2(ff);
+  };
 
   let videoClips = '';
   const audioByTrack = {};   // { trackIndex: chaîne de clipitems }
@@ -6791,8 +6823,11 @@ function buildSequenceXML(o) {
 
     const localStart = source.localTC;
     const localEnd = localStart + duration;
-    const inFrames = Math.round(localStart * fps);
-    const outFrames = Math.round(localEnd * fps);
+    // V5.140 — P10 : TC de départ embarqué de CETTE source (par source, jamais sources[0]).
+    const startTCframes = tcToFrames(srcObj.startTC);
+    const tcOffset = (tcMode === 'absolute') ? startTCframes : 0;
+    const inFrames = Math.round(localStart * fps) + tcOffset;
+    const outFrames = Math.round(localEnd * fps) + tcOffset;
     const startFrames = Math.round(timelineOffset * fps);
     const endFrames = Math.round((timelineOffset + duration) * fps);
     const clipDurFrames = outFrames - inFrames;
@@ -6806,14 +6841,14 @@ function buildSequenceXML(o) {
     // <file> complet déclaré UNE seule fois (par le clip vidéo) ; l'audio ne fait que référencer.
     const fileBlockFull =
       '            <file id="' + fileId + '">\n' +
-      '              <n>' + clipName + '</n>\n' +
+      '              <name>' + clipName + '</name>\n' +
       '              <pathurl>' + (source && source.path ? 'file://localhost' + source.path : 'file://localhost/' + clipName) + '</pathurl>\n' +
       '              <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
       '              <duration>' + srcDurFrames + '</duration>\n' +
       '              <timecode>\n' +
       '                <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
-      '                <string>00:00:00:00</string>\n' +
-      '                <frame>0</frame>\n' +
+      '                <string>' + framesToTC(startTCframes) + '</string>\n' + // V5.140 — P10 : vrai TC de départ source
+      '                <frame>' + startTCframes + '</frame>\n' +
       '                <displayformat>NDF</displayformat>\n' +
       '              </timecode>\n' +
       '              <media>\n' +
@@ -6849,7 +6884,7 @@ function buildSequenceXML(o) {
     // ── Clip VIDÉO (géométrie inchangée ; linkBlock vide en mode 'none' → sortie identique) ──
     const videoClip =
       '          <clipitem id="clipitem-v' + n + '">\n' +
-      '            <n>' + clipName + '</n>\n' +
+      '            <name>' + clipName + '</name>\n' +
       '            <duration>' + clipDurFrames + '</duration>\n' +
       '            <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
       '            <start>' + startFrames + '</start>\n' +
@@ -6860,13 +6895,13 @@ function buildSequenceXML(o) {
       videoFileBlock + '\n' +
       '            <filter>\n' +
       '              <effect>\n' +
-      '                <n>Motion</n>\n' +
+      '                <name>Motion</name>\n' +
       '                <effectid>basic</effectid>\n' +
       '                <effecttype>motion</effecttype>\n' +
       '                <mediatype>video</mediatype>\n' +
       '                <parameter>\n' +
       '                  <parameterid>scale</parameterid>\n' +
-      '                  <n>Scale</n>\n' +
+      '                  <name>Scale</name>\n' +
       '                  <value>' + clipScale + '</value>\n' +
       '                </parameter>\n' +
       '              </effect>\n' +
@@ -6879,7 +6914,7 @@ function buildSequenceXML(o) {
     for (var c = 1; c <= srcAudioCh; c++) {
       const audioClip =
         '          <clipitem id="clipitem-a' + n + '-' + c + '">\n' +
-        '            <n>' + clipName + '</n>\n' +
+        '            <name>' + clipName + '</name>\n' +
         '            <duration>' + clipDurFrames + '</duration>\n' +
         '            <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
         '            <start>' + startFrames + '</start>\n' +
@@ -6944,7 +6979,7 @@ function buildSequenceXML(o) {
     '<!DOCTYPE xmeml>\n' +
     '<xmeml version="4">\n' +
     '  <sequence id="seq-' + ch + '">\n' +
-    '    <n>' + seqName + '</n>\n' +
+    '    <name>' + seqName + '</name>\n' +
     '    <duration>' + totalFrames + '</duration>\n' +
     '    <rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate>\n' +
     '    <timecode>\n' +
