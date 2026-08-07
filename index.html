@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RUSHUP.AI V5.137</title>
+<title>RUSHUP.AI V5.138</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
@@ -1404,7 +1404,7 @@ textarea::placeholder, input::placeholder { color: var(--muted2); font-style: it
 <div id="mainApp" style="display:none;">
 
 <header>
-  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.137</span></div>
+  <div class="logo">RUSHUP<span>.</span>AI <span class="version-badge">V5.138</span></div>
   <div class="header-right">
     <span id="userGreeting" style="font-size:11px;color:var(--muted);margin-right:12px;"></span>
     <button id="adminResetBtn" onclick="adminReset()" style="display:none;background:transparent;border:1px solid var(--border);border-radius:3px;padding:4px 10px;color:var(--muted2);font-size:10px;font-family:'Plus Jakarta Sans',sans-serif;cursor:pointer;margin-right:8px;" title="Reset expérience (admin)">↺ Reset</button>
@@ -6434,7 +6434,7 @@ function exportBrief(ch) {
   const segs = data.segments;
   const total = secToMin(data.total_duration_sec);
   const line = (c,n) => c.repeat(n);
-  let out = `RUSHUP.AI V5.137 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
+  let out = `RUSHUP.AI V5.138 — BRIEF DE MONTAGE\n${line('═',60)}\n`;
   out += `Canal : ${cfg.name}\nDate : ${new Date().toLocaleDateString('fr')}\nDurée totale : ${total}\nScore de performance : ${data.perf.total}/100\n${line('═',60)}\n\n`;
   out += `NOTE ÉDITORIALE\n${line('─',60)}\n${data.editorial_note}\n\n`;
   out += `ARC NARRATIF : intro → tension → développement → conclusion\n\n`;
@@ -6818,7 +6818,7 @@ function buildSequenceXML(o) {
       '              </timecode>\n' +
       '              <media>\n' +
       '                <video><samplecharacteristics><rate><timebase>' + fps + '</timebase><ntsc>FALSE</ntsc></rate><width>' + sequenceWidth + '</width><height>' + sequenceHeight + '</height></samplecharacteristics></video>\n' +
-      '                <audio><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate><channels>' + srcAudioCh + '</channels></samplecharacteristics></audio>\n' +
+      '                <audio><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate></samplecharacteristics><channelcount>' + srcAudioCh + '</channelcount></audio>\n' + // V5.138 — P8 : channelcount (frère de samplecharacteristics) au lieu de <channels> ignoré par Premiere
       '              </media>\n' +
       '            </file>';
     const fileRef = '            <file id="' + fileId + '"/>';
@@ -6965,7 +6965,7 @@ function buildSequenceXML(o) {
     '      </video>\n' +
     '      <audio>\n' +
     '        <numOutputChannels>' + seqAudioCh + '</numOutputChannels>\n' +
-    '        <format><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate><channels>' + seqAudioCh + '</channels></samplecharacteristics></format>\n' +
+    '        <format><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate></samplecharacteristics></format>\n' + // V5.138 — P8 : suppression du <channels> résiduel non-standard (le compte de séquence passe par numOutputChannels)
     audioTracksXml +
     '      </audio>\n' +
     '    </media>\n' +
