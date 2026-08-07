@@ -29,7 +29,7 @@ function gen(audioChannels, linkMode) {
   const sources = makeSources(audioChannels);
   return buildSequenceXML({
     ch: 'instagram_reels', cfg: { name: 'Instagram Reels' }, segs: SEGS, sources: sources, fps: 25,
-    seqName: 'TEST', sequenceWidth: 1080, sequenceHeight: 1920, scaleA: 100, scaleB: 85,
+    seqName: 'FC_VINTAGE_INSTAGRAM_REELS_v2', sequenceWidth: 1080, sequenceHeight: 1920, scaleA: 100, scaleB: 85,
     linkMode: linkMode || 'none', getSourceForTC: getSourceForTC(sources)
   }).xml;
 }
@@ -113,6 +113,13 @@ function runScenario(name, nCh) {
   const chCount = +(fileBlock.match(/<channelcount>(\d+)<\/channelcount>/) || [])[1];
   check('I7 · <file> <channelcount> == ' + nCh + ' (l\'élément que Premiere lit réellement)', chCount === nCh, 'channelcount=' + chCount);
   check('I7b · AUCUN <channels> dans tout le XML (balise fantôme éliminée partout)', !/<channels>/.test(xml), 'reste ' + (xml.match(/<channels>/g) || []).length);
+
+  // Invariant 8 (P11) — aucune balise <n> : uniquement <name> (noms visibles dans Premiere + relink possible)
+  check('I8 · aucune balise <n> dans le XML (P11 : <name> partout)', !/<n>/.test(xml), 'reste ' + (xml.match(/<n>/g) || []).length);
+
+  // Invariant 9 (P11) — la séquence porte un <name> non vide conforme à PROJET_CANAL_vN
+  const seqName = (xml.match(/<sequence[^>]*>\s*<name>([^<]+)<\/name>/) || [])[1] || '';
+  check('I9 · séquence <name> non vide conforme PROJET_CANAL_vN', /^[A-Z0-9_]+_v\d+$/.test(seqName), 'name="' + seqName + '"');
 }
 
 runScenario('SCÉNARIO A — mono déclaré mono', 1);
@@ -130,6 +137,52 @@ console.log('\nSCÉNARIO C — linkMode (stéréo)');
   check('linkMode "full" → 27 <link> (3 clips × 3 refs × 3 segments)', linksFull === 27, 'links=' + linksFull);
   check('linkMode "none" → sortie vidéo identique au sourcetrack seul (pas de <link> en vidéo)',
     !/<link>/.test(videoOf(none)));
+}
+
+// ── SCÉNARIO D — P10 : timecode source ────────────────────────────────────────
+console.log('\nSCÉNARIO D — P10 timecode source (TC départ 00:19:31:05)');
+{
+  const FPS = 25;
+  const TCSTR = '00:19:31:05';
+  const startTCframes = (0 * 3600 + 19 * 60 + 31) * FPS + 5; // 29280
+  const srcDurSec = 1800;
+  const srcDurFrames = srcDurSec * FPS;
+  const genTC = (tcMode, startTC) => {
+    const sources = [{ name: 'r.mp4', durationSec: srcDurSec, offset: 0, audioChannels: 2, startTC: startTC }];
+    return buildSequenceXML({
+      ch: 'x', cfg: { name: 'X' }, segs: SEGS, sources: sources, fps: FPS,
+      seqName: 'FC_X_v1', sequenceWidth: 1080, sequenceHeight: 1920, scaleA: 100, scaleB: 85,
+      linkMode: 'none', tcMode: tcMode, getSourceForTC: (t) => ({ name: 'r.mp4', localTC: t, sourceIndex: 0 })
+    }).xml;
+  };
+  const fileTC = xml => { const b = between(xml, '<file id="file-1">', '</file>'); return { str: (b.match(/<string>([^<]+)<\/string>/) || [])[1], frame: +(b.match(/<frame>(\d+)<\/frame>/) || [])[1] }; };
+  const beforeMarkers = xml => { const i = xml.indexOf('<marker>'); return i < 0 ? xml : xml.slice(0, i); };  // exclut les in/out des markers
+  const ins = xml => [...beforeMarkers(xml).matchAll(/<in>(\d+)<\/in>/g)].map(m => +m[1]);
+  const outs = xml => [...beforeMarkers(xml).matchAll(/<out>(\d+)<\/out>/g)].map(m => +m[1]);
+
+  const abs = genTC('absolute', TCSTR);
+  const rel = genTC('relative', TCSTR);
+
+  // I10 — les deux modes déclarent le VRAI TC dans le <file>
+  const tcA = fileTC(abs);
+  check('I10 · <file><timecode> == source (string ' + TCSTR + ' + frame ' + startTCframes + ')',
+    tcA.str === TCSTR && tcA.frame === startTCframes, 'string=' + tcA.str + ' frame=' + tcA.frame);
+
+  // I11 — mode absolute : tous les in/out dans l'intervalle média [TC, TC+durée] → relink OK
+  const lo = startTCframes, hi = startTCframes + srcDurFrames;
+  const insA = ins(abs), outsA = outs(abs);
+  const inRange = insA.length > 0 && insA.every(v => v >= lo && v <= hi) && outsA.every(v => v >= lo && v <= hi);
+  check('I11 · mode absolute : in/out dans [TC, TC+durée] (plus de noir au relink)', inRange, 'in=[' + insA + '] borne=[' + lo + ',' + hi + ']');
+
+  // Contraste — mode relative : in/out restent 0-based (hors intervalle média). Variante à départager dans Premiere.
+  check('· contraste : mode relative → in/out 0-based (in[0]=' + ins(rel)[0] + ' < TC ' + startTCframes + ')', ins(rel)[0] < startTCframes);
+
+  // I12 — cas TC nul : strictement identique à avant (file TC 00:00:00:00 + in/out relatifs), quel que soit le mode
+  const zAbs = genTC('absolute', ''), zRel = genTC('relative', '');
+  const tcZ = fileTC(zAbs);
+  check('I12 · TC nul : <file><timecode> 00:00:00:00, frame 0, in/out relatifs (cas simple inchangé)',
+    tcZ.str === '00:00:00:00' && tcZ.frame === 0 && ins(zAbs)[0] === ins(zRel)[0] && ins(zAbs)[0] < FPS * 60,
+    'string=' + tcZ.str + ' frame=' + tcZ.frame + ' in[0]=' + ins(zAbs)[0]);
 }
 
 console.log('\n──────────────────────────────');
