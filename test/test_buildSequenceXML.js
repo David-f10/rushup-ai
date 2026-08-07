@@ -66,12 +66,12 @@ function runScenario(name, nCh) {
   const aTracks = tracks(audio), vTracks = tracks(video);
   const N = SEGS.length;
 
-  // Invariant 1 — nb pistes audio == numOutputChannels == channels déclarés
+  // Invariant 1 — nb pistes audio == numOutputChannels (le <channels> de séquence est supprimé en V5.138 ;
+  // le compte de canaux de la séquence passe désormais uniquement par numOutputChannels)
   const numOut = +(audio.match(/<numOutputChannels>(\d+)<\/numOutputChannels>/) || [])[1];
-  const fmtCh = +(audio.match(/<channels>(\d+)<\/channels>/) || [])[1];
-  check('I1 · pistes audio == numOutputChannels == channels == ' + nCh,
-    aTracks.length === nCh && numOut === nCh && fmtCh === nCh,
-    'pistes=' + aTracks.length + ' numOut=' + numOut + ' channels=' + fmtCh);
+  check('I1 · pistes audio == numOutputChannels == ' + nCh,
+    aTracks.length === nCh && numOut === nCh,
+    'pistes=' + aTracks.length + ' numOut=' + numOut);
 
   // Invariant 2 — ZÉRO piste audio vide + N clipitems par piste (le défaut qui bloquait la prod)
   const counts = aTracks.map(countClipitems);
@@ -104,11 +104,15 @@ function runScenario(name, nCh) {
   check('I5 · vidéo intacte : ' + N + ' clips + timeline continue', vClips === N && cont,
     'clips=' + vClips + ' starts=[' + starts + '] ends=[' + ends + ']');
 
-  // Invariant 6 — <file> complet déclaré UNE fois ; channels == nCh
+  // Invariant 6 — <file> complet déclaré UNE seule fois (au lieu de 2)
   const fullFile = (xml.match(/<file id="file-1">/g) || []).length;      // ouverture avec enfants
-  const fileCh = +(between(xml, '<file id="file-1">', '</file>').match(/<channels>(\d+)<\/channels>/) || [])[1];
-  check('I6 · <file> complet déclaré 1× (au lieu de 2) et channels == ' + nCh,
-    fullFile === 1 && fileCh === nCh, 'occurrences=' + fullFile + ' channels=' + fileCh);
+  check('I6 · <file> complet déclaré 1× (au lieu de 2)', fullFile === 1, 'occurrences=' + fullFile);
+
+  // Invariant 7 — <channelcount> == nCh dans le <file> ; AUCUN <channels> nulle part (la balise fantôme)
+  const fileBlock = between(xml, '<file id="file-1">', '</file>');
+  const chCount = +(fileBlock.match(/<channelcount>(\d+)<\/channelcount>/) || [])[1];
+  check('I7 · <file> <channelcount> == ' + nCh + ' (l\'élément que Premiere lit réellement)', chCount === nCh, 'channelcount=' + chCount);
+  check('I7b · AUCUN <channels> dans tout le XML (balise fantôme éliminée partout)', !/<channels>/.test(xml), 'reste ' + (xml.match(/<channels>/g) || []).length);
 }
 
 runScenario('SCÉNARIO A — mono déclaré mono', 1);
